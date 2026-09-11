@@ -1,0 +1,30 @@
+## .NET and Visual Studio
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+logs/
+*.log
+
+## Rider / JetBrains
+.idea/
+*.DotSettings.user
+
+## VS Code
+.vscode/
+
+## Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env
+.env.*
+!.env.example
+
+## OS generated files
+.DS_Store
+Thumbs.db
