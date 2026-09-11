@@ -1,5 +1,6 @@
 using AquaReflect.Application.Common.Interfaces;
 using AquaReflect.Infrastructure.Data;
+using AquaReflect.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,9 @@ public static class DependencyInjection
 
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+
+        // Dịch vụ mã hóa băm mật khẩu
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         return services;
     }

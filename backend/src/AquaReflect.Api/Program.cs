@@ -3,6 +3,7 @@ using AquaReflect.Api.Extensions;
 using AquaReflect.Api.Middlewares;
 using AquaReflect.Application;
 using AquaReflect.Infrastructure;
+using AquaReflect.Infrastructure.Data;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -73,6 +74,10 @@ app.MapControllers();
 try
 {
     Log.Information("Khởi động AquaReflect API Server...");
+
+    // Tự động kiểm tra và khởi tạo dữ liệu mẫu nếu database trống
+    await ApplicationDbContextSeed.SeedSampleDataAsync(app.Services);
+
     app.Run();
 }
 catch (Exception ex)
