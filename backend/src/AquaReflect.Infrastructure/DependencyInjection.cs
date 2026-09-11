@@ -19,8 +19,6 @@ public static class DependencyInjection
         {
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
-                // Kích hoạt hỗ trợ PostGIS NetTopologySuite cho EF Core
-                npgsqlOptions.UseNetTopologySuite();
                 npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
             });
         });

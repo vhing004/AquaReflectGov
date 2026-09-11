@@ -27,9 +27,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Kích hoạt extension PostGIS trong PostgreSQL
-        modelBuilder.HasPostgresExtension("postgis");
-
         // 1. Cấu hình AdministrativeUnit
         modelBuilder.Entity<AdministrativeUnit>(entity =>
         {
@@ -108,14 +105,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.CitizenEmail).HasMaxLength(100);
             entity.Property(e => e.CitizenIdCard).HasMaxLength(25);
 
+            // Bỏ qua LocationGeometry nếu không có PostGIS C-extension trên host
+            entity.Ignore(e => e.LocationGeometry);
+
             // Chỉ mục duy nhất cho mã hồ sơ tra cứu
             entity.HasIndex(e => e.TrackingCode).IsUnique();
 
-            // Chỉ mục không gian địa lý GiST cho cột LocationGeometry (WGS84 SRID 4326)
-            entity.Property(e => e.LocationGeometry)
-                .HasColumnType("geometry(Point, 4326)");
-            entity.HasIndex(e => e.LocationGeometry)
-                .HasMethod("GIST");
+            // Chỉ mục tọa độ địa lý (Vĩ độ, Kinh độ) phục vụ tìm kiếm và hiển thị bản đồ
+            entity.HasIndex(e => new { e.Latitude, e.Longitude });
 
             // Chỉ mục tìm kiếm và lọc thường dùng
             entity.HasIndex(e => e.Status);

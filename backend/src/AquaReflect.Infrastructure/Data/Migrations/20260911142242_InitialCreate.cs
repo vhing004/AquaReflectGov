@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -8,14 +7,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AquaReflect.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialSchemaAndPostGis : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterDatabase()
-                .Annotation("Npgsql:PostgresExtension:postgis", ",,");
-
             migrationBuilder.CreateTable(
                 name: "AdministrativeUnits",
                 columns: table => new
@@ -134,7 +130,6 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     TrackingCode = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     Title = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
                     Content = table.Column<string>(type: "text", nullable: false),
-                    LocationGeometry = table.Column<Point>(type: "geometry(Point, 4326)", nullable: true),
                     Latitude = table.Column<double>(type: "double precision", nullable: true),
                     Longitude = table.Column<double>(type: "double precision", nullable: true),
                     AddressText = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
@@ -433,10 +428,9 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                 column: "DepartmentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Petitions_LocationGeometry",
+                name: "IX_Petitions_Latitude_Longitude",
                 table: "Petitions",
-                column: "LocationGeometry")
-                .Annotation("Npgsql:IndexMethod", "GIST");
+                columns: new[] { "Latitude", "Longitude" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Petitions_PriorityLevel",

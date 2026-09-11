@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -13,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AquaReflect.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260911141415_InitialSchemaAndPostGis")]
-    partial class InitialSchemaAndPostGis
+    [Migration("20260911142242_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,7 +23,6 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                 .HasAnnotation("ProductVersion", "9.0.20")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("AquaReflect.Domain.Entities.AdministrativeUnit", b =>
@@ -227,9 +225,6 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.Property<double?>("Latitude")
                         .HasColumnType("double precision");
 
-                    b.Property<Point>("LocationGeometry")
-                        .HasColumnType("geometry(Point, 4326)");
-
                     b.Property<double?>("Longitude")
                         .HasColumnType("double precision");
 
@@ -270,16 +265,14 @@ namespace AquaReflect.Infrastructure.Data.Migrations
 
                     b.HasIndex("DepartmentId");
 
-                    b.HasIndex("LocationGeometry");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("LocationGeometry"), "GIST");
-
                     b.HasIndex("PriorityLevel");
 
                     b.HasIndex("Status");
 
                     b.HasIndex("TrackingCode")
                         .IsUnique();
+
+                    b.HasIndex("Latitude", "Longitude");
 
                     b.ToTable("Petitions", (string)null);
                 });
