@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization;
 using AquaReflect.Api.Extensions;
 using AquaReflect.Api.Middlewares;
+using AquaReflect.Api.Services;
 using AquaReflect.Application;
+using AquaReflect.Application.Common.Interfaces;
 using AquaReflect.Infrastructure;
 using AquaReflect.Infrastructure.Data;
 using Serilog;
@@ -17,6 +19,10 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 // Đăng ký các tầng trong Clean Architecture
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+// Đăng ký HttpContextAccessor và CurrentUserService
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // Cấu hình Controllers và Json Serializer
 builder.Services.AddControllers()
