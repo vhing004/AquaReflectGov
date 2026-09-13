@@ -61,10 +61,16 @@ export interface Department {
 export interface PetitionAttachment {
   id: string;
   fileName: string;
-  fileExtension: string;
-  fileSizeBytes: number;
+  originalFileName?: string;
   fileUrl: string;
-  uploadedAt: string;
+  fileType?: string;
+  mimeType?: string;
+  fileSize?: number;
+  fileSizeBytes?: number;
+  fileExtension?: string;
+  uploadedAt?: string;
+  exifLatitude?: number;
+  exifLongitude?: number;
 }
 
 export interface CreatePetitionResult {
@@ -83,3 +89,79 @@ export interface CreatePetitionResult {
   defaultSlaHours: number;
   attachments: PetitionAttachment[];
 }
+
+export interface PetitionTimelineItem {
+  id: string;
+  createdAt: string;
+  action: string;
+  fromStatus?: number;
+  fromStatusName?: string;
+  toStatus: number;
+  toStatusName: string;
+  note?: string;
+  actorName?: string;
+}
+
+export interface PetitionResolution {
+  id: string;
+  conclusionText: string;
+  documentNumber?: string;
+  officialDocumentUrl?: string;
+  issuedAt: string;
+  approvedByName?: string;
+}
+
+export interface PetitionTrackingDetail {
+  id: string;
+  trackingCode: string;
+  title: string;
+  content: string;
+  categoryId: string;
+  categoryName: string;
+  categoryCode: string;
+  defaultSlaHours: number;
+  status: number;
+  statusName: string;
+  priorityLevel: number;
+  priorityName: string;
+  addressText: string;
+  latitude?: number;
+  longitude?: number;
+  administrativeUnitId?: number;
+  administrativeUnitName?: string;
+  departmentId?: string;
+  departmentName?: string;
+  assignedUserName?: string;
+  isAnonymous: boolean;
+  citizenNameMasked?: string;
+  citizenPhoneMasked?: string;
+  createdAt: string;
+  dueDate?: string;
+  resolvedAt?: string;
+  isOverdue: boolean;
+  remainingHours?: number;
+  resolutionSummary?: string;
+  attachments: PetitionAttachment[];
+  timeline: PetitionTimelineItem[];
+  resolution?: PetitionResolution;
+  hasFeedback: boolean;
+  feedbackRating?: number;
+  feedbackComment?: string;
+}
+
+export interface PetitionSummary {
+  id: string;
+  trackingCode: string;
+  title: string;
+  categoryName: string;
+  status: number;
+  statusName: string;
+  priorityLevel: number;
+  priorityName: string;
+  createdAt: string;
+  dueDate?: string;
+  isOverdue: boolean;
+  attachmentsCount: number;
+  departmentName?: string;
+}
+

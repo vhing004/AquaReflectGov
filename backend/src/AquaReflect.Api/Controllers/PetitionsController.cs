@@ -1,6 +1,8 @@
 using AquaReflect.Application.Common.Models;
 using AquaReflect.Application.Features.Petitions.Commands.CreatePetition;
 using AquaReflect.Application.Features.Petitions.DTOs;
+using AquaReflect.Application.Features.Petitions.Queries.GetPetitionsByPhone;
+using AquaReflect.Application.Features.Petitions.Queries.TrackPetitionByCode;
 using AquaReflect.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
@@ -67,6 +69,44 @@ public class PetitionsController : BaseApiController
 
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(ApiResponse<CreatePetitionResultDto>.Created(result, "Tiếp nhận phản ánh kiến nghị thành công."));
+    }
+
+    /// <summary>
+    /// Tra cứu tiến độ giải quyết phản ánh kiến nghị công khai bằng mã tra cứu (TrackingCode)
+    /// </summary>
+    /// <param name="trackingCode">Mã biên nhận hồ sơ (ví dụ: TS-202609-HGZH4)</param>
+    /// <param name="phone">Số điện thoại người gửi (tùy chọn - dùng để xác thực quyền xem hồ sơ)</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Chi tiết tiến độ, dòng thời gian 4 bước, tệp đính kèm và văn bản kết luận giải quyết</returns>
+    [HttpGet("track/{trackingCode}")]
+    [ProducesResponseType(typeof(ApiResponse<PetitionTrackingDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<PetitionTrackingDto>>> TrackPetition(
+        string trackingCode,
+        [FromQuery] string? phone,
+        CancellationToken cancellationToken)
+    {
+        var query = new TrackPetitionByCodeQuery(trackingCode, phone);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(ApiResponse<PetitionTrackingDto>.Ok(result, "Tra cứu thông tin tiến độ phản ánh thành công."));
+    }
+
+    /// <summary>
+    /// Tra cứu danh sách các hồ sơ phản ánh kiến nghị theo số điện thoại công dân/ngư dân
+    /// </summary>
+    /// <param name="phone">Số điện thoại người gửi phản ánh</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Danh sách các hồ sơ kiến nghị đã gửi</returns>
+    [HttpGet("by-phone")]
+    [ProducesResponseType(typeof(ApiResponse<List<PetitionSummaryDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<List<PetitionSummaryDto>>>> GetPetitionsByPhone(
+        [FromQuery] string phone,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetPetitionsByPhoneQuery(phone);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(ApiResponse<List<PetitionSummaryDto>>.Ok(result, $"Tìm thấy {result.Count} hồ sơ phản ánh kiến nghị."));
     }
 }
 

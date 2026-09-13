@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { masterDataApi } from '../api/masterDataApi';
 import { petitionApi } from '../api/petitionApi';
-import type { Category, AdministrativeUnit, CreatePetitionResult } from '../types';
+import type { Category, AdministrativeUnit, CreatePetitionResult, PetitionTrackingDetail } from '../types';
 import { 
   Send, 
   MapPin, 
@@ -68,8 +68,30 @@ export const SubmitPetitionPage: React.FC = () => {
   const [copiedCode, setCopiedCode] = useState(false);
 
   // Tracking query on the right side
-  const [trackingCodeInput, setTrackingCodeInput] = useState('#TS-2024-8891');
-  const [activeTrackingCode, setActiveTrackingCode] = useState('#TS-2024-8891');
+  const [trackingCodeInput, setTrackingCodeInput] = useState('TS-202609-HGZH4');
+  const [activeTrackingCode, setActiveTrackingCode] = useState('TS-202609-HGZH4');
+  const [trackedDetail, setTrackedDetail] = useState<PetitionTrackingDetail | null>(null);
+  const [isTrackLoading, setIsTrackLoading] = useState(false);
+
+  // Auto fetch real tracking details when activeTrackingCode changes
+  useEffect(() => {
+    const code = activeTrackingCode.replace('#', '').trim();
+    if (code) {
+      setIsTrackLoading(true);
+      petitionApi.trackPetition(code)
+        .then((res) => {
+          if (res.success && res.data) {
+            setTrackedDetail(res.data);
+          }
+        })
+        .catch(() => {
+          setTrackedDetail(null);
+        })
+        .finally(() => {
+          setIsTrackLoading(false);
+        });
+    }
+  }, [activeTrackingCode]);
 
   // Load master data on mount
   useEffect(() => {
@@ -810,30 +832,35 @@ export const SubmitPetitionPage: React.FC = () => {
                 className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006194] uppercase bg-slate-50"
               />
               <button
+                type="button"
+                disabled={isTrackLoading}
                 onClick={() => setActiveTrackingCode(trackingCodeInput)}
-                className="px-4 py-2 rounded-xl bg-[#006194] hover:bg-[#0284c7] text-white text-xs font-bold transition-colors"
+                className="px-4 py-2 rounded-xl bg-[#006194] hover:bg-[#0284c7] disabled:bg-slate-400 text-white text-xs font-bold transition-colors flex items-center space-x-1.5"
               >
-                Tra cứu
+                {isTrackLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Tra cứu</span>
               </button>
             </div>
           </div>
 
-          {/* Card hiển thị tiến độ chi tiết theo mẫu */}
+          {/* Card hiển thị tiến độ chi tiết */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-6">
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div>
                 <div className="flex items-center space-x-2">
-                  <span className="font-mono font-extrabold text-sm text-[#006194]">{activeTrackingCode}</span>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    {submittedPetition && activeTrackingCode === submittedPetition.trackingCode 
-                      ? 'Đang thụ lý' 
-                      : 'Đã có kết quả'}
+                  <span className="font-mono font-extrabold text-sm text-[#006194]">
+                    #{trackedDetail ? trackedDetail.trackingCode : (submittedPetition ? submittedPetition.trackingCode : activeTrackingCode)}
+                  </span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    (trackedDetail?.status === 4 || submittedPetition?.status === 4)
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      : 'bg-sky-100 text-sky-800 border border-sky-200'
+                  }`}>
+                    {trackedDetail?.statusName || (submittedPetition ? submittedPetition.statusName : 'Mới tiếp nhận')}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Tiếp nhận: {submittedPetition && activeTrackingCode === submittedPetition.trackingCode 
-                    ? 'Hôm nay' 
-                    : '14/10/2024'} • Kênh: Cổng DVC Thủy Sản Trực Tuyến
+                  Tiếp nhận: {trackedDetail ? new Date(trackedDetail.createdAt).toLocaleDateString('vi-VN') : 'Hôm nay'} • Cổng DVC Thủy Sản Trực Tuyến
                 </p>
               </div>
               <button
@@ -849,15 +876,11 @@ export const SubmitPetitionPage: React.FC = () => {
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
               <span className="text-[10px] font-bold uppercase text-slate-400">Vấn đề phản ánh</span>
               <h4 className="text-xs font-bold text-slate-900 leading-snug">
-                {submittedPetition && activeTrackingCode === submittedPetition.trackingCode
-                  ? submittedPetition.title
-                  : 'Kiến nghị nạo vét luồng lạch tại Cửa biển Sa Kỳ đảm bảo an toàn tàu trên 700CV ra vào cập cảng'}
+                {trackedDetail?.title || submittedPetition?.title || 'Kiến nghị nạo vét luồng lạch tại Cửa biển Sa Kỳ đảm bảo an toàn tàu ra vào cập cảng'}
               </h4>
               <p className="text-[11px] text-slate-600">
                 Đơn vị giải quyết: <strong className="text-[#006194]">
-                  {submittedPetition && activeTrackingCode === submittedPetition.trackingCode
-                    ? 'Chi cục Thủy sản tỉnh Quảng Ngãi & BQL Cảng cá'
-                    : 'Ban Quản lý Cảng cá & Chi cục Thủy sản Quảng Ngãi'}
+                  {trackedDetail?.departmentName || 'Chi cục Thủy sản tỉnh & BQL Cảng cá'}
                 </strong>
               </p>
             </div>
@@ -868,108 +891,103 @@ export const SubmitPetitionPage: React.FC = () => {
                 Quy trình giải quyết 4 bước
               </span>
 
-              <div className="relative pl-6 space-y-5">
-                <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-emerald-400"></div>
+              {(() => {
+                const currentStatus = trackedDetail ? trackedDetail.status : (submittedPetition ? submittedPetition.status : 1);
+                return (
+                  <div className="relative pl-6 space-y-5">
+                    <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-emerald-400"></div>
 
-                {/* Bước 1 */}
-                <div className="relative flex items-start space-x-3 text-xs">
-                  <div className="absolute -left-6 mt-0.5 w-5 h-5 rounded-full bg-[#006194] text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
-                    ✓
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-bold text-slate-900">1. Đã tiếp nhận & Cấp mã sổ bộ</span>
-                      <span className="text-[10px] text-slate-400">Tự động</span>
+                    {/* Bước 1 */}
+                    <div className="relative flex items-start space-x-3 text-xs">
+                      <div className="absolute -left-6 mt-0.5 w-5 h-5 rounded-full bg-[#006194] text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                        ✓
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-bold text-slate-900">1. Đã tiếp nhận & Cấp mã sổ bộ</span>
+                          <span className="text-[10px] text-slate-400">Đã xong</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Hệ thống thẩm định hồ sơ số và phân loại nghiệp vụ.
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Bộ phận điều phối thẩm định hồ sơ số và tính hợp lệ.
-                    </p>
-                  </div>
-                </div>
 
-                {/* Bước 2 */}
-                <div className="relative flex items-start space-x-3 text-xs">
-                  <div className={`absolute -left-6 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs ${
-                    submittedPetition && activeTrackingCode === submittedPetition.trackingCode
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-[#006194] text-white'
-                  }`}>
-                    {submittedPetition && activeTrackingCode === submittedPetition.trackingCode ? '⋯' : '✓'}
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-bold text-slate-900">2. Thẩm tra thực địa & Giám sát VMS</span>
-                      <span className="text-[10px] text-slate-400">Đang triển khai</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Trích xuất dữ liệu hải trình, kiểm tra mẫu nước hoặc hiện trường.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Bước 3 */}
-                <div className="relative flex items-start space-x-3 text-xs">
-                  <div className={`absolute -left-6 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs ${
-                    submittedPetition && activeTrackingCode === submittedPetition.trackingCode
-                      ? 'bg-slate-300 text-slate-600'
-                      : 'bg-[#006194] text-white'
-                  }`}>
-                    {submittedPetition && activeTrackingCode === submittedPetition.trackingCode ? '3' : '✓'}
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-bold text-slate-900">3. Phối hợp xử lý liên ngành</span>
-                      <span className="text-[10px] text-slate-400">Chờ kết luận</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Phối hợp Đồn Biên phòng, Ban Quản lý cảng cá, Phòng Nông nghiệp.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Bước 4 */}
-                <div className="relative flex items-start space-x-3 text-xs">
-                  <div className={`absolute -left-6 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs ${
-                    submittedPetition && activeTrackingCode === submittedPetition.trackingCode
-                      ? 'bg-slate-300 text-slate-600'
-                      : 'bg-emerald-600 text-white'
-                  }`}>
-                    {submittedPetition && activeTrackingCode === submittedPetition.trackingCode ? '4' : '✓'}
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`font-bold ${
-                        submittedPetition && activeTrackingCode === submittedPetition.trackingCode
-                          ? 'text-slate-700'
-                          : 'text-emerald-800'
+                    {/* Bước 2 */}
+                    <div className="relative flex items-start space-x-3 text-xs">
+                      <div className={`absolute -left-6 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs ${
+                        currentStatus >= 2 ? 'bg-[#006194] text-white' : 'bg-amber-500 text-white'
                       }`}>
-                        4. Ban hành văn bản & Kết luận công khai
-                      </span>
+                        {currentStatus >= 2 ? '✓' : '⋯'}
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-bold text-slate-900">2. Thẩm tra thực địa & Giám sát VMS</span>
+                          <span className="text-[10px] text-slate-400">
+                            {currentStatus >= 2 ? 'Đã hoàn thành' : 'Đang xử lý'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Trích xuất dữ liệu hải trình, đo kiểm tra mẫu nước hoặc hiện trường.
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Kết quả giải quyết được thông báo qua SMS/Email và niêm yết công khai.
-                    </p>
+
+                    {/* Bước 3 */}
+                    <div className="relative flex items-start space-x-3 text-xs">
+                      <div className={`absolute -left-6 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs ${
+                        currentStatus >= 3 ? 'bg-[#006194] text-white' : 'bg-slate-300 text-slate-600'
+                      }`}>
+                        {currentStatus >= 3 ? '✓' : '3'}
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-bold text-slate-900">3. Phối hợp xử lý liên ngành</span>
+                          <span className="text-[10px] text-slate-400">
+                            {currentStatus >= 3 ? 'Đã hoàn thành' : 'Chờ phân công'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Phối hợp Đồn Biên phòng, Ban Quản lý cảng cá, Trạm Kiểm ngư.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bước 4 */}
+                    <div className="relative flex items-start space-x-3 text-xs">
+                      <div className={`absolute -left-6 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs ${
+                        currentStatus >= 4 ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-600'
+                      }`}>
+                        {currentStatus >= 4 ? '✓' : '4'}
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`font-bold ${currentStatus >= 4 ? 'text-emerald-800' : 'text-slate-700'}`}>
+                            4. Ban hành quyết định & Kết luận
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Ban hành văn bản giải quyết chính thức có đóng dấu số.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
 
-            {/* Tải về tài liệu */}
-            <div className="pt-2 border-t border-slate-100">
+            {/* Link chuyển sang Cổng tra cứu chuyên sâu */}
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
               <a
-                href="#download"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('Tải về văn bản quyết định giải quyết có đóng dấu số của Cục Thủy Sản.');
-                }}
-                className="flex items-center justify-between p-3 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 transition-colors text-xs text-[#006194]"
+                href={`/track?code=${encodeURIComponent(
+                  trackedDetail?.trackingCode || submittedPetition?.trackingCode || activeTrackingCode.replace('#', '')
+                )}`}
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-[#006194] hover:underline"
               >
-                <div className="flex items-center space-x-2">
-                  <FileText className="w-4 h-4 text-[#006194]" />
-                  <span className="font-bold">Quyet_dinh_xu_ly_thuy_san.pdf</span>
-                </div>
-                <Printer className="w-3.5 h-3.5" />
+                <span>Mở trang tra cứu chi tiết & nhật ký</span>
+                <ChevronRight className="w-3.5 h-3.5" />
               </a>
+              <span className="text-[11px] text-slate-400">Theo dõi 24/7</span>
             </div>
           </div>
         </section>
