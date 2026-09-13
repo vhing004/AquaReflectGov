@@ -10,6 +10,8 @@ logs/
 *.log
 appsettings.Development.json
 !appsettings.Development.json.example
+backend/src/AquaReflect.Api/wwwroot/uploads/*
+!backend/src/AquaReflect.Api/wwwroot/uploads/.gitkeep
 
 ## Rider / JetBrains
 .idea/

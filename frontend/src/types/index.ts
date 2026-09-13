@@ -57,3 +57,29 @@ export interface Department {
   email?: string;
   address?: string;
 }
+
+export interface PetitionAttachment {
+  id: string;
+  fileName: string;
+  fileExtension: string;
+  fileSizeBytes: number;
+  fileUrl: string;
+  uploadedAt: string;
+}
+
+export interface CreatePetitionResult {
+  id: string;
+  trackingCode: string;
+  title: string;
+  status: number;
+  statusName: string;
+  priority: number;
+  priorityName: string;
+  categoryId: string;
+  categoryName: string;
+  administrativeUnitId?: number;
+  createdAt: string;
+  dueDate: string;
+  defaultSlaHours: number;
+  attachments: PetitionAttachment[];
+}

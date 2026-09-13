@@ -69,6 +69,9 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
 
+// Kích hoạt phục vụ tệp tĩnh (ảnh/video đính kèm) trong wwwroot
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

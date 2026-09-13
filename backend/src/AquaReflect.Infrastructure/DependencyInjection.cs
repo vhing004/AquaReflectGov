@@ -35,6 +35,9 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
+        // Dịch vụ lưu trữ tệp đính kèm cục bộ (ảnh/video thực địa)
+        services.AddScoped<IFileStorageService, Services.LocalFileStorageService>();
+
         // Cấu hình Authentication JWT Bearer
         var jwtKey = configuration["JwtSettings:Key"]
             ?? "AquaReflect_Secure_Super_Secret_Key_2026_Fisheries_Management_Key_Must_Be_Long";
