@@ -1,5 +1,6 @@
 using AquaReflect.Application.Common.Models;
 using AquaReflect.Application.Features.Petitions.Commands.CreatePetition;
+using AquaReflect.Application.Features.Petitions.Commands.SubmitFeedback;
 using AquaReflect.Application.Features.Petitions.DTOs;
 using AquaReflect.Application.Features.Petitions.Queries.GetPetitionsByPhone;
 using AquaReflect.Application.Features.Petitions.Queries.TrackPetitionByCode;
@@ -108,6 +109,45 @@ public class PetitionsController : BaseApiController
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(ApiResponse<List<PetitionSummaryDto>>.Ok(result, $"Tìm thấy {result.Count} hồ sơ phản ánh kiến nghị."));
     }
+
+    /// <summary>
+    /// Công dân gửi đánh giá chất lượng phục vụ sau khi hồ sơ phản ánh đã được giải quyết
+    /// </summary>
+    /// <param name="trackingCode">Mã tra cứu hồ sơ (ví dụ: TS-202609-HGZH4)</param>
+    /// <param name="request">Đánh giá sao (1-5) và nhận xét tùy chọn</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Xác nhận đánh giá đã được ghi nhận thành công</returns>
+    [HttpPost("{trackingCode}/feedback")]
+    [ProducesResponseType(typeof(ApiResponse<SubmitFeedbackResultDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<SubmitFeedbackResultDto>>> SubmitFeedback(
+        string trackingCode,
+        [FromBody] SubmitFeedbackRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new SubmitFeedbackCommand
+        {
+            TrackingCode = trackingCode,
+            Rating = request.Rating,
+            Comment = request.Comment
+        };
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<SubmitFeedbackResultDto>.Created(result, result.Message));
+    }
+}
+
+public class SubmitFeedbackRequest
+{
+    /// <summary>
+    /// Điểm đánh giá chất lượng phục vụ từ 1 (Rất không hài lòng) đến 5 (Rất hài lòng)
+    /// </summary>
+    public int Rating { get; set; }
+
+    /// <summary>
+    /// Nhận xét tự do của công dân (tùy chọn, tối đa 1000 ký tự)
+    /// </summary>
+    public string? Comment { get; set; }
 }
 
 public class CreatePetitionRequest

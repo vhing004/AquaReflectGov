@@ -3,7 +3,8 @@ import type {
   ApiResponse, 
   CreatePetitionResult, 
   PetitionTrackingDetail, 
-  PetitionSummary 
+  PetitionSummary,
+  SubmitFeedbackResult
 } from '../types';
 
 export const petitionApi = {
@@ -30,6 +31,18 @@ export const petitionApi = {
     const res = await axiosClient.get<ApiResponse<PetitionSummary[]>>('/petitions/by-phone', {
       params: { phone: phone.trim() },
     });
+    return res.data;
+  },
+
+  submitFeedback: async (
+    trackingCode: string,
+    rating: number,
+    comment?: string
+  ): Promise<ApiResponse<SubmitFeedbackResult>> => {
+    const res = await axiosClient.post<ApiResponse<SubmitFeedbackResult>>(
+      `/petitions/${encodeURIComponent(trackingCode.trim())}/feedback`,
+      { rating, comment }
+    );
     return res.data;
   },
 };

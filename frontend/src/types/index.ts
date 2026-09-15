@@ -165,3 +165,11 @@ export interface PetitionSummary {
   departmentName?: string;
 }
 
+export interface SubmitFeedbackResult {
+  feedbackId: string;
+  trackingCode: string;
+  rating: number;
+  comment?: string;
+  feedbackAt: string;
+  message: string;
+}
