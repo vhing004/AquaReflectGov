@@ -32,9 +32,12 @@ import {
   ExternalLink,
   Layers,
   Flame,
-  X
+  X,
+  LayoutList,
+  Kanban,
 } from 'lucide-react';
 import { TransitionStatusModal } from '../components/admin/TransitionStatusModal';
+import { KanbanBoard } from '../components/admin/KanbanBoard';
 
 export const AdminPetitionsPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -54,6 +57,9 @@ export const AdminPetitionsPage: React.FC = () => {
   const [sortDesc, setSortDesc] = useState(true);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+
+  // View mode: 'list' (table) or 'kanban' (board)
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
 
   // Active drawer / quick view modal state
   const [selectedPetition, setSelectedPetition] = useState<AdminPetitionItem | null>(null);
@@ -80,10 +86,14 @@ export const AdminPetitionsPage: React.FC = () => {
   const categories = categoriesRes?.data || [];
 
   // Query parameters memoized
+  // In kanban mode: load up to 100 items (no pagination), page always 1
+  const effectivePageSize = viewMode === 'kanban' ? 100 : pageSize;
+  const effectivePageNumber = viewMode === 'kanban' ? 1 : pageNumber;
+
   const queryParams = useMemo<AdminPetitionFilterParams>(() => {
     const params: AdminPetitionFilterParams = {
-      pageNumber,
-      pageSize,
+      pageNumber: effectivePageNumber,
+      pageSize: effectivePageSize,
       sortBy,
       sortDesc,
     };
@@ -109,8 +119,8 @@ export const AdminPetitionsPage: React.FC = () => {
     dateTo,
     sortBy,
     sortDesc,
-    pageNumber,
-    pageSize,
+    effectivePageNumber,
+    effectivePageSize,
   ]);
 
   // Fetch Admin Petitions
@@ -307,6 +317,34 @@ export const AdminPetitionsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3 shrink-0">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-white/10 rounded-xl p-0.5 border border-white/20">
+              <button
+                onClick={() => setViewMode('list')}
+                title="Chế độ Bảng danh sách"
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-white text-[#006194] shadow-sm'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <LayoutList className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Danh sách</span>
+              </button>
+              <button
+                onClick={() => setViewMode('kanban')}
+                title="Chế độ Bảng Kanban"
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'kanban'
+                    ? 'bg-white text-[#006194] shadow-sm'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <Kanban className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Kanban</span>
+              </button>
+            </div>
+
             <button
               onClick={() => refetch()}
               disabled={isFetching}
@@ -320,7 +358,7 @@ export const AdminPetitionsPage: React.FC = () => {
               className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs font-bold shadow-md hover:shadow transition-all"
             >
               <Sparkles className="w-3.5 h-3.5 text-slate-900" />
-              <span>Báo cáo Dashboard</span>
+              <span className="hidden sm:inline">Dashboard</span>
             </Link>
           </div>
         </div>
@@ -446,8 +484,17 @@ export const AdminPetitionsPage: React.FC = () => {
           </button>
         </div>
 
-        {/* 3. MULTI-CRITERIA FILTER TOOLBAR */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200/80 space-y-4">
+        {/* 3. MULTI-CRITERIA FILTER TOOLBAR — hidden in Kanban mode */}
+        {viewMode === 'kanban' && (
+          <div className="flex items-center gap-2 text-xs text-slate-500 bg-white rounded-2xl px-4 py-3 border border-slate-200 shadow-xs">
+            <Kanban className="w-4 h-4 text-[#006194]" />
+            <span className="font-semibold text-slate-700">Chế độ Kanban:</span>
+            <span>Hiển thị tối đa 100 hồ sơ gần nhất, nhóm theo trạng thái.</span>
+            <span className="ml-auto text-[11px] text-slate-400">Dùng bộ lọc Status/Phòng ban bên trên để thu hẹp.</span>
+          </div>
+        )}
+        {viewMode === 'list' && (
+          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200/80 space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div className="flex items-center space-x-2 text-slate-800 font-bold text-sm">
               <Filter className="w-4 h-4 text-[#006194]" />
@@ -626,9 +673,19 @@ export const AdminPetitionsPage: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
 
-        {/* 4. PETITION DATA TABLE */}
-        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
+        {/* 4. PETITION DATA TABLE (List Mode) OR KANBAN BOARD */}
+        {viewMode === 'kanban' ? (
+          <KanbanBoard
+            petitions={petitions}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            onTransition={(item) => setTransitionPetition(item)}
+            onViewDetail={(item) => setSelectedPetition(item)}
+          />
+        ) : (
+          <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
           {/* Table Header Action Bar */}
           <div className="px-5 py-3.5 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="text-slate-600 font-medium">
@@ -914,7 +971,8 @@ export const AdminPetitionsPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 6. QUICK VIEW DETAIL DRAWER / MODAL */}
