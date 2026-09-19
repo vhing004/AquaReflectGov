@@ -21,6 +21,8 @@ public static class DependencyInjection
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         });
 
+        services.AddScoped<Common.Interfaces.IPetitionWorkflowService, Services.PetitionWorkflowService>();
+
         return services;
     }
 }

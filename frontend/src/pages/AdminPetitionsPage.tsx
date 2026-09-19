@@ -34,6 +34,7 @@ import {
   Flame,
   X
 } from 'lucide-react';
+import { TransitionStatusModal } from '../components/admin/TransitionStatusModal';
 
 export const AdminPetitionsPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -57,6 +58,10 @@ export const AdminPetitionsPage: React.FC = () => {
   // Active drawer / quick view modal state
   const [selectedPetition, setSelectedPetition] = useState<AdminPetitionItem | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  // Workflow transition state & toast
+  const [transitionPetition, setTransitionPetition] = useState<AdminPetitionItem | null>(null);
+  const [actionToast, setActionToast] = useState<string | null>(null);
 
   // Fetch Master Data
   const { data: deptsRes } = useQuery({
@@ -322,6 +327,22 @@ export const AdminPetitionsPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-5">
+        {/* Action Success Toast */}
+        {actionToast && (
+          <div className="p-4 rounded-2xl bg-emerald-600 text-white font-bold text-xs shadow-lg flex items-center justify-between animate-in slide-in-from-top-2">
+            <div className="flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-100 shrink-0" />
+              <span>{actionToast}</span>
+            </div>
+            <button
+              onClick={() => setActionToast(null)}
+              className="p-1 rounded-lg hover:bg-white/20 text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* 2. QUICK STATUS TABS (Kanban style top filter) */}
         <div className="bg-white rounded-2xl p-2 shadow-xs border border-slate-200/80 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           <button
@@ -812,6 +833,14 @@ export const AdminPetitionsPage: React.FC = () => {
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
                           <button
+                            onClick={() => setTransitionPetition(item)}
+                            disabled={item.status === 6}
+                            className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={item.status === 6 ? 'Hồ sơ đã đóng' : 'Luân chuyển trạng thái / Phân công'}
+                          >
+                            <Layers className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => setSelectedPetition(item)}
                             className="p-1.5 rounded-lg text-sky-700 hover:bg-sky-100 transition-colors"
                             title="Xem nhanh chi tiết"
@@ -1004,6 +1033,19 @@ export const AdminPetitionsPage: React.FC = () => {
               </button>
 
               <div className="flex items-center space-x-2">
+                {selectedPetition.status !== 6 && (
+                  <button
+                    onClick={() => {
+                      const target = selectedPetition;
+                      setSelectedPetition(null);
+                      setTransitionPetition(target);
+                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center space-x-1.5 shadow-sm"
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Luân chuyển trạng thái</span>
+                  </button>
+                )}
                 <Link
                   to={`/track?code=${encodeURIComponent(selectedPetition.trackingCode)}`}
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-[#006194] hover:bg-[#0284c7] text-white transition-colors flex items-center space-x-1.5 shadow-sm"
@@ -1015,6 +1057,20 @@ export const AdminPetitionsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 7. WORKFLOW TRANSITION MODAL */}
+      {transitionPetition && (
+        <TransitionStatusModal
+          petition={transitionPetition}
+          isOpen={!!transitionPetition}
+          onClose={() => setTransitionPetition(null)}
+          onSuccess={(msg) => {
+            setActionToast(msg);
+            setTimeout(() => setActionToast(null), 4000);
+            refetch();
+          }}
+        />
       )}
     </div>
   );

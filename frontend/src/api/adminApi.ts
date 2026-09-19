@@ -26,4 +26,28 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  /**
+   * Lấy danh sách trạng thái tiếp theo hợp lệ mà cán bộ hiện tại có thể chuyển
+   */
+  getAllowedTransitions: async (petitionId: string): Promise<ApiResponse<import('../types').AllowedTransition[]>> => {
+    const response = await axiosClient.get<ApiResponse<import('../types').AllowedTransition[]>>(
+      `/admin/petitions/${petitionId}/allowed-transitions`
+    );
+    return response.data;
+  },
+
+  /**
+   * Chuyển trạng thái hồ sơ theo State Machine & ghi vết Audit Trail
+   */
+  transitionStatus: async (
+    petitionId: string,
+    data: import('../types').TransitionStatusRequest
+  ): Promise<ApiResponse<import('../types').TransitionStatusResult>> => {
+    const response = await axiosClient.post<ApiResponse<import('../types').TransitionStatusResult>>(
+      `/admin/petitions/${petitionId}/transition`,
+      data
+    );
+    return response.data;
+  },
 };

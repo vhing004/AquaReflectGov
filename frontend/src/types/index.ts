@@ -226,3 +226,35 @@ export interface AdminPetitionFilterParams {
   sortDesc?: boolean;
 }
 
+export interface AllowedTransition {
+  status: number;
+  statusName: string;
+  actionDescription: string;
+  requiresDepartment: boolean;
+  requiresResolution: boolean;
+  requiresReason: boolean;
+}
+
+export interface TransitionStatusRequest {
+  toStatus: number;
+  departmentId?: string;
+  assignedUserId?: string;
+  resolutionSummary?: string;
+  note?: string;
+}
+
+export interface TransitionStatusResult {
+  petitionId: string;
+  trackingCode: string;
+  previousStatus: number;
+  previousStatusName: string;
+  newStatus: number;
+  newStatusName: string;
+  action: string;
+  departmentName?: string;
+  assignedUserName?: string;
+  resolvedAt?: string;
+  message: string;
+}
+
+
