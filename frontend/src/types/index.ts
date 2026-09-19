@@ -173,3 +173,56 @@ export interface SubmitFeedbackResult {
   feedbackAt: string;
   message: string;
 }
+
+export interface PaginatedResult<T> {
+  items: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export interface AdminPetitionItem {
+  id: string;
+  trackingCode: string;
+  title: string;
+  categoryName: string;
+  categoryCode: string;
+  status: number;
+  statusName: string;
+  priorityLevel: number;
+  priorityName: string;
+  departmentName?: string;
+  assignedUserName?: string;
+  citizenName?: string;
+  citizenPhone?: string;
+  isAnonymous: boolean;
+  addressText: string;
+  administrativeUnitName?: string;
+  createdAt: string;
+  dueDate?: string;
+  resolvedAt?: string;
+  isOverdue: boolean;
+  remainingHours?: number;
+  attachmentsCount: number;
+  hasFeedback: boolean;
+  feedbackRating?: number;
+}
+
+export interface AdminPetitionFilterParams {
+  keyword?: string;
+  status?: number;
+  priorityLevel?: number;
+  departmentId?: string;
+  categoryId?: string;
+  isOverdue?: boolean;
+  dateFrom?: string;
+  dateTo?: string;
+  pageNumber?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDesc?: boolean;
+}
+

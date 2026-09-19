@@ -15,7 +15,8 @@ import {
   PhoneCall, 
   AlertTriangle, 
   Globe, 
-  Bell
+  Bell,
+  FileText
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -160,14 +161,24 @@ export const Navbar: React.FC = () => {
                     </div>
 
                     {isOfficer && (
-                      <Link
-                        to="/admin/dashboard"
-                        onClick={() => setUserDropdownOpen(false)}
-                        className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50"
-                      >
-                        <Shield className="w-4 h-4 text-amber-600" />
-                        <span>Cổng Điều Hành & Xử Lý</span>
-                      </Link>
+                      <>
+                        <Link
+                          to="/admin/petitions"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-sky-900 hover:bg-sky-50"
+                        >
+                          <FileText className="w-4 h-4 text-[#006194]" />
+                          <span>Quản Lý Hồ Sơ Nghiệp Vụ</span>
+                        </Link>
+                        <Link
+                          to="/admin/dashboard"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50"
+                        >
+                          <Shield className="w-4 h-4 text-amber-600" />
+                          <span>Báo Cáo & Điều Phối</span>
+                        </Link>
+                      </>
                     )}
 
                     <button
@@ -232,17 +243,30 @@ export const Navbar: React.FC = () => {
           })}
 
           {isOfficer && (
-            <Link
-              to="/admin/dashboard"
-              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ml-auto ${
-                location.pathname === '/admin/dashboard'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200'
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5 text-amber-500" />
-              <span>Bảng Điều Phối Cán Bộ</span>
-            </Link>
+            <div className="flex items-center space-x-1.5 ml-auto shrink-0">
+              <Link
+                to="/admin/petitions"
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  location.pathname === '/admin/petitions'
+                    ? 'bg-[#006194] text-white shadow-xs'
+                    : 'text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 text-[#006194]" />
+                <span>Hồ Sơ Nghiệp Vụ</span>
+              </Link>
+              <Link
+                to="/admin/dashboard"
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  location.pathname === '/admin/dashboard'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5 text-amber-500" />
+                <span>Điều Phối Cán Bộ</span>
+              </Link>
+            </div>
           )}
         </div>
       </nav>
@@ -269,14 +293,24 @@ export const Navbar: React.FC = () => {
           })}
 
           {isOfficer && (
-            <Link
-              to="/admin/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-amber-800 bg-amber-50"
-            >
-              <Shield className="w-4 h-4 text-amber-600" />
-              <span>Bảng Điều Phối Cán Bộ</span>
-            </Link>
+            <div className="pt-2 border-t border-slate-100 space-y-1">
+              <Link
+                to="/admin/petitions"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-sky-900 bg-sky-50"
+              >
+                <FileText className="w-4 h-4 text-[#006194]" />
+                <span>Quản Lý Hồ Sơ Nghiệp Vụ</span>
+              </Link>
+              <Link
+                to="/admin/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-amber-800 bg-amber-50"
+              >
+                <Shield className="w-4 h-4 text-amber-600" />
+                <span>Bảng Điều Phối Cán Bộ</span>
+              </Link>
+            </div>
           )}
         </div>
       )}
