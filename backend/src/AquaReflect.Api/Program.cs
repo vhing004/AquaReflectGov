@@ -6,6 +6,7 @@ using AquaReflect.Application;
 using AquaReflect.Application.Common.Interfaces;
 using AquaReflect.Infrastructure;
 using AquaReflect.Infrastructure.Data;
+using AquaReflect.Infrastructure.Hubs;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,9 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 // Đăng ký các tầng trong Clean Architecture
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+// Đăng ký SignalR Real-time Hubs
+builder.Services.AddSignalR();
 
 // Đăng ký HttpContextAccessor và CurrentUserService
 builder.Services.AddHttpContextAccessor();
@@ -79,6 +83,9 @@ app.UseAuthorization();
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.MapControllers();
+
+// Đăng ký Endpoint SignalR Hub cho WebSocket real-time
+app.MapHub<NotificationHub>("/hubs/notification");
 
 try
 {

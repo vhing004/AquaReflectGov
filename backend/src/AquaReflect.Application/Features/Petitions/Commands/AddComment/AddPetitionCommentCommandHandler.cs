@@ -12,11 +12,16 @@ public class AddPetitionCommentCommandHandler : IRequestHandler<AddPetitionComme
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
+    private readonly INotificationService _notificationService;
 
-    public AddPetitionCommentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser)
+    public AddPetitionCommentCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUserService currentUser,
+        INotificationService notificationService)
     {
         _context = context;
         _currentUser = currentUser;
+        _notificationService = notificationService;
     }
 
     public async Task<PetitionCommentDto> Handle(AddPetitionCommentCommand request, CancellationToken cancellationToken)
@@ -72,6 +77,9 @@ public class AddPetitionCommentCommandHandler : IRequestHandler<AddPetitionComme
 
         _context.PetitionComments.Add(comment);
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Phát thông báo real-time tới chuyên viên và cán bộ theo dõi hồ sơ
+        await _notificationService.NotifyNewCommentAsync(petition, comment, cancellationToken);
 
         return new PetitionCommentDto
         {

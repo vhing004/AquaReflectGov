@@ -38,6 +38,10 @@ public static class DependencyInjection
         // Dịch vụ lưu trữ tệp đính kèm cục bộ (ảnh/video thực địa)
         services.AddScoped<IFileStorageService, Services.LocalFileStorageService>();
 
+        // Dịch vụ thông báo thời gian thực SignalR & Email tự động
+        services.AddScoped<INotificationService, Services.SignalRNotificationService>();
+        services.AddScoped<IEmailService, Services.EmailService>();
+
         // Cấu hình Authentication JWT Bearer
         var jwtKey = configuration["JwtSettings:Key"]
             ?? "AquaReflect_Secure_Super_Secret_Key_2026_Fisheries_Management_Key_Must_Be_Long";
@@ -63,6 +67,21 @@ public static class DependencyInjection
                 ValidAudience = jwtAudience,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
+            };
+
+            // Hỗ trợ xác thực JWT khi kết nối WebSocket SignalR qua query param 'access_token'
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                }
             };
         });
 

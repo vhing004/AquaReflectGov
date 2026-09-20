@@ -24,7 +24,7 @@
 | **Sprint 3** | Task 3.2 | Quy trình luân chuyển trạng thái (State Machine) & Audit Trail | `47fa9b4` | ✅ Hoàn thành |
 | **Sprint 3** | Task 3.3 | UI Portal Cán bộ: Chuyển đổi Danh sách & Bảng Kanban thông minh | `27b6ae8` | ✅ Hoàn thành |
 | **Sprint 3** | Task 3.4 | UI Chi tiết Hồ sơ Chuyên sâu & Cập nhật Kết quả Thụ lý | `efe06bf` | ✅ Hoàn thành |
-| **Sprint 3** | Task 3.5 | Hệ thống Thông báo Thời gian thực & Email (SignalR) | Kế hoạch chi tiết | ⏳ Sắp tới |
+| **Sprint 3** | Task 3.5 | Hệ thống Thông báo Thời gian thực & Email (SignalR) | `SignalR-Realtime` | ✅ Hoàn thành |
 | **Sprint 4** | Task 4.1 - 4.4 | Bản đồ số GIS, Dashboard Giám sát & Báo cáo thống kê | Thiết kế kiến trúc | ⏳ Sắp tới |
 | **Sprint 5** | Task 5.1 - 5.4 | Chống spam, Kiểm thử, Container Docker & Triển khai | Thiết kế kiến trúc | ⏳ Sắp tới |
 
@@ -50,7 +50,7 @@
 
 ---
 
-### Giai Đoạn 3: Phân Hệ Quản Lý, Điều Phối & Xử Lý Cho Cán Bộ (Sprint 3) - [Đang Triển Khai - 80% Hoàn Thành]
+### Giai Đoạn 3: Phân Hệ Quản Lý, Điều Phối & Xử Lý Cho Cán Bộ (Sprint 3) - [100% Hoàn Thành]
 - [x] **Task 3.1: API Quản lý & Lọc Hồ sơ Nâng cao (Cán bộ)** *(Commit `9982f02`)*
   - Backend: `GetAdminPetitionListQuery`, lọc từ khóa toàn văn, trạng thái, mức ưu tiên, phòng ban, danh mục, quá hạn SLA, phân trang `PaginatedResult`. Phân quyền Dispatcher xem tất cả, Specialist xem theo phòng ban.
   - Frontend: `adminApi.ts`, `AdminPetitionsPage.tsx` (/admin/petitions), toolbar đa tiêu chí, data table, SLA alert indicators, Quick View modal.
@@ -71,9 +71,20 @@
   - Frontend: `AdminPetitionDetailPage.tsx` bố cục 2 cột chuyên nghiệp (header control bar, cột chính, sidebar SLA/Audit).
   - Frontend: `ResolutionModal.tsx` (ban hành kết luận + upload file), `MediaLightbox.tsx` (xem ảnh/video fullscreen), `MiniMapViewer.tsx` (bản đồ OSM + link Google Maps).
   - Frontend: Điều hướng tích hợp từ danh sách (table + Kanban card) sang trang chi tiết.
-- [ ] **Task 3.5: Hệ thống Thông báo Thời gian thực & Email (SignalR + Background Job)**
-  - Cấu hình SignalR Hub: Bắn thông báo real-time khi có đơn phản ánh mới đến cán bộ trực ban.
-  - Tự động gửi Email/SMS đến người dân khi hồ sơ chuyển trạng thái hoặc có kết quả xử lý.
+- [x] **Task 3.5: Hệ thống Thông báo Thời gian thực & Email (SignalR + Background Notification)** *(Hoàn thành)*
+  - Backend:
+    - Entity `Notification` trong Domain và Migration PostgreSQL `AddNotificationEntity`.
+    - `NotificationHub` (`/hubs/notification`) với phân nhóm `dispatchers`, `dept_{id}`, `user_{id}`, `officers` và cấu hình JWT WebSocket handshake.
+    - `INotificationService` & `SignalRNotificationService` phát sự kiện real-time: `ReceiveNotification`, `PetitionCreated`, `PetitionStatusChanged`, `PetitionResolved`, `NewCommentAdded`.
+    - `IEmailService` & `EmailService`: Thiết kế mẫu Email HTML chuẩn phong cách Chính quyền số (tiếp nhận đơn kèm mã tra cứu, cập nhật tiến độ, kết quả xử lý chính thức), hỗ trợ SMTP & Logger fallback.
+    - Tích hợp thông báo tự động trong các Handlers: `CreatePetition`, `TransitionPetitionStatus`, `UpdatePetitionResolution`, `AddPetitionComment`.
+    - `NotificationsController`: API phân trang danh sách thông báo, đếm chưa đọc, đánh dấu đã đọc (`GET /api/v1/notifications`, `PUT /api/v1/notifications/{id}/read`, `PUT /api/v1/notifications/read-all`).
+  - Frontend:
+    - Cài đặt `@microsoft/signalr` và xây dựng `signalRService.ts` tự động kết nối lại, quản lý callbacks.
+    - `notificationApi.ts` giao tiếp API thông báo.
+    - `NotificationBell.tsx`: Chuông thông báo trên Navbar, badge số lượng chưa đọc, popover dropdown xem nhanh, nút đánh dấu tất cả đã đọc, điều hướng tới chi tiết hồ sơ.
+    - `ToastNotification.tsx`: Container popup thông báo nổi góc màn hình kèm thời gian relative và tự tắt sau 6s.
+    - Live Sync: Tự động invalidate cache React Query (`admin-petitions`, `admin-petition-detail`) giúp bảng Kanban và Danh sách tự cập nhật thẻ mới không cần F5.
 
 ---
 

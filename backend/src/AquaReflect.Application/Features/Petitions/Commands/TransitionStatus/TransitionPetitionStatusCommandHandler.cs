@@ -16,15 +16,21 @@ public class TransitionPetitionStatusCommandHandler
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
     private readonly IPetitionWorkflowService _workflowService;
+    private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
 
     public TransitionPetitionStatusCommandHandler(
         IApplicationDbContext context,
         ICurrentUserService currentUser,
-        IPetitionWorkflowService workflowService)
+        IPetitionWorkflowService workflowService,
+        INotificationService notificationService,
+        IEmailService emailService)
     {
         _context = context;
         _currentUser = currentUser;
         _workflowService = workflowService;
+        _notificationService = notificationService;
+        _emailService = emailService;
     }
 
     public async Task<TransitionPetitionStatusResultDto> Handle(
@@ -139,6 +145,34 @@ public class TransitionPetitionStatusCommandHandler
 
         // 9. Lưu toàn bộ thay đổi vào cơ sở dữ liệu
         await _context.SaveChangesAsync(cancellationToken);
+
+        // 10. Phát thông báo real-time tới phòng ban / cán bộ liên quan và live sync Kanban
+        await _notificationService.NotifyPetitionStatusChangedAsync(
+            petition,
+            previousStatus,
+            request.ToStatus,
+            request.Note ?? request.ResolutionSummary,
+            cancellationToken);
+
+        // 11. Nếu có phân công chuyên viên, gửi thông báo đích danh cho chuyên viên đó
+        if (petition.AssignedUser != null && request.AssignedUserId.HasValue)
+        {
+            await _notificationService.NotifyPetitionAssignedAsync(petition, petition.AssignedUser, cancellationToken);
+        }
+
+        // 12. Gửi email cập nhật tiến độ cho công dân nếu có email
+        if (!string.IsNullOrWhiteSpace(petition.CitizenEmail))
+        {
+            await _emailService.SendPetitionStatusUpdatedEmailAsync(
+                petition.CitizenEmail,
+                petition.CitizenName ?? "Quý công dân",
+                petition.TrackingCode,
+                petition.Title,
+                GetStatusName(previousStatus),
+                GetStatusName(petition.Status),
+                request.Note ?? request.ResolutionSummary,
+                cancellationToken);
+        }
 
         return new TransitionPetitionStatusResultDto
         {

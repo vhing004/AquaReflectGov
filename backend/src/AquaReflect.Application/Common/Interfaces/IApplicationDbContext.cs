@@ -15,6 +15,7 @@ public interface IApplicationDbContext
     DbSet<PetitionComment> PetitionComments { get; }
     DbSet<PetitionResolution> PetitionResolutions { get; }
     DbSet<CitizenFeedback> CitizenFeedbacks { get; }
+    DbSet<Notification> Notifications { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

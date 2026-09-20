@@ -13,6 +13,8 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
     private readonly IFileStorageService _fileStorage;
+    private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
 
     private static readonly string[] AllowedExtensions = { ".pdf", ".docx", ".doc", ".jpg", ".jpeg", ".png" };
     private const long MaxFileSize = 25 * 1024 * 1024; // 25MB
@@ -20,11 +22,15 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
     public UpdatePetitionResolutionCommandHandler(
         IApplicationDbContext context,
         ICurrentUserService currentUser,
-        IFileStorageService fileStorage)
+        IFileStorageService fileStorage,
+        INotificationService notificationService,
+        IEmailService emailService)
     {
         _context = context;
         _currentUser = currentUser;
         _fileStorage = fileStorage;
+        _notificationService = notificationService;
+        _emailService = emailService;
     }
 
     public async Task<PetitionResolutionDto> Handle(UpdatePetitionResolutionCommand request, CancellationToken cancellationToken)
@@ -136,7 +142,28 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        // 8. Trả về DTO kết quả
+        // 8. Bắn thông báo real-time tới cán bộ và live sync trạng thái hoàn tất
+        await _notificationService.NotifyPetitionResolvedAsync(
+            petition,
+            request.ConclusionText.Trim(),
+            request.DocumentNumber?.Trim(),
+            cancellationToken);
+
+        // 9. Gửi Email thông báo kết quả giải quyết chính thức cho công dân
+        if (!string.IsNullOrWhiteSpace(petition.CitizenEmail))
+        {
+            await _emailService.SendPetitionResolutionEmailAsync(
+                petition.CitizenEmail,
+                petition.CitizenName ?? "Quý công dân",
+                petition.TrackingCode,
+                petition.Title,
+                request.ConclusionText.Trim(),
+                request.DocumentNumber?.Trim(),
+                petition.ResolvedAt ?? DateTime.UtcNow,
+                cancellationToken);
+        }
+
+        // 10. Trả về DTO kết quả
         return new PetitionResolutionDto
         {
             Id = resolution.Id,

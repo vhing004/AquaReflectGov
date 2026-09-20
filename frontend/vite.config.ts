@@ -18,6 +18,11 @@ export default defineConfig({
       '/uploads': {
         target: 'http://localhost:5119',
         changeOrigin: true,
+      },
+      '/hubs': {
+        target: 'http://localhost:5119',
+        changeOrigin: true,
+        ws: true,
       }
     }
   }

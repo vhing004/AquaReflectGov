@@ -15,9 +15,9 @@ import {
   PhoneCall, 
   AlertTriangle, 
   Globe, 
-  Bell,
   FileText
 } from 'lucide-react';
+import { NotificationBell } from './NotificationBell';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -126,11 +126,10 @@ export const Navbar: React.FC = () => {
               <span>Cảnh báo VMS: 03 tàu mất kết nối</span>
             </div>
 
-            {/* Notification Bell */}
-            <button className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
-            </button>
+            {/* Notification Bell Real-time cho Cán bộ */}
+            {isAuthenticated && isOfficer && (
+              <NotificationBell />
+            )}
 
             {/* Profile Dropdown */}
             {isAuthenticated && user ? (

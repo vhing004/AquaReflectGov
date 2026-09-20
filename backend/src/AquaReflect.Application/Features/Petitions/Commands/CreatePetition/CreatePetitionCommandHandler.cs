@@ -15,17 +15,23 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
     private readonly IApplicationDbContext _context;
     private readonly IFileStorageService _fileStorageService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<CreatePetitionCommandHandler> _logger;
 
     public CreatePetitionCommandHandler(
-        IApplicationDbContext _context,
+        IApplicationDbContext context,
         IFileStorageService fileStorageService,
         ICurrentUserService currentUserService,
+        INotificationService notificationService,
+        IEmailService emailService,
         ILogger<CreatePetitionCommandHandler> logger)
     {
-        this._context = _context;
+        _context = context;
         _fileStorageService = fileStorageService;
         _currentUserService = currentUserService;
+        _notificationService = notificationService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -144,6 +150,22 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
         // 9. Lưu vào CSDL
         _context.Petitions.Add(petition);
         await _context.SaveChangesAsync(cancellationToken);
+
+        // 10. Bắn thông báo real-time qua SignalR tới cán bộ trực ban
+        await _notificationService.NotifyNewPetitionAsync(petition, cancellationToken);
+
+        // 11. Gửi Email biên nhận tự động nếu công dân có cung cấp địa chỉ email
+        if (!string.IsNullOrWhiteSpace(petition.CitizenEmail))
+        {
+            await _emailService.SendPetitionReceivedEmailAsync(
+                petition.CitizenEmail,
+                petition.CitizenName ?? "Quý công dân",
+                petition.TrackingCode,
+                petition.Title,
+                petition.CreatedAt,
+                petition.DueDate,
+                cancellationToken);
+        }
 
         _logger.LogInformation(
             "Tiếp nhận thành công phản ánh {TrackingCode}: {Title} (SLA: {SlaHours}h, Danh mục: {Category})",

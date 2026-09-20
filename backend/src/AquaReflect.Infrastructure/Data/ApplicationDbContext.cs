@@ -22,6 +22,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<PetitionComment> PetitionComments => Set<PetitionComment>();
     public DbSet<PetitionResolution> PetitionResolutions => Set<PetitionResolution>();
     public DbSet<CitizenFeedback> CitizenFeedbacks => Set<CitizenFeedback>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -227,6 +228,35 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.ToTable("CitizenFeedbacks");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Comment).HasMaxLength(1000);
+        });
+
+        // 11. Cấu hình Notification
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("Notifications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(250).IsRequired();
+            entity.Property(e => e.Content).HasMaxLength(2000).IsRequired();
+            entity.Property(e => e.TrackingCode).HasMaxLength(50);
+
+            entity.HasOne(e => e.TargetUser)
+                .WithMany()
+                .HasForeignKey(e => e.TargetUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.TargetDepartment)
+                .WithMany()
+                .HasForeignKey(e => e.TargetDepartmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Petition)
+                .WithMany()
+                .HasForeignKey(e => e.PetitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.TargetUserId);
+            entity.HasIndex(e => e.IsRead);
+            entity.HasIndex(e => e.CreatedAt);
         });
     }
 
