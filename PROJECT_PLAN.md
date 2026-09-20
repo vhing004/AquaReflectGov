@@ -2,7 +2,7 @@
 
 > **Dự án**: AquaReflect - Nền tảng số đa kênh tiếp nhận, điều phối và xử lý phản ánh kiến nghị ngành Thủy sản (Dịch bệnh thủy sản, ô nhiễm nguồn nước ao nuôi, vi phạm khai thác hải sản IUU, giống/thức ăn kém chất lượng, thủ tục hành chính nghề cá).  
 > **Kiến trúc**: .NET 9 Web API (Clean Architecture) + React 19 + TypeScript + Tailwind CSS v4 + PostgreSQL/PostGIS.  
-> **Cập nhật lần cuối**: 19/09/2026
+> **Cập nhật lần cuối**: 20/09/2026
 
 ---
 
@@ -23,7 +23,7 @@
 | **Sprint 3** | Task 3.1 | API Quản lý & Lọc hồ sơ nâng cao cho cán bộ + UI Danh sách | `9982f02` | ✅ Hoàn thành |
 | **Sprint 3** | Task 3.2 | Quy trình luân chuyển trạng thái (State Machine) & Audit Trail | `47fa9b4` | ✅ Hoàn thành |
 | **Sprint 3** | Task 3.3 | UI Portal Cán bộ: Chuyển đổi Danh sách & Bảng Kanban thông minh | `27b6ae8` | ✅ Hoàn thành |
-| **Sprint 3** | Task 3.4 | UI Chi tiết Hồ sơ Chuyên sâu & Cập nhật Kết quả Thụ lý | Kế hoạch chi tiết | ⏳ Tiếp theo |
+| **Sprint 3** | Task 3.4 | UI Chi tiết Hồ sơ Chuyên sâu & Cập nhật Kết quả Thụ lý | `efe06bf` | ✅ Hoàn thành |
 | **Sprint 3** | Task 3.5 | Hệ thống Thông báo Thời gian thực & Email (SignalR) | Kế hoạch chi tiết | ⏳ Sắp tới |
 | **Sprint 4** | Task 4.1 - 4.4 | Bản đồ số GIS, Dashboard Giám sát & Báo cáo thống kê | Thiết kế kiến trúc | ⏳ Sắp tới |
 | **Sprint 5** | Task 5.1 - 5.4 | Chống spam, Kiểm thử, Container Docker & Triển khai | Thiết kế kiến trúc | ⏳ Sắp tới |
@@ -50,7 +50,7 @@
 
 ---
 
-### Giai Đoạn 3: Phân Hệ Quản Lý, Điều Phối & Xử Lý Cho Cán Bộ (Sprint 3) - [Đang Triển Khai - 60% Hoàn Thành]
+### Giai Đoạn 3: Phân Hệ Quản Lý, Điều Phối & Xử Lý Cho Cán Bộ (Sprint 3) - [Đang Triển Khai - 80% Hoàn Thành]
 - [x] **Task 3.1: API Quản lý & Lọc Hồ sơ Nâng cao (Cán bộ)** *(Commit `9982f02`)*
   - Backend: `GetAdminPetitionListQuery`, lọc từ khóa toàn văn, trạng thái, mức ưu tiên, phòng ban, danh mục, quá hạn SLA, phân trang `PaginatedResult`. Phân quyền Dispatcher xem tất cả, Specialist xem theo phòng ban.
   - Frontend: `adminApi.ts`, `AdminPetitionsPage.tsx` (/admin/petitions), toolbar đa tiêu chí, data table, SLA alert indicators, Quick View modal.
@@ -63,10 +63,14 @@
   - `KanbanCard.tsx`: SLA urgency color ring (xanh -> vàng ≤48h -> đỏ ≤24h -> đỏ nhấp nháy pulse khi quá hạn), badge "QUÁ HẠN SLA", priority badge, nút luân chuyển trạng thái nhanh.
   - `KanbanBoard.tsx`: Bảng điều phối 4 cột (*Mới tiếp nhận* -> *Đã phân công* -> *Đang xử lý* -> *Đã giải quyết*). Smart sort (quá hạn lên đầu -> khẩn cấp -> cũ nhất), mobile scroll-snap.
   - `AdminPetitionsPage.tsx`: Toggle linh hoạt giữa chế độ **Danh sách | Kanban**.
-- [ ] **Task 3.4: UI Chi tiết Hồ sơ Chuyên sâu & Cập nhật Kết quả Thụ lý** *(Kế hoạch tiếp theo)*
-  - Màn hình chi tiết toàn diện: Xem thông tin đầy đủ, bản đồ thu nhỏ, album ảnh/video phóng to, dòng sự kiện lịch sử xử lý.
-  - Modal điều phối đơn vị/cán bộ thụ lý chuyên môn.
-  - Form soạn thảo kết luận xử lý, đính kèm văn bản thông báo hoặc quyết định xử phạt vi phạm chính thức.
+- [x] **Task 3.4: UI Chi tiết Hồ sơ Chuyên sâu & Cập nhật Kết quả Thụ lý** *(Commit `efe06bf`)*
+  - Backend: `GetAdminPetitionDetailQuery` + Handler (full dossier: attachments, timeline, resolution, comments, citizen identity, SLA metrics).
+  - Backend: `UpdatePetitionResolutionCommand` (ban hành văn bản kết luận chính thức + upload PDF/file con dấu).
+  - Backend: `AddPetitionCommentCommand` (ghi chú nghiệp vụ nội bộ giữa các cán bộ).
+  - Backend: 3 endpoints mới trong `AdminController` — `GET /petitions/{id}`, `POST /petitions/{id}/resolution`, `POST /petitions/{id}/comments`.
+  - Frontend: `AdminPetitionDetailPage.tsx` bố cục 2 cột chuyên nghiệp (header control bar, cột chính, sidebar SLA/Audit).
+  - Frontend: `ResolutionModal.tsx` (ban hành kết luận + upload file), `MediaLightbox.tsx` (xem ảnh/video fullscreen), `MiniMapViewer.tsx` (bản đồ OSM + link Google Maps).
+  - Frontend: Điều hướng tích hợp từ danh sách (table + Kanban card) sang trang chi tiết.
 - [ ] **Task 3.5: Hệ thống Thông báo Thời gian thực & Email (SignalR + Background Job)**
   - Cấu hình SignalR Hub: Bắn thông báo real-time khi có đơn phản ánh mới đến cán bộ trực ban.
   - Tự động gửi Email/SMS đến người dân khi hồ sơ chuyển trạng thái hoặc có kết quả xử lý.
