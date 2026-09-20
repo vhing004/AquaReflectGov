@@ -15,6 +15,7 @@ import { TrackPetitionPage } from './pages/TrackPetitionPage';
 import { MapPage } from './pages/MapPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { AdminPetitionsPage } from './pages/AdminPetitionsPage';
+import { AdminPetitionDetailPage } from './pages/AdminPetitionDetailPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +62,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher', 'Specialist']}>
                     <AdminPetitionsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/petitions/:id"
+                element={
+                  <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher', 'Specialist']}>
+                    <AdminPetitionDetailPage />
                   </ProtectedRoute>
                 }
               />

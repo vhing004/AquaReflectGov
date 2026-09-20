@@ -810,9 +810,13 @@ export const AdminPetitionsPage: React.FC = () => {
 
                       {/* Title & Category */}
                       <td className="py-3.5 px-4">
-                        <p className="font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#006194] transition-colors">
+                        <Link
+                          to={`/admin/petitions/${item.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="font-bold text-slate-900 leading-snug line-clamp-2 hover:text-[#006194] transition-colors block"
+                        >
                           {item.title}
-                        </p>
+                        </Link>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-100">
                             {item.categoryName}
@@ -904,6 +908,13 @@ export const AdminPetitionsPage: React.FC = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          <Link
+                            to={`/admin/petitions/${item.id}`}
+                            className="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-100 transition-colors"
+                            title="Mở hồ sơ chi tiết toàn diện & Bản đồ GIS"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </Link>
                           <Link
                             to={`/track?code=${encodeURIComponent(item.trackingCode)}`}
                             className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
@@ -1105,11 +1116,18 @@ export const AdminPetitionsPage: React.FC = () => {
                   </button>
                 )}
                 <Link
+                  to={`/admin/petitions/${selectedPetition.id}`}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center space-x-1.5 shadow-sm"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Chi tiết toàn diện & GIS</span>
+                </Link>
+                <Link
                   to={`/track?code=${encodeURIComponent(selectedPetition.trackingCode)}`}
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-[#006194] hover:bg-[#0284c7] text-white transition-colors flex items-center space-x-1.5 shadow-sm"
                 >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Xem dòng thời gian & Biên nhận</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Cổng công dân</span>
                 </Link>
               </div>
             </div>

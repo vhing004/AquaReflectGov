@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import type { AdminPetitionItem } from '../../types';
 import {
   Clock,
@@ -13,6 +14,7 @@ import {
   Star,
   Flame,
   Paperclip,
+  FileText,
 } from 'lucide-react';
 
 interface KanbanCardProps {
@@ -208,6 +210,13 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ item, onTransition, onVi
 
           {/* Action buttons */}
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <Link
+              to={`/admin/petitions/${item.id}`}
+              className="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 transition-colors"
+              title="Mở hồ sơ chi tiết toàn diện"
+            >
+              <FileText className="w-3.5 h-3.5" />
+            </Link>
             <button
               onClick={() => onViewDetail(item)}
               className="p-1.5 rounded-lg text-slate-500 hover:text-sky-700 hover:bg-sky-50 transition-colors"

@@ -257,4 +257,60 @@ export interface TransitionStatusResult {
   message: string;
 }
 
+export interface PetitionComment {
+  id: string;
+  petitionId: string;
+  authorName: string;
+  authorUserId?: string;
+  isInternal: boolean;
+  content: string;
+  createdAt: string;
+}
+
+export interface AdminPetitionDetail {
+  id: string;
+  trackingCode: string;
+  title: string;
+  content: string;
+  categoryId: string;
+  categoryName: string;
+  categoryCode: string;
+  defaultSlaHours: number;
+  status: number;
+  statusName: string;
+  priorityLevel: number;
+  priorityName: string;
+  addressText: string;
+  latitude?: number;
+  longitude?: number;
+  administrativeUnitId?: number;
+  administrativeUnitName?: string;
+  isAnonymous: boolean;
+  citizenName?: string;
+  citizenPhone?: string;
+  citizenEmail?: string;
+  citizenIdCard?: string;
+  departmentId?: string;
+  departmentName?: string;
+  assignedUserId?: string;
+  assignedUserName?: string;
+  assignedUserEmail?: string;
+  createdAt: string;
+  updatedAt?: string;
+  dueDate?: string;
+  resolvedAt?: string;
+  isOverdue: boolean;
+  remainingHours?: number;
+  resolutionSummary?: string;
+  attachments: PetitionAttachment[];
+  timeline: PetitionTimelineItem[];
+  resolution?: PetitionResolution;
+  hasFeedback: boolean;
+  feedbackRating?: number;
+  feedbackComment?: string;
+  feedbackCreatedAt?: string;
+  comments: PetitionComment[];
+}
+
+
 

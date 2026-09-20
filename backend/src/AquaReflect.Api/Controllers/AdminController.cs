@@ -77,6 +77,120 @@ public class AdminController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.Commands.TransitionStatus.TransitionPetitionStatusResultDto>.Ok(result, result.Message));
     }
+
+    /// <summary>
+    /// Lấy toàn bộ thông tin chi tiết hồ sơ nghiệp vụ cán bộ
+    /// </summary>
+    /// <param name="id">ID hồ sơ phản ánh</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Dữ liệu chi tiết hồ sơ toàn diện</returns>
+    [HttpGet("petitions/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.AdminPetitionDetailDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.AdminPetitionDetailDto>>> GetPetitionDetail(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var query = new AquaReflect.Application.Features.Petitions.Queries.GetAdminPetitionDetail.GetAdminPetitionDetailQuery(id);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.AdminPetitionDetailDto>.Ok(result, "Lấy chi tiết hồ sơ thành công."));
+    }
+
+    /// <summary>
+    /// Ban hành kết luận giải quyết và đính kèm văn bản quyết định có dấu đỏ
+    /// </summary>
+    /// <param name="id">ID hồ sơ phản ánh</param>
+    /// <param name="request">Thông tin kết luận và tệp văn bản</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Kết quả giải quyết đã ban hành</returns>
+    [HttpPost("petitions/{id:guid}/resolution")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.PetitionResolutionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.PetitionResolutionDto>>> UpdateResolution(
+        Guid id,
+        [FromForm] IssueResolutionRequest request,
+        CancellationToken cancellationToken)
+    {
+        AquaReflect.Application.Common.Models.FileUploadModel? fileModel = null;
+        if (request.OfficialDocument != null && request.OfficialDocument.Length > 0)
+        {
+            fileModel = new AquaReflect.Application.Common.Models.FileUploadModel
+            {
+                ContentStream = request.OfficialDocument.OpenReadStream(),
+                FileName = request.OfficialDocument.FileName,
+                ContentType = request.OfficialDocument.ContentType,
+                Length = request.OfficialDocument.Length
+            };
+        }
+
+        var command = new AquaReflect.Application.Features.Petitions.Commands.UpdateResolution.UpdatePetitionResolutionCommand
+        {
+            PetitionId = id,
+            ConclusionText = request.ConclusionText,
+            DocumentNumber = request.DocumentNumber,
+            DocumentFile = fileModel
+        };
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.PetitionResolutionDto>.Ok(result, "Ban hành kết luận giải quyết thành công."));
+    }
+
+    /// <summary>
+    /// Thêm ghi chú nghiệp vụ hoặc trao đổi nội bộ giữa các cán bộ
+    /// </summary>
+    /// <param name="id">ID hồ sơ phản ánh</param>
+    /// <param name="request">Nội dung ghi chú</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Bình luận / ghi chú nội bộ vừa tạo</returns>
+    [HttpPost("petitions/{id:guid}/comments")]
+    [ProducesResponseType(typeof(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.PetitionCommentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.PetitionCommentDto>>> AddComment(
+        Guid id,
+        [FromBody] AddCommentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AquaReflect.Application.Features.Petitions.Commands.AddComment.AddPetitionCommentCommand
+        {
+            PetitionId = id,
+            Content = request.Content
+        };
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.PetitionCommentDto>.Ok(result, "Thêm ghi chú nội bộ thành công."));
+    }
+}
+
+public class IssueResolutionRequest
+{
+    /// <summary>
+    /// Nội dung kết luận giải quyết và biện pháp xử lý
+    /// </summary>
+    public string ConclusionText { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Số hiệu văn bản / Quyết định xử lý (ví dụ: Số 128/KL-CCTS)
+    /// </summary>
+    public string? DocumentNumber { get; set; }
+
+    /// <summary>
+    /// Tệp văn bản scan hoặc văn bản ký số đính kèm (PDF, DOCX, JPG, PNG)
+    /// </summary>
+    public IFormFile? OfficialDocument { get; set; }
+}
+
+public class AddCommentRequest
+{
+    /// <summary>
+    /// Nội dung ghi chú nghiệp vụ nội bộ
+    /// </summary>
+    public string Content { get; set; } = string.Empty;
 }
 
 public class TransitionStatusRequest
