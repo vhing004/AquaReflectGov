@@ -24,7 +24,7 @@
 | **Sprint 3** | Task 3.2 | Quy trình luân chuyển trạng thái (State Machine) & Audit Trail | `47fa9b4` | ✅ Hoàn thành |
 | **Sprint 3** | Task 3.3 | UI Portal Cán bộ: Chuyển đổi Danh sách & Bảng Kanban thông minh | `27b6ae8` | ✅ Hoàn thành |
 | **Sprint 3** | Task 3.4 | UI Chi tiết Hồ sơ Chuyên sâu & Cập nhật Kết quả Thụ lý | `efe06bf` | ✅ Hoàn thành |
-| **Sprint 3** | Task 3.5 | Hệ thống Thông báo Thời gian thực & Email (SignalR) | `SignalR-Realtime` | ✅ Hoàn thành |
+| **Sprint 3** | Task 3.5 | Hệ thống Thông báo Thời gian thực & Email (SignalR) | `fb20c2d` | ✅ Hoàn thành |
 | **Sprint 4** | Task 4.1 - 4.4 | Bản đồ số GIS, Dashboard Giám sát & Báo cáo thống kê | Thiết kế kiến trúc | ⏳ Sắp tới |
 | **Sprint 5** | Task 5.1 - 5.4 | Chống spam, Kiểm thử, Container Docker & Triển khai | Thiết kế kiến trúc | ⏳ Sắp tới |
 
