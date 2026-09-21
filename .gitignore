@@ -36,4 +36,5 @@ Thumbs.db
 ## Agent rules & internal plans (local only)
 .agents/
 docs/
+PROJECT_PLAN.md
 
