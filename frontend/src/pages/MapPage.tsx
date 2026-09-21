@@ -1,257 +1,268 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { 
   Flame, 
   Anchor, 
   Droplets, 
-  Navigation,
-  Compass
+  PlusCircle,
+  RotateCw,
+  Compass,
+  MapPin
 } from 'lucide-react';
 
+import { gisApi } from '../api/gisApi';
+import type { GisFilterParams, GeoJsonFeature } from '../types/gis';
+import { GisLeafletMap } from '../components/gis/GisLeafletMap';
+import type { BaseMapType } from '../components/gis/GisFilterPanel';
+
 export const MapPage: React.FC = () => {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'iuu' | 'disease' | 'pollution'>('all');
-  const [selectedHotspot, setSelectedHotspot] = useState<number | null>(0);
+  const [baseMap, setBaseMap] = useState<BaseMapType>('streets');
+  const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
+  const [activeType, setActiveType] = useState<string>('all');
+  const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState<GeoJsonFeature | null>(null);
 
-  const hotspots = [
-    {
-      id: 0,
-      title: 'Tàu cá mất kết nối thiết bị VMS trên 6 giờ',
-      type: 'iuu',
-      code: 'QNg-90822-TS',
-      location: '15°13\'45.2"N 108°52\'10.5"E (Vùng biển Sa Kỳ, Quảng Ngãi)',
-      status: 'Khẩn cấp',
-      statusColor: 'bg-rose-500 text-white',
-      desc: 'Thiết bị giám sát hành trình bị gián đoạn tín hiệu khi đang hoạt động cách đường ranh giới biển 12 hải lý. Đã gửi cảnh báo đến Đồn Biên phòng Sa Kỳ.',
-      time: '15 phút trước'
-    },
-    {
-      id: 1,
-      title: 'Ổ dịch đốm trắng & hoại tử gan tụy cấp lây lan',
-      type: 'disease',
-      code: 'DB-2026-08',
-      location: '8°58\'12.4"N 105°10\'44.1"E (Huyện Đầm Dơi, Cà Mau)',
-      status: 'Đang cách ly',
-      statusColor: 'bg-amber-500 text-white',
-      desc: 'Phát hiện tôm nuôi chết rải rác trên diện tích 12 hecta. Trạm Khuyến nông đã khoanh vùng khử trùng bằng Chlorine.',
-      time: '2 giờ trước'
-    },
-    {
-      id: 2,
-      title: 'Xả thải gây đổi màu nước kênh cấp vùng nuôi tôm',
-      type: 'pollution',
-      code: 'ON-2026-15',
-      location: '10°02\'30.0"N 106°35\'18.2"E (Huyện Ba Tri, Bến Tre)',
-      status: 'Đã lấy mẫu',
-      statusColor: 'bg-cyan-600 text-white',
-      desc: 'Nguồn nước có bọt khí đen và mùi hôi nồng nặc. Đoàn thanh tra liên ngành Chi cục Thủy sản đã tiến hành lấy mẫu nước quan trắc.',
-      time: '4 giờ trước'
-    },
-    {
-      id: 3,
-      title: 'Luồng lạch Cửa biển Sa Kỳ bị bồi lắng cạn 1.4m',
-      type: 'pollution',
-      code: 'HT-2026-03',
-      location: '15°14\'10.0"N 108°51\'40.0"E (Cảng cá Sa Kỳ, Quảng Ngãi)',
-      status: 'Chờ nạo vét',
-      statusColor: 'bg-purple-600 text-white',
-      desc: 'Tàu cá công suất trên 700CV mắc cạn khi cập bến lúc triều rút. Đã có quyết định nạo vét thông luồng khẩn cấp.',
-      time: '1 ngày trước'
-    }
-  ];
+  // Xây dựng params lọc
+  const filters: GisFilterParams = {};
+  if (activeType !== 'all') {
+    // Mapping loại vi phạm
+    if (activeType === 'iuu') filters.status = undefined; // Category filter sẽ được áp dụng nếu cần
+  }
 
-  const filteredHotspots = hotspots.filter(
-    (h) => activeFilter === 'all' || h.type === activeFilter
-  );
+  // 1. Query GeoJSON data
+  const { 
+    data: geoJsonData, 
+    isLoading, 
+    refetch 
+  } = useQuery({
+    queryKey: ['public-gis-geojson', activeType],
+    queryFn: () => gisApi.getPetitionsGeoJson(),
+  });
+
+  // 2. Query Heatmap data
+  const { data: heatmapRes } = useQuery({
+    queryKey: ['public-gis-heatmap'],
+    queryFn: () => gisApi.getHeatmapData(),
+    enabled: showHeatmap,
+  });
+
+  // Lọc danh sách điểm hiển thị
+  const allFeatures = geoJsonData?.features ?? [];
+  const filteredFeatures = allFeatures.filter((f) => {
+    if (activeType === 'all') return true;
+    if (activeType === 'iuu') return f.properties.categoryType === 'IuuFishing';
+    if (activeType === 'disease') return f.properties.categoryType === 'AquacultureDisease';
+    if (activeType === 'pollution') return f.properties.categoryType === 'WaterPollution';
+    return true;
+  });
+
+  const handleSelectHotspot = useCallback((feature: GeoJsonFeature) => {
+    setSelectedFeature(feature);
+    setFlyToLocation({
+      lat: feature.geometry.coordinates[1],
+      lng: feature.geometry.coordinates[0],
+      zoom: 14,
+    });
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
-          <span className="text-xs font-bold text-[#006194] uppercase tracking-wider">
-            Hệ Thống Thông Tin Địa Lý GIS Thủy Sản
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-            Bản Đồ Số Điểm Nóng & Cảnh Báo VMS / IUU
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-bold text-[#006194] uppercase tracking-wider bg-sky-50 px-2 py-0.5 rounded">
+              Hệ Thống Thông Tin Địa Lý GIS Thủy Sản
+            </span>
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+            Bản Đồ Số Cảnh Báo Ngư Trường & Vùng Nuôi Trồng
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Giám sát trực tuyến dữ liệu không gian thời gian thực trên vùng biển 28 tỉnh thành ven biển Việt Nam.
+            Trực quan hóa thời gian thực các sự cố ô nhiễm, ổ dịch bệnh và vi phạm trên vùng biển tỉnh Cà Mau.
           </p>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto">
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Heatmap Toggle */}
           <button
-            onClick={() => setActiveFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              activeFilter === 'all'
-                ? 'bg-[#006194] text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            onClick={() => setShowHeatmap(!showHeatmap)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 border ${
+              showHeatmap
+                ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-xs'
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
             }`}
           >
-            Tất cả (4)
+            <Flame className={`w-3.5 h-3.5 ${showHeatmap ? 'text-rose-600 animate-pulse' : 'text-slate-400'}`} />
+            <span>Lớp Nhiệt Mật Độ</span>
           </button>
-          <button
-            onClick={() => setActiveFilter('iuu')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 ${
-              activeFilter === 'iuu'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-            }`}
+
+          {/* Base Map Switcher */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-xs font-semibold">
+            <button
+              onClick={() => setBaseMap('streets')}
+              className={`px-2.5 py-1 rounded-lg transition-all ${
+                baseMap === 'streets' ? 'bg-white text-sky-800 shadow-xs' : 'text-slate-600'
+              }`}
+            >
+              Đường phố
+            </button>
+            <button
+              onClick={() => setBaseMap('satellite')}
+              className={`px-2.5 py-1 rounded-lg transition-all ${
+                baseMap === 'satellite' ? 'bg-white text-emerald-800 shadow-xs' : 'text-slate-600'
+              }`}
+            >
+              Vệ tinh
+            </button>
+          </div>
+
+          <Link
+            to="/submit"
+            className="flex items-center space-x-1 px-3.5 py-1.5 rounded-xl bg-[#006194] hover:bg-[#0284c7] text-white text-xs font-bold shadow-xs transition-colors"
           >
-            <Anchor className="w-3 h-3 text-rose-500" />
-            <span>Cảnh báo IUU / VMS</span>
-          </button>
-          <button
-            onClick={() => setActiveFilter('disease')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 ${
-              activeFilter === 'disease'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Flame className="w-3 h-3 text-amber-500" />
-            <span>Ổ dịch bệnh</span>
-          </button>
-          <button
-            onClick={() => setActiveFilter('pollution')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 ${
-              activeFilter === 'pollution'
-                ? 'bg-cyan-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Droplets className="w-3 h-3 text-cyan-500" />
-            <span>Ô nhiễm & Luồng lạch</span>
-          </button>
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>Gửi phản ánh mới</span>
+          </Link>
         </div>
       </div>
 
-      {/* Grid: 8 Cols Map Simulator, 4 Cols Active Hotspots List */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* === MAP SIMULATION CONTAINER (COL-SPAN-8) === */}
-        <div className="lg:col-span-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl overflow-hidden relative min-h-[480px] flex flex-col justify-between p-6">
-          {/* Radar background grid */}
-          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:32px_32px]"></div>
-          
-          {/* Top floating control bar */}
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 bg-slate-800/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700 text-white text-xs">
-            <div className="flex items-center space-x-2">
-              <Compass className="w-4 h-4 text-cyan-400 animate-spin" style={{ animationDuration: '8s' }} />
-              <span className="font-mono text-cyan-300">TRẠM QUAN SÁT VỆ TINH VMS-GEO-02</span>
-            </div>
-            <div className="flex items-center space-x-3 text-[11px] text-slate-300 font-mono">
-              <span>LAT: 15.229°N</span>
-              <span>LNG: 108.869°E</span>
-              <span className="text-emerald-400 font-bold">● VỆ TINH TRỰC TUYẾN</span>
-            </div>
-          </div>
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <button
+          onClick={() => setActiveType('all')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            activeType === 'all'
+              ? 'bg-[#006194] text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Tất cả ({allFeatures.length})
+        </button>
+        <button
+          onClick={() => setActiveType('iuu')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+            activeType === 'iuu'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <Anchor className="w-3.5 h-3.5 text-rose-500" />
+          <span>Cảnh báo IUU / VMS</span>
+        </button>
+        <button
+          onClick={() => setActiveType('disease')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+            activeType === 'disease'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <Flame className="w-3.5 h-3.5 text-amber-500" />
+          <span>Dịch bệnh thủy sản</span>
+        </button>
+        <button
+          onClick={() => setActiveType('pollution')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+            activeType === 'pollution'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <Droplets className="w-3.5 h-3.5 text-sky-500" />
+          <span>Ô nhiễm nguồn nước</span>
+        </button>
+      </div>
 
-          {/* Map interactive simulated points */}
-          <div className="relative z-10 my-auto py-12 flex flex-col items-center justify-center text-center space-y-6">
-            <div className="flex flex-wrap items-center justify-center gap-6">
-              {filteredHotspots.map((item, index) => (
-                <button
-                  key={item.id}
-                  onClick={() => setSelectedHotspot(index)}
-                  className={`relative p-3.5 rounded-2xl transition-all text-left max-w-xs ${
-                    selectedHotspot === index
-                      ? 'bg-sky-950/90 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 scale-105'
-                      : 'bg-slate-800/80 border border-slate-700 hover:border-slate-500'
-                  }`}
-                >
-                  <div className="flex items-center justify-between space-x-2 mb-1.5">
-                    <span className="text-[10px] font-mono text-cyan-300 font-bold">{item.code}</span>
-                    <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded ${item.statusColor}`}>
-                      {item.status}
-                    </span>
-                  </div>
-                  <p className="text-xs font-bold text-white leading-tight line-clamp-2">{item.title}</p>
-                  <p className="text-[10px] font-mono text-slate-400 mt-1 truncate">{item.location}</p>
-                </button>
-              ))}
-            </div>
+      {/* Main Grid: 8 Cols Interactive Leaflet Map, 4 Cols Active Hotspots */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* === MAP CONTAINER (8 COLS) === */}
+        <div className="lg:col-span-8 relative h-[560px] rounded-3xl overflow-hidden shadow-xl border border-slate-200">
+          <GisLeafletMap
+            geoJsonData={{ type: 'FeatureCollection', features: filteredFeatures, totalCount: filteredFeatures.length }}
+            heatmapPoints={heatmapRes?.data?.rawArray ?? null}
+            showHeatmap={showHeatmap}
+            baseMap={baseMap}
+            radiusMode={false}
+            radiusCenter={null}
+            radiusKm={10}
+            onSelectFeature={setSelectedFeature}
+            flyToLocation={flyToLocation}
+          />
 
-            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-[11px] text-slate-300 backdrop-blur-xs">
-              <Navigation className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Phân hệ tích hợp bản đồ số tương tác Leaflet / PostGIS hoàn thiện ở Giai đoạn 4</span>
-            </div>
-          </div>
-
-          {/* Bottom map legend */}
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 bg-slate-800/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700 text-white text-[11px]">
-            <div className="flex items-center space-x-4">
-              <span className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                <span>Tàu cá mất kết nối VMS</span>
-              </span>
-              <span className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                <span>Vùng dịch bệnh thủy sản</span>
-              </span>
-              <span className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
-                <span>Ô nhiễm nguồn nước</span>
-              </span>
-            </div>
-            <span className="text-slate-400 font-mono text-[10px]">Cập nhật: 12/09/2026 12:45 UTC+7</span>
-          </div>
+          {/* Quick Refresh Button on Map */}
+          <button
+            onClick={() => refetch()}
+            className="absolute top-4 right-4 z-1000 p-2 rounded-xl bg-white/90 backdrop-blur-md hover:bg-white text-slate-700 shadow-md border border-slate-200 transition-colors"
+            title="Làm mới dữ liệu bản đồ"
+          >
+            <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
-        {/* === HOTSPOT DETAILS PANEL (COL-SPAN-4) === */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+        {/* === HOTSPOT DETAILS / LIST PANEL (4 COLS) === */}
+        <div className="lg:col-span-4 h-[560px] flex flex-col space-y-4">
+          <div className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4 flex-grow flex flex-col overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <span className="text-xs font-bold text-[#006194] uppercase tracking-wider">
-                Chi Tiết Cảnh Báo Ngư Trường
+                Điểm Nóng Gần Đây
               </span>
-              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                Live Telemetry
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                {filteredFeatures.length} Điểm ghi nhận
               </span>
             </div>
 
-            {selectedHotspot !== null && filteredHotspots[selectedHotspot] ? (
-              <div className="space-y-4 text-xs">
-                <div>
-                  <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded ${filteredHotspots[selectedHotspot].statusColor}`}>
-                    {filteredHotspots[selectedHotspot].status}
-                  </span>
-                  <h3 className="text-sm font-extrabold text-slate-900 mt-2 leading-snug">
-                    {filteredHotspots[selectedHotspot].title}
-                  </h3>
-                  <p className="text-slate-400 text-[11px] font-mono mt-0.5">
-                    Mã hồ sơ/Hiệu tàu: {filteredHotspots[selectedHotspot].code}
-                  </p>
+            {/* List of points */}
+            <div className="space-y-2 overflow-y-auto pr-1 flex-grow custom-scrollbar">
+              {filteredFeatures.length > 0 ? (
+                filteredFeatures.map((feat) => {
+                  const isSelected = selectedFeature?.id === feat.id;
+                  const p = feat.properties;
+                  return (
+                    <div
+                      key={feat.id}
+                      onClick={() => handleSelectHotspot(feat)}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
+                        isSelected
+                          ? 'bg-sky-50/80 border-sky-400 shadow-sm ring-1 ring-sky-300'
+                          : 'bg-slate-50/60 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-[#006194] text-xs">{p.trackingCode}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-white text-slate-700 border border-slate-200">
+                          {p.statusName || 'Tiếp nhận'}
+                        </span>
+                      </div>
+                      <p className="font-bold text-slate-800 text-xs leading-snug line-clamp-2">{p.title}</p>
+                      <div className="flex items-center space-x-1 text-[11px] text-slate-500 truncate">
+                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{p.addressText || 'Đang cập nhật'}</span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="py-12 text-center text-slate-400 space-y-2">
+                  <Compass className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p className="text-xs">Không có điểm nóng nào trong bộ lọc này.</p>
                 </div>
+              )}
+            </div>
 
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Tọa độ GPS hải trình</span>
-                  <p className="text-slate-800 font-mono text-[11px] font-semibold">
-                    {filteredHotspots[selectedHotspot].location}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Tình trạng ghi nhận</span>
-                  <p className="text-slate-600 leading-relaxed text-xs">
-                    {filteredHotspots[selectedHotspot].desc}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-slate-400 text-[11px]">
-                  <span>Thời gian: {filteredHotspots[selectedHotspot].time}</span>
-                  <button
-                    onClick={() => alert(`Đã phát tín hiệu cảnh báo đến đội tàu lân cận tọa độ ${filteredHotspots[selectedHotspot].code}`)}
-                    className="px-3 py-1.5 rounded-xl bg-[#006194] hover:bg-[#0284c7] text-white font-bold text-xs transition-colors"
-                  >
-                    Phát cảnh báo vùng
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-slate-400 text-xs py-8 text-center">
-                Chọn một điểm nóng trên bản đồ để xem chi tiết tọa độ và hướng dẫn ứng phó.
-              </p>
-            )}
+            {/* Quick action footer */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Hệ tọa độ: WGS84 (EPSG:4326)</span>
+              <Link
+                to="/track"
+                className="text-[#006194] font-bold hover:underline"
+              >
+                Tra cứu tiến độ &rarr;
+              </Link>
+            </div>
           </div>
         </div>
       </div>

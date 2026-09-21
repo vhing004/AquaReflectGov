@@ -96,7 +96,22 @@
   - `GetHeatmapDataQuery` + Handler: Tính toán trọng số nhiệt (weight 0.1 - 1.0) dựa trên độ ưu tiên vi phạm (`Urgent`, `High`, `Normal`) và nhóm nguy cơ (IUU, ô nhiễm, dịch bệnh); cung cấp mảng `rawArray: [[lat, lng, weight]]` tối ưu cho Leaflet.heat.
   - `GetSpatialSummaryQuery` + Handler: Thống kê mật độ phản ánh theo địa bàn huyện/thị xã và phân bố tỷ trọng chuyên mục.
   - `GisController`: Cung cấp 4 endpoints chuẩn RESTful (`/api/v1/gis/petitions-geojson`, `/api/v1/gis/petitions-radius`, `/api/v1/gis/heatmap`, `/api/v1/gis/spatial-summary`).
-- [ ] **Task 4.2**: Tích hợp Bản đồ GIS phía Frontend (Leaflet / Mapbox GL) phân bố điểm phản ánh, phân loại màu theo chuyên mục.
+- [x] **Task 4.2: Tích hợp Bản đồ GIS phía Frontend** *(Hoàn thành)*
+  - Thư viện: Cài đặt và tích hợp `leaflet`, `@types/leaflet`, `leaflet.heat` tối ưu 100% cho React 19 bằng React `useRef` + `useEffect`.
+  - `gisApi.ts` & `gis.ts`: Client gọi API GeoJSON, bán kính Haversine, heatmap và thống kê không gian theo địa bàn.
+  - `GisLeafletMap.tsx`: Component bản đồ cốt lõi đa tầng (Multi-layer):
+    - Đổi lớp nền (Base Map Switcher): OpenStreetMap Đường phố, Esri World Imagery Vệ tinh độ nét cao, CartoDB Positron Tối giản.
+    - Custom Marker Pin SVG phân loại màu trực quan theo chuyên mục: Đỏ (IUU/VMS), Xanh (Ô nhiễm nước), Cam (Dịch bệnh), Tím (Bảo vệ nguồn lợi).
+    - Hiệu ứng Pulse Animation sóng lan tỏa cho hồ sơ Khẩn cấp hoặc Quá hạn SLA.
+    - Leaflet Popup tương tác: Mã hồ sơ, Tiêu đề, Chuyên mục, Trạng thái, Địa chỉ, Nút chuyển hướng chi tiết `/admin/petitions/{id}`.
+    - Lớp bản đồ nhiệt Heatmap (Leaflet.heat) với dải màu $0.2 \rightarrow 1.0$ (Xanh $\rightarrow$ Vàng $\rightarrow$ Đỏ).
+    - Vòng tròn bán kính không gian `L.circle` trực quan khi quét lân cận.
+  - `GisFilterPanel.tsx`: Thanh điều khiển chuyển lớp nền, bật/tắt Heatmap, kích hoạt Quét bán kính, lọc trạng thái, ưu tiên và quá hạn SLA.
+  - `GisRadiusTool.tsx`: Bảng công cụ quét cự ly 5km - 50km, danh sách hồ sơ lọt vào bán kính kèm khoảng cách Haversine và zoom nhanh.
+  - `GisSummarySidebar.tsx`: Thống kê mật độ theo huyện/thị xã Cà Mau, phân bổ tỷ trọng chuyên mục, nhấp huyện tự động bay (Fly to) tới vị trí.
+  - `AdminGisMapPage.tsx`: Trang Trung tâm Chỉ huy & Giám sát GIS chuyên dụng cho Cán bộ (`/admin/gis-map`).
+  - `MapPage.tsx`: Nâng cấp trang Bản đồ Cảnh báo cộng đồng thời gian thực cho người dân và ngư dân (`/map`).
+  - Đăng ký route được bảo vệ `/admin/gis-map` và cập nhật menu Navbar cho cán bộ.
 - [ ] **Task 4.3**: Dashboard thống kê & phân tích KPI (tỷ lệ đúng hạn, biểu đồ xu hướng, chỉ số hài lòng).
 - [ ] **Task 4.4**: Module xuất báo cáo định dạng Excel (ClosedXML) và PDF.
 

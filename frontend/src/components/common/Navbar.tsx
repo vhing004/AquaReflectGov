@@ -15,7 +15,8 @@ import {
   PhoneCall, 
   AlertTriangle, 
   Globe, 
-  FileText
+  FileText,
+  Compass
 } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 
@@ -177,6 +178,14 @@ export const Navbar: React.FC = () => {
                           <Shield className="w-4 h-4 text-amber-600" />
                           <span>Báo Cáo & Điều Phối</span>
                         </Link>
+                        <Link
+                          to="/admin/gis-map"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"
+                        >
+                          <Compass className="w-4 h-4 text-emerald-600" />
+                          <span>Bản Đồ GIS Giám Sát</span>
+                        </Link>
                       </>
                     )}
 
@@ -265,6 +274,17 @@ export const Navbar: React.FC = () => {
                 <Shield className="w-3.5 h-3.5 text-amber-500" />
                 <span>Điều Phối Cán Bộ</span>
               </Link>
+              <Link
+                to="/admin/gis-map"
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  location.pathname === '/admin/gis-map'
+                    ? 'bg-[#006194] text-white shadow-xs'
+                    : 'text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Bản Đồ GIS</span>
+              </Link>
             </div>
           )}
         </div>
@@ -308,6 +328,14 @@ export const Navbar: React.FC = () => {
               >
                 <Shield className="w-4 h-4 text-amber-600" />
                 <span>Bảng Điều Phối Cán Bộ</span>
+              </Link>
+              <Link
+                to="/admin/gis-map"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-emerald-900 bg-emerald-50"
+              >
+                <Compass className="w-4 h-4 text-emerald-600" />
+                <span>Bản Đồ GIS Giám Sát</span>
               </Link>
             </div>
           )}

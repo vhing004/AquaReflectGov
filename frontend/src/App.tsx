@@ -19,6 +19,7 @@ import { MapPage } from './pages/MapPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { AdminPetitionsPage } from './pages/AdminPetitionsPage';
 import { AdminPetitionDetailPage } from './pages/AdminPetitionDetailPage';
+import { AdminGisMapPage } from './pages/AdminGisMapPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -128,6 +129,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher', 'Specialist']}>
                     <AdminPetitionDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/gis-map"
+                element={
+                  <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher', 'Specialist']}>
+                    <AdminGisMapPage />
                   </ProtectedRoute>
                 }
               />
