@@ -89,7 +89,13 @@
 ---
 
 ### Giai Đoạn 4: Bản Đồ Số GIS & Dashboard Giám Sát, Báo Cáo (Sprint 4)
-- [ ] **Task 4.1**: API Bản đồ không gian GIS (`GET /api/v1/gis/petitions-geojson`, ST_DWithin, heatmap data).
+- [x] **Task 4.1: API Bản đồ không gian GIS** *(Hoàn thành)*
+  - `GeoJsonDtos.cs`: Chuẩn GeoJSON RFC 7946 (`FeatureCollection`, `Feature`, `Geometry`, `Properties`).
+  - `GetPetitionsGeoJsonQuery` + Handler: Lọc Bounding Box (`minLat, maxLat, minLng, maxLng`), chuyên mục, trạng thái, quá hạn SLA; xuất GeoJSON RFC 7946.
+  - `GetPetitionsByRadiusQuery` + Handler: Tìm kiếm điểm nóng xung quanh vị trí tâm (`centerLat, centerLng`) theo bán kính `radiusKm`, tính khoảng cách cầu Haversine (km & mét).
+  - `GetHeatmapDataQuery` + Handler: Tính toán trọng số nhiệt (weight 0.1 - 1.0) dựa trên độ ưu tiên vi phạm (`Urgent`, `High`, `Normal`) và nhóm nguy cơ (IUU, ô nhiễm, dịch bệnh); cung cấp mảng `rawArray: [[lat, lng, weight]]` tối ưu cho Leaflet.heat.
+  - `GetSpatialSummaryQuery` + Handler: Thống kê mật độ phản ánh theo địa bàn huyện/thị xã và phân bố tỷ trọng chuyên mục.
+  - `GisController`: Cung cấp 4 endpoints chuẩn RESTful (`/api/v1/gis/petitions-geojson`, `/api/v1/gis/petitions-radius`, `/api/v1/gis/heatmap`, `/api/v1/gis/spatial-summary`).
 - [ ] **Task 4.2**: Tích hợp Bản đồ GIS phía Frontend (Leaflet / Mapbox GL) phân bố điểm phản ánh, phân loại màu theo chuyên mục.
 - [ ] **Task 4.3**: Dashboard thống kê & phân tích KPI (tỷ lệ đúng hạn, biểu đồ xu hướng, chỉ số hài lòng).
 - [ ] **Task 4.4**: Module xuất báo cáo định dạng Excel (ClosedXML) và PDF.

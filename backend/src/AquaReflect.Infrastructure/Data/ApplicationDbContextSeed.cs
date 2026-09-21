@@ -286,6 +286,167 @@ public static class ApplicationDbContextSeed
                 await context.SaveChangesAsync();
             }
 
+            // 5. Seed Các phản ánh kiến nghị mẫu có tọa độ GPS thực địa tại Cà Mau
+            if (await context.Petitions.CountAsync() < 5)
+            {
+                logger.LogInformation("Đang bổ sung các phản ánh kiến nghị mẫu kèm tọa độ GPS tại Cà Mau...");
+
+                var iuuCat = await context.PetitionCategories.FirstOrDefaultAsync(c => c.CategoryType == PetitionCategoryType.IUUFishing);
+                var diseaseCat = await context.PetitionCategories.FirstOrDefaultAsync(c => c.CategoryType == PetitionCategoryType.AquaticDisease);
+                var pollutionCat = await context.PetitionCategories.FirstOrDefaultAsync(c => c.CategoryType == PetitionCategoryType.WaterPollution);
+                var infraCat = await context.PetitionCategories.FirstOrDefaultAsync(c => c.CategoryType == PetitionCategoryType.FisheryInfrastructure);
+                var seedFeedCat = await context.PetitionCategories.FirstOrDefaultAsync(c => c.CategoryType == PetitionCategoryType.SeedAndFeedQuality);
+
+                var ttknDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "TTKN");
+                var cctsDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "CCTS");
+                var ntsDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "CCNTTS");
+
+                var specialistUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "kiemngu");
+
+                // Lấy đơn vị hành chính cấp huyện của Cà Mau
+                var ngocHien = await context.AdministrativeUnits.FirstOrDefaultAsync(u => u.Name.Contains("Ngọc Hiển"));
+                var damDoi = await context.AdministrativeUnits.FirstOrDefaultAsync(u => u.Name.Contains("Đầm Dơi"));
+                var tpCaMau = await context.AdministrativeUnits.FirstOrDefaultAsync(u => u.Name.Contains("Cà Mau"));
+                var tranVanThoi = await context.AdministrativeUnits.FirstOrDefaultAsync(u => u.Name.Contains("Trần Văn Thời"));
+                var namCan = await context.AdministrativeUnits.FirstOrDefaultAsync(u => u.Name.Contains("Năm Căn"));
+                var uMinh = await context.AdministrativeUnits.FirstOrDefaultAsync(u => u.Name.Contains("U Minh"));
+
+                var samplePetitions = new List<Petition>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TrackingCode = "TS-202609-HONK1",
+                        Title = "Tàu cá cào bay hủy diệt nguồn lợi ven bờ khu bảo tồn biển Hòn Khoai",
+                        Content = "Phát hiện 02 cặp tàu cá công suất lớn đang sử dụng cào bay cào sát đáy biển, cách bờ Hòn Khoai khoảng 3 hải lý, làm hư hỏng nhiều bẫy mực của ngư dân địa phương.",
+                        Latitude = 8.4352,
+                        Longitude = 104.8321,
+                        AddressText = "Vùng biển Hòn Khoai, Xã Tân Ân, Huyện Ngọc Hiển, Cà Mau",
+                        AdministrativeUnitId = ngocHien?.Id,
+                        CitizenName = "Nguyễn Văn Hải",
+                        CitizenPhone = "0918112233",
+                        CitizenEmail = "nguyenhai.camaubien@gmail.com",
+                        Status = PetitionStatus.Investigating,
+                        PriorityLevel = PriorityLevel.Urgent,
+                        CategoryId = iuuCat?.Id ?? Guid.NewGuid(),
+                        DepartmentId = ttknDept?.Id,
+                        AssignedUserId = specialistUser?.Id,
+                        DueDate = DateTime.UtcNow.AddHours(12),
+                        CreatedAt = DateTime.UtcNow.AddHours(-18),
+                        CreatedBy = "Nguyễn Văn Hải"
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TrackingCode = "TS-202609-DAMD2",
+                        Title = "Ổ dịch đốm trắng lây lan trên 15ha đầm nuôi tôm quảng canh cải tiến",
+                        Content = "Tôm sú nuôi được 45 ngày tuổi xuất hiện nhiều đốm trắng li ti trên vỏ đầu ngực, chết chìm đáy ao hàng loạt. Nguy cơ lây lan sang các hộ liền kề.",
+                        Latitude = 8.9712,
+                        Longitude = 105.1784,
+                        AddressText = "Ấp Tân Long, Xã Tân Duyệt, Huyện Đầm Dơi, Cà Mau",
+                        AdministrativeUnitId = damDoi?.Id,
+                        CitizenName = "Trần Thanh Bình",
+                        CitizenPhone = "0949223344",
+                        CitizenEmail = "thanhbinh.damdoi@gmail.com",
+                        Status = PetitionStatus.Assigned,
+                        PriorityLevel = PriorityLevel.Urgent,
+                        CategoryId = diseaseCat?.Id ?? Guid.NewGuid(),
+                        DepartmentId = ntsDept?.Id,
+                        DueDate = DateTime.UtcNow.AddHours(20),
+                        CreatedAt = DateTime.UtcNow.AddHours(-4),
+                        CreatedBy = "Trần Thanh Bình"
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TrackingCode = "TS-202609-CAMAU3",
+                        Title = "Xả nước thải đen nồng nặc trực tiếp ra kênh xáng Cà Mau - Bạc Liêu",
+                        Content = "Cơ sở chế biến bột cá xả dòng nước đen hôi thối vào ban đêm khi triều rút, làm chết hàng loạt cá tự nhiên trên tuyến kênh nội đồng.",
+                        Latitude = 9.1768,
+                        Longitude = 105.1524,
+                        AddressText = "Khóm 6, Phường 8, Thành phố Cà Mau, Tỉnh Cà Mau",
+                        AdministrativeUnitId = tpCaMau?.Id,
+                        CitizenName = "Lê Thị Cẩm",
+                        CitizenPhone = "0908334455",
+                        CitizenEmail = "camle.cm@yahoo.com",
+                        Status = PetitionStatus.Submitted,
+                        PriorityLevel = PriorityLevel.High,
+                        CategoryId = pollutionCat?.Id ?? Guid.NewGuid(),
+                        DueDate = DateTime.UtcNow.AddHours(40),
+                        CreatedAt = DateTime.UtcNow.AddHours(-8),
+                        CreatedBy = "Lê Thị Cẩm"
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TrackingCode = "TS-202609-SONGD4",
+                        Title = "Cửa biển Sông Đốc bị cồn cát bồi lắng cạn 1.2m lúc triều kiệt",
+                        Content = "Luồng tàu chạy ra vào cảng cá Sông Đốc bị cạn nghiêm trọng, nhiều tàu cá đầy ắp hải sản phải nằm ngoài phao số 0 chờ nước lớn mới vào bến được.",
+                        Latitude = 9.0521,
+                        Longitude = 104.8214,
+                        AddressText = "Cửa biển Sông Đốc, Thị trấn Sông Đốc, Huyện Trần Văn Thời, Cà Mau",
+                        AdministrativeUnitId = tranVanThoi?.Id,
+                        CitizenName = "Võ Văn Tâm",
+                        CitizenPhone = "0939556677",
+                        CitizenEmail = "tamvo.songdoc@gmail.com",
+                        Status = PetitionStatus.Resolved,
+                        PriorityLevel = PriorityLevel.Normal,
+                        CategoryId = infraCat?.Id ?? Guid.NewGuid(),
+                        DepartmentId = cctsDept?.Id,
+                        DueDate = DateTime.UtcNow.AddDays(3),
+                        ResolvedAt = DateTime.UtcNow.AddHours(-2),
+                        ResolutionSummary = "Sở Giao thông Vận tải phối hợp Sở Nông nghiệp đã phê duyệt phương án nạo vét luồng lạch thông tuyến khẩn cấp bằng ngân sách phòng chống thiên tai.",
+                        CreatedAt = DateTime.UtcNow.AddDays(-2),
+                        CreatedBy = "Võ Văn Tâm"
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TrackingCode = "TS-202609-NAMC5",
+                        Title = "Đại lý bán tôm giống trôi nổi không giấy kiểm dịch thú y",
+                        Content = "Một số hộ dân mua phải giống tôm thẻ chân trắng không rõ xuất xứ tại chợ Năm Căn, sau khi thả giống 5 ngày thì tôm hao hụt trên 80%.",
+                        Latitude = 8.7541,
+                        Longitude = 105.0215,
+                        AddressText = "Khóm 1, Thị trấn Năm Căn, Huyện Năm Căn, Cà Mau",
+                        AdministrativeUnitId = namCan?.Id,
+                        CitizenName = "Huỳnh Tấn Phát",
+                        CitizenPhone = "0977665544",
+                        Status = PetitionStatus.Submitted,
+                        PriorityLevel = PriorityLevel.Normal,
+                        CategoryId = seedFeedCat?.Id ?? Guid.NewGuid(),
+                        DueDate = DateTime.UtcNow.AddHours(60),
+                        CreatedAt = DateTime.UtcNow.AddHours(-12),
+                        CreatedBy = "Huỳnh Tấn Phát"
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TrackingCode = "TS-202609-UMINH6",
+                        Title = "Tàu giã cào đôi xung điện hoạt động ban đêm tại bờ biển U Minh",
+                        Content = "Khoảng 23h đêm thường xuất hiện 3-4 cặp tàu vỏ sắt dùng lưới cào gắn dây điện rà quét sát bờ biển ven rừng phòng hộ U Minh Hạ, làm cạn kiệt cá tôm giống.",
+                        Latitude = 9.4215,
+                        Longitude = 104.9124,
+                        AddressText = "Khu vực Bờ kè chống sạt lở Xã Khánh Hội, Huyện U Minh, Cà Mau",
+                        AdministrativeUnitId = uMinh?.Id,
+                        CitizenName = "Nguyễn Hoàng Minh",
+                        CitizenPhone = "0988776655",
+                        CitizenEmail = "hoangminh.uminh@gmail.com",
+                        Status = PetitionStatus.Investigating,
+                        PriorityLevel = PriorityLevel.Urgent,
+                        CategoryId = iuuCat?.Id ?? Guid.NewGuid(),
+                        DepartmentId = ttknDept?.Id,
+                        AssignedUserId = specialistUser?.Id,
+                        DueDate = DateTime.UtcNow.AddHours(6),
+                        CreatedAt = DateTime.UtcNow.AddHours(-15),
+                        CreatedBy = "Nguyễn Hoàng Minh"
+                    }
+                };
+
+                context.Petitions.AddRange(samplePetitions);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Khởi tạo 06 phản ánh kiến nghị mẫu kèm tọa độ GPS thành công!");
+            }
+
             logger.LogInformation("Khởi tạo dữ liệu mẫu thành công!");
         }
         catch (Exception ex)
