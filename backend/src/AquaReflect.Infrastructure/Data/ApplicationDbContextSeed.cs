@@ -447,6 +447,26 @@ public static class ApplicationDbContextSeed
                 logger.LogInformation("Khởi tạo 06 phản ánh kiến nghị mẫu kèm tọa độ GPS thành công!");
             }
 
+            // 7. Seed Đánh giá mức độ hài lòng của công dân (CitizenFeedback)
+            if (!await context.CitizenFeedbacks.AnyAsync())
+            {
+                var resolvedPetition = await context.Petitions.FirstOrDefaultAsync(p => p.Status == PetitionStatus.Resolved);
+                if (resolvedPetition != null)
+                {
+                    var feedback = new CitizenFeedback
+                    {
+                        Id = Guid.NewGuid(),
+                        PetitionId = resolvedPetition.Id,
+                        Rating = 5,
+                        Comment = "Cán bộ Chi cục Thủy sản phản hồi rất nhanh và có phương án nạo vét luồng lạch kịp thời cho bà con ngư dân. Rất cảm ơn!",
+                        FeedbackAt = DateTime.UtcNow.AddHours(-1)
+                    };
+                    context.CitizenFeedbacks.Add(feedback);
+                    await context.SaveChangesAsync();
+                    logger.LogInformation("Khởi tạo đánh giá hài lòng mẫu thành công!");
+                }
+            }
+
             logger.LogInformation("Khởi tạo dữ liệu mẫu thành công!");
         }
         catch (Exception ex)
