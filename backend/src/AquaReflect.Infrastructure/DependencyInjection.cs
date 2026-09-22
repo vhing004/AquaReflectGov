@@ -42,6 +42,9 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, Services.SignalRNotificationService>();
         services.AddScoped<IEmailService, Services.EmailService>();
 
+        // Dịch vụ xác thực chống bot/spam Cloudflare Turnstile
+        services.AddHttpClient<ITurnstileService, Services.TurnstileService>();
+
         // Cấu hình Authentication JWT Bearer
         var jwtKey = configuration["JwtSettings:Key"]
             ?? "AquaReflect_Secure_Super_Secret_Key_2026_Fisheries_Management_Key_Must_Be_Long";

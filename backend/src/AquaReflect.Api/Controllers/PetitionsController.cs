@@ -1,3 +1,4 @@
+using AquaReflect.Api.Extensions;
 using AquaReflect.Application.Common.Models;
 using AquaReflect.Application.Features.Petitions.Commands.CreatePetition;
 using AquaReflect.Application.Features.Petitions.Commands.SubmitFeedback;
@@ -6,6 +7,7 @@ using AquaReflect.Application.Features.Petitions.Queries.GetPetitionsByPhone;
 using AquaReflect.Application.Features.Petitions.Queries.TrackPetitionByCode;
 using AquaReflect.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AquaReflect.Api.Controllers;
 
@@ -18,9 +20,11 @@ public class PetitionsController : BaseApiController
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Thông tin tiếp nhận, mã tra cứu duy nhất và hạn xử lý SLA</returns>
     [HttpPost]
+    [EnableRateLimiting(RateLimiterExtensions.PetitionSubmitPolicy)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ApiResponse<CreatePetitionResultDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<ApiResponse<CreatePetitionResultDto>>> CreatePetition(
         [FromForm] CreatePetitionRequest request,
         CancellationToken cancellationToken)
@@ -50,6 +54,8 @@ public class PetitionsController : BaseApiController
             ? request.AddressText 
             : request.Location;
 
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
         var command = new CreatePetitionCommand
         {
             Title = request.Title,
@@ -65,7 +71,10 @@ public class PetitionsController : BaseApiController
             CitizenEmail = request.CitizenEmail,
             CitizenIdCard = request.CitizenIdCard,
             PriorityLevel = request.PriorityLevel,
-            Files = fileUploadModels
+            Files = fileUploadModels,
+            TurnstileToken = request.TurnstileToken,
+            Honeypot = request.Honeypot,
+            ClientIp = clientIp
         };
 
         var result = await Mediator.Send(command, cancellationToken);
@@ -118,9 +127,11 @@ public class PetitionsController : BaseApiController
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Xác nhận đánh giá đã được ghi nhận thành công</returns>
     [HttpPost("{trackingCode}/feedback")]
+    [EnableRateLimiting(RateLimiterExtensions.FeedbackPolicy)]
     [ProducesResponseType(typeof(ApiResponse<SubmitFeedbackResultDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<ApiResponse<SubmitFeedbackResultDto>>> SubmitFeedback(
         string trackingCode,
         [FromBody] SubmitFeedbackRequest request,
@@ -231,4 +242,14 @@ public class CreatePetitionRequest
     /// Danh sách tệp đính kèm (Ảnh hiện trường JPG/PNG, Video MP4, Tài liệu PDF - Tối đa 5 tệp, 25MB/tệp)
     /// </summary>
     public List<IFormFile>? Files { get; set; }
+
+    /// <summary>
+    /// Token bảo mật xác minh chống Spam từ Cloudflare Turnstile
+    /// </summary>
+    public string? TurnstileToken { get; set; }
+
+    /// <summary>
+    /// Bẫy Bot ẩn (Honeypot). Người dùng thật sẽ bỏ trống trường này.
+    /// </summary>
+    public string? Honeypot { get; set; }
 }

@@ -25,4 +25,9 @@ public class CreatePetitionCommand : IRequest<CreatePetitionResultDto>
     public PriorityLevel? PriorityLevel { get; set; }
 
     public List<FileUploadModel> Files { get; set; } = new();
+
+    // Thuộc tính bảo mật chống Spam & Bot
+    public string? TurnstileToken { get; set; }
+    public string? Honeypot { get; set; }
+    public string? ClientIp { get; set; }
 }

@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { masterDataApi } from '../api/masterDataApi';
 import { petitionApi } from '../api/petitionApi';
 import { PetitionReceiptModal } from '../components/petition/PetitionReceiptModal';
+import { TurnstileWidget } from '../components/common/TurnstileWidget';
 import type { Category, AdministrativeUnit, CreatePetitionResult, PetitionTrackingDetail } from '../types';
 import { 
   Send, 
@@ -132,6 +133,8 @@ export const SubmitPetitionPage: React.FC = () => {
   const [submittedPetition, setSubmittedPetition] = useState<CreatePetitionResult | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const [honeypot, setHoneypot] = useState<string>('');
 
   // Tracking query on the right side
   const [trackingCodeInput, setTrackingCodeInput] = useState('TS-202609-HGZH4');
@@ -478,6 +481,13 @@ export const SubmitPetitionPage: React.FC = () => {
       }
 
       formData.append('IsAnonymous', String(isAnonymous));
+
+      if (turnstileToken) {
+        formData.append('TurnstileToken', turnstileToken);
+      }
+      if (honeypot) {
+        formData.append('Honeypot', honeypot);
+      }
 
       // Append files
       selectedFiles.forEach((file) => {
@@ -1194,6 +1204,23 @@ export const SubmitPetitionPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* BẢO MẬT CHỐNG SPAM (TURNSTILE & HONEYPOT) */}
+                <div className="pt-2">
+                  <TurnstileWidget
+                    onSuccess={(token) => setTurnstileToken(token)}
+                    onExpire={() => setTurnstileToken('')}
+                  />
+                  <input
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    className="opacity-0 absolute pointer-events-none -z-50 h-0 w-0"
+                  />
+                </div>
               </div>
             )}
 

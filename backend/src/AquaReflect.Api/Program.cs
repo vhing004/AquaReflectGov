@@ -60,10 +60,16 @@ builder.Services.AddCors(options =>
 // Cấu hình Swagger với tài liệu và JWT Authorization
 builder.Services.AddSwaggerDocumentation();
 
+// Cấu hình Rate Limiting chống Brute-force & Spam
+builder.Services.AddCustomRateLimiting();
+
 var app = builder.Build();
 
 // Sử dụng Serilog để log tất cả HTTP requests
 app.UseSerilogRequestLogging();
+
+// Middleware thiết lập HTTP Security Headers
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 // Middleware xử lý lỗi tập trung toàn cục
 app.UseMiddleware<ExceptionHandlingMiddleware>();
@@ -77,6 +83,9 @@ if (app.Environment.IsDevelopment() || true)
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
+
+// Kích hoạt kiểm soát tần suất truy cập Rate Limiting
+app.UseRateLimiter();
 
 // Kích hoạt phục vụ tệp tĩnh (ảnh/video đính kèm) trong wwwroot
 app.UseStaticFiles();

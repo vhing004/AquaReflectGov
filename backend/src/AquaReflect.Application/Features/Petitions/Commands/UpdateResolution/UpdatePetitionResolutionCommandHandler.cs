@@ -1,4 +1,5 @@
 using AquaReflect.Application.Common.Interfaces;
+using AquaReflect.Application.Common.Security;
 using AquaReflect.Application.Features.Petitions.DTOs;
 using AquaReflect.Domain.Entities;
 using AquaReflect.Domain.Enums;
@@ -93,6 +94,9 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
 
         var oldStatus = petition.Status;
 
+        var sanitizedConclusion = InputSanitizer.SanitizeRichText(request.ConclusionText);
+        var sanitizedDocumentNumber = InputSanitizer.SanitizePlainText(request.DocumentNumber);
+
         // 5. Cập nhật hoặc tạo mới PetitionResolution
         var resolution = petition.Resolution;
         if (resolution == null)
@@ -100,8 +104,8 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
             resolution = new PetitionResolution
             {
                 PetitionId = petition.Id,
-                ConclusionText = request.ConclusionText.Trim(),
-                DocumentNumber = request.DocumentNumber?.Trim(),
+                ConclusionText = sanitizedConclusion,
+                DocumentNumber = sanitizedDocumentNumber,
                 OfficialDocumentUrl = documentUrl,
                 ApprovedByUserId = _currentUser.UserId,
                 IssuedAt = DateTime.UtcNow
@@ -110,8 +114,8 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
         }
         else
         {
-            resolution.ConclusionText = request.ConclusionText.Trim();
-            resolution.DocumentNumber = request.DocumentNumber?.Trim() ?? resolution.DocumentNumber;
+            resolution.ConclusionText = sanitizedConclusion;
+            resolution.DocumentNumber = sanitizedDocumentNumber ?? resolution.DocumentNumber;
             if (!string.IsNullOrEmpty(documentUrl))
             {
                 resolution.OfficialDocumentUrl = documentUrl;

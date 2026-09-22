@@ -87,6 +87,13 @@ axiosClient.interceptors.response.use(
       }
     }
 
+    if (error.response?.status === 429) {
+      console.warn('Rate Limit Exceeded (HTTP 429): Yêu cầu vượt quá giới hạn tần suất.');
+      if (error.response.data && !error.response.data.message) {
+        error.response.data.message = 'Quý vị thao tác quá nhanh. Vui lòng chờ 1 phút trước khi thử lại.';
+      }
+    }
+
     return Promise.reject(error);
   }
 );

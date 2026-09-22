@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using AquaReflect.Application.Common.Interfaces;
+using AquaReflect.Application.Common.Security;
 using AquaReflect.Application.Features.Petitions.DTOs;
 using AquaReflect.Domain.Entities;
 using AquaReflect.Domain.Enums;
@@ -17,6 +18,7 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
     private readonly ICurrentUserService _currentUserService;
     private readonly INotificationService _notificationService;
     private readonly IEmailService _emailService;
+    private readonly ITurnstileService _turnstileService;
     private readonly ILogger<CreatePetitionCommandHandler> _logger;
 
     public CreatePetitionCommandHandler(
@@ -25,6 +27,7 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
         ICurrentUserService currentUserService,
         INotificationService notificationService,
         IEmailService emailService,
+        ITurnstileService turnstileService,
         ILogger<CreatePetitionCommandHandler> logger)
     {
         _context = context;
@@ -32,11 +35,40 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
         _currentUserService = currentUserService;
         _notificationService = notificationService;
         _emailService = emailService;
+        _turnstileService = turnstileService;
         _logger = logger;
     }
 
     public async Task<CreatePetitionResultDto> Handle(CreatePetitionCommand command, CancellationToken cancellationToken)
     {
+        // 0.1. Kiểm tra bẫy Honeypot chống Bot gửi tự động
+        if (!string.IsNullOrWhiteSpace(command.Honeypot))
+        {
+            _logger.LogWarning("Phát hiện Bot kích hoạt bẫy Honeypot với giá trị: {Honeypot}", command.Honeypot);
+            throw new BadRequestException("Yêu cầu không hợp lệ. Phát hiện truy cập tự động trái phép.");
+        }
+
+        // 0.2. Xác thực Cloudflare Turnstile token chống spam
+        var isCaptchaValid = await _turnstileService.VerifyTokenAsync(
+            command.TurnstileToken, 
+            command.ClientIp, 
+            cancellationToken);
+
+        if (!isCaptchaValid)
+        {
+            _logger.LogWarning("Xác thực Cloudflare Turnstile thất bại cho ClientIp: {ClientIp}", command.ClientIp);
+            throw new BadRequestException("Xác thực bảo mật chống spam không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.");
+        }
+
+        // 0.3. Khử độc dữ liệu (Anti-XSS Sanitization)
+        var sanitizedTitle = InputSanitizer.SanitizePlainText(command.Title);
+        var sanitizedContent = InputSanitizer.SanitizeRichText(command.Content);
+        var sanitizedAddressText = InputSanitizer.SanitizePlainText(command.AddressText);
+        var sanitizedCitizenName = InputSanitizer.SanitizePlainText(command.CitizenName);
+        var sanitizedCitizenPhone = InputSanitizer.SanitizePlainText(command.CitizenPhone);
+        var sanitizedCitizenEmail = InputSanitizer.SanitizePlainText(command.CitizenEmail);
+        var sanitizedCitizenIdCard = InputSanitizer.SanitizePlainText(command.CitizenIdCard);
+
         // 1. Kiểm tra danh mục phản ánh
         var category = await _context.PetitionCategories
             .FirstOrDefaultAsync(c => c.Id == command.CategoryId, cancellationToken);
@@ -72,24 +104,24 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
 
         var citizenDisplayName = command.IsAnonymous
             ? "Công dân (Ẩn danh)"
-            : (command.CitizenName?.Trim() ?? "Công dân");
+            : (!string.IsNullOrWhiteSpace(sanitizedCitizenName) ? sanitizedCitizenName : "Công dân");
 
-        // 6. Khởi tạo đối tượng Petition
+        // 6. Khởi tạo đối tượng Petition với dữ liệu đã được khử độc an toàn
         var petition = new Petition
         {
             Id = Guid.NewGuid(),
             TrackingCode = trackingCode,
-            Title = command.Title.Trim(),
-            Content = command.Content.Trim(),
-            AddressText = command.AddressText?.Trim() ?? string.Empty,
+            Title = sanitizedTitle,
+            Content = sanitizedContent,
+            AddressText = sanitizedAddressText,
             Latitude = command.Latitude,
             Longitude = command.Longitude,
             AdministrativeUnitId = command.AdministrativeUnitId,
             IsAnonymous = command.IsAnonymous,
-            CitizenName = command.IsAnonymous ? "Công dân (Ẩn danh)" : command.CitizenName?.Trim(),
-            CitizenPhone = command.IsAnonymous ? null : command.CitizenPhone?.Trim(),
-            CitizenEmail = command.IsAnonymous ? null : command.CitizenEmail?.Trim(),
-            CitizenIdCard = command.IsAnonymous ? null : command.CitizenIdCard?.Trim(),
+            CitizenName = command.IsAnonymous ? "Công dân (Ẩn danh)" : sanitizedCitizenName,
+            CitizenPhone = command.IsAnonymous ? null : sanitizedCitizenPhone,
+            CitizenEmail = command.IsAnonymous ? null : sanitizedCitizenEmail,
+            CitizenIdCard = command.IsAnonymous ? null : sanitizedCitizenIdCard,
             CategoryId = category.Id,
             Status = PetitionStatus.Submitted,
             PriorityLevel = priority,
