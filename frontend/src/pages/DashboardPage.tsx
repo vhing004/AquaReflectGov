@@ -4,12 +4,15 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { dashboardApi } from '../api/dashboardApi';
 import { masterDataApi } from '../api/masterDataApi';
+import { reportsApi } from '../api/reportsApi';
 import { 
   RotateCw, 
   Calendar, 
   Building2, 
   Layers, 
-  Compass
+  Compass,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
 
 import { KpiMetricCards } from '../components/dashboard/KpiMetricCards';
@@ -22,6 +25,28 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
   const [days, setDays] = useState<number>(30);
   const [selectedDeptId, setSelectedDeptId] = useState<string>('');
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportExcel = async () => {
+    setExportingExcel(true);
+    try {
+      await reportsApi.exportPetitionsExcel(
+        selectedDeptId ? { departmentId: selectedDeptId } : undefined
+      );
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      await reportsApi.exportKpiPdf(days, selectedDeptId || undefined);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   // 1. Query danh sách phòng ban phục vụ bộ lọc
   const { data: deptsRes } = useQuery({
@@ -129,6 +154,26 @@ export const DashboardPage: React.FC = () => {
               ))}
             </select>
           </div>
+
+          <button
+            onClick={handleExportExcel}
+            disabled={exportingExcel}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all disabled:opacity-60 shadow-xs"
+            title="Xuất danh sách phản ánh ra Excel"
+          >
+            <FileSpreadsheet className={`w-3.5 h-3.5 ${exportingExcel ? 'animate-pulse' : ''}`} />
+            <span>{exportingExcel ? 'Đang xuất...' : 'Xuất Excel'}</span>
+          </button>
+
+          <button
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-all disabled:opacity-60 shadow-xs"
+            title="Xuất báo cáo KPI ra PDF"
+          >
+            <FileText className={`w-3.5 h-3.5 ${exportingPdf ? 'animate-pulse' : ''}`} />
+            <span>{exportingPdf ? 'Đang xuất...' : 'Xuất PDF KPI'}</span>
+          </button>
 
           <button
             onClick={() => refetch()}

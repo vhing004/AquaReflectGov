@@ -21,6 +21,11 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
+// Đăng ký thêm MediatR handlers từ Infrastructure (Reports: Excel/PDF)
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(AquaReflect.Infrastructure.Reports.ExportPetitionsToExcelQueryHandler).Assembly));
+
+
 // Đăng ký SignalR Real-time Hubs
 builder.Services.AddSignalR();
 
