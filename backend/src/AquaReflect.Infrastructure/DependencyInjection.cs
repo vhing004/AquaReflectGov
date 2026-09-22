@@ -17,16 +17,28 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Chuỗi kết nối 'DefaultConnection' không được tìm thấy trong cấu hình.");
-
-        services.AddDbContext<ApplicationDbContext>(options =>
+        var useInMemory = configuration.GetValue<bool>("UseInMemoryDatabase", false);
+        if (useInMemory)
         {
-            options.UseNpgsql(connectionString, npgsqlOptions =>
+            var dbName = configuration.GetValue<string>("InMemoryDatabaseName") ?? "AquaReflectTestDb";
+            services.AddDbContext<ApplicationDbContext>(options =>
             {
-                npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                options.UseInMemoryDatabase(dbName);
             });
-        });
+        }
+        else
+        {
+            var connectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("Chuỗi kết nối 'DefaultConnection' không được tìm thấy trong cấu hình.");
+
+            services.AddDbContext<ApplicationDbContext>(options =>
+            {
+                options.UseNpgsql(connectionString, npgsqlOptions =>
+                {
+                    npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                });
+            });
+        }
 
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
