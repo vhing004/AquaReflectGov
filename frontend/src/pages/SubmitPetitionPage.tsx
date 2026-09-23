@@ -129,6 +129,8 @@ export const SubmitPetitionPage: React.FC = () => {
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadSizeInfo, setUploadSizeInfo] = useState<{ loaded: string; total: string } | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedPetition, setSubmittedPetition] = useState<CreatePetitionResult | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -455,6 +457,8 @@ export const SubmitPetitionPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      setUploadProgress(0);
+      setUploadSizeInfo(null);
 
       const formData = new FormData();
       formData.append('CategoryId', categoryId);
@@ -494,7 +498,16 @@ export const SubmitPetitionPage: React.FC = () => {
         formData.append('Files', file);
       });
 
-      const response = await petitionApi.createPetition(formData);
+      const response = await petitionApi.createPetition(formData, (progressEvent) => {
+        if (progressEvent.total && progressEvent.total > 0) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percent);
+
+          const loadedMb = (progressEvent.loaded / (1024 * 1024)).toFixed(1);
+          const totalMb = (progressEvent.total / (1024 * 1024)).toFixed(1);
+          setUploadSizeInfo({ loaded: `${loadedMb} MB`, total: `${totalMb} MB` });
+        }
+      });
 
       if (response.success && response.data) {
         setSubmittedPetition(response.data);
@@ -523,6 +536,8 @@ export const SubmitPetitionPage: React.FC = () => {
       setSubmitError(serverMessage);
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
+      setUploadSizeInfo(null);
     }
   };
 
@@ -1221,6 +1236,40 @@ export const SubmitPetitionPage: React.FC = () => {
                     className="opacity-0 absolute pointer-events-none -z-50 h-0 w-0"
                   />
                 </div>
+                {/* THANH TIẾN ĐỘ UPLOAD TỆP ĐÍNH KÈM THỜI GIAN THỰC (PROGRESS BAR) */}
+                {isSubmitting && uploadProgress !== null && (
+                  <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 space-y-2.5 shadow-sm animate-in fade-in">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center space-x-2 font-bold text-[#006194]">
+                        <Loader2 className="w-4 h-4 animate-spin text-[#006194] shrink-0" />
+                        <span>
+                          {uploadProgress < 100
+                            ? `Đang tải ảnh/video minh chứng... ${uploadProgress}%`
+                            : 'Đang mã hóa & khởi tạo mã tra cứu... 100%'}
+                        </span>
+                      </div>
+                      {uploadSizeInfo && (
+                        <span className="text-[11px] font-mono text-slate-600 font-semibold bg-white/80 px-2 py-0.5 rounded-md border border-sky-100">
+                          {uploadSizeInfo.loaded} / {uploadSizeInfo.total}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Progress track */}
+                    <div className="w-full bg-slate-200/80 h-2.5 rounded-full overflow-hidden shadow-inner relative">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan-500 via-sky-500 to-[#006194] transition-all duration-300 ease-out rounded-full shadow-xs"
+                        style={{ width: `${Math.max(uploadProgress, 4)}%` }}
+                      />
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 italic">
+                      {uploadProgress < 100
+                        ? 'Đang truyền dữ liệu hình ảnh/video hiện trường từ thiết bị... Vui lòng không đóng trang.'
+                        : 'Hoàn tất tải tệp. Hệ thống đang tiến hành cấp mã biên nhận QR...'}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
