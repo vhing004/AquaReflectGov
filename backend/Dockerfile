@@ -16,8 +16,7 @@ RUN dotnet restore "src/AquaReflect.Api/AquaReflect.Api.csproj"
 COPY backend/src/ ./src/
 RUN dotnet publish "src/AquaReflect.Api/AquaReflect.Api.csproj" \
     -c Release \
-    -o /app/publish \
-    --no-restore
+    -o /app/publish
 
 # ===== Runtime Stage =====
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime

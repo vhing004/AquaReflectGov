@@ -18,6 +18,9 @@ public static class ApplicationDbContextSeed
 
         try
         {
+            // 0. Tự động áp dụng EF Core Migrations nếu database mới được tạo
+            await context.Database.MigrateAsync();
+
             // 1. Seed Đơn vị hành chính
             if (!await context.AdministrativeUnits.AnyAsync())
             {

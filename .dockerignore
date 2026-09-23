@@ -1,0 +1,22 @@
+# .NET Build artifacts
+**/bin/
+**/obj/
+**/*.user
+**/*.suo
+.vs/
+.idea/
+.vscode/
+
+# Node.js
+**/node_modules/
+**/dist/
+**/dist-ssr/
+
+# Git & Temp
+.git/
+.gitignore
+.env
+.env.*
+!.env.example
+logs/
+*.log
