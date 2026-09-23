@@ -1,0 +1,20 @@
+# .NET build artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Logs
+logs/
+*.log
+
+# Test projects (không cần trong Docker build)
+tests/
+
+# Rider / JetBrains
+.idea/
+*.DotSettings.user
+
+# VS Code
+.vscode/

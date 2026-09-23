@@ -1,0 +1,93 @@
+services:
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 1. CSDL PostgreSQL + PostGIS (Lưu trữ dữ liệu không gian ngành Thủy sản)
+  # ─────────────────────────────────────────────────────────────────────────────
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: aquareflect_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aquareflect_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-AquaReflect@2026!}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - aquareflect_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-aquareflect_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 2. Backend .NET 9 Clean Architecture Web API
+  # ─────────────────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: aquareflect_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      # Chuỗi kết nối PostgreSQL PostGIS (tên hostname = tên service 'db')
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-aquareflect_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-AquaReflect@2026!}"
+      # Cấu hình JWT
+      JwtSettings__Key: ${JWT_SECRET_KEY:-AquaReflect_Secure_Super_Secret_Key_2026_Fisheries_Management_Key_Must_Be_Long}
+      JwtSettings__Issuer: ${JWT_ISSUER:-AquaReflectServer}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-AquaReflectClient}
+      JwtSettings__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-1440}
+      # Cấu hình Cloudflare Turnstile chống Bot
+      TurnstileSettings__Enabled: ${TURNSTILE_ENABLED:-false}
+      TurnstileSettings__SecretKey: ${TURNSTILE_SECRET_KEY:-}
+      TurnstileSettings__SiteKey: ${TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
+      # Cấu hình CORS cho Frontend
+      CorsSettings__AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost}
+    volumes:
+      - backend_uploads:/app/wwwroot/uploads
+    expose:
+      - "8080"
+    networks:
+      - aquareflect_net
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 3. Frontend React 19 SPA + Nginx Reverse Proxy
+  # ─────────────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: aquareflect_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    networks:
+      - aquareflect_net
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Docker Volumes (Bền vững - Dữ liệu không bị mất khi restart containers)
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    name: aquareflect_postgres_data
+  backend_uploads:
+    name: aquareflect_backend_uploads
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Docker Network
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  aquareflect_net:
+    name: aquareflect_net
+    driver: bridge
