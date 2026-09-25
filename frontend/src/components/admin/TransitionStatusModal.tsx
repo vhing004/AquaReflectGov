@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../../api/adminApi';
 import { masterDataApi } from '../../api/masterDataApi';
-import type { AdminPetitionItem, AllowedTransition, Department } from '../../types';
+import type { AdminPetitionItem, AllowedTransition, Department, DepartmentOfficer } from '../../types';
 import {
   X,
   Layers,
@@ -15,7 +15,10 @@ import {
   Building2,
   FileText,
   MessageSquare,
-  ShieldAlert
+  ShieldAlert,
+  Sparkles,
+  UserCheck,
+  Zap
 } from 'lucide-react';
 
 interface TransitionStatusModalProps {
@@ -33,6 +36,7 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
 }) => {
   const [selectedStatus, setSelectedStatus] = useState<number | null>(null);
   const [departmentId, setDepartmentId] = useState<string>('');
+  const [assignedUserId, setAssignedUserId] = useState<string>('');
   const [resolutionSummary, setResolutionSummary] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,19 +60,67 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
     enabled: isOpen,
   });
 
+  // Fetch department officers with workload
+  const { data: officersRes, isLoading: isLoadingOfficers } = useQuery({
+    queryKey: ['departmentOfficers', departmentId],
+    queryFn: () => adminApi.getDepartmentOfficers(departmentId),
+    enabled: !!departmentId && isOpen && selectedStatus === 2,
+  });
+
   const allowedTransitions = allowedRes?.data || [];
   const departments: Department[] = deptsRes?.data || [];
+  const officers: DepartmentOfficer[] = officersRes?.data || [];
 
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setSelectedStatus(null);
-      setDepartmentId(petition.departmentName ? '' : '');
+      setDepartmentId('');
+      setAssignedUserId('');
       setResolutionSummary('');
       setNote('');
       setErrorMessage(null);
     }
   }, [isOpen, petition]);
+
+  // Smart Department Auto-Mapping based on petition category
+  useEffect(() => {
+    if (isOpen && departments.length > 0 && !departmentId && selectedStatus === 2) {
+      const catName = (petition.categoryName || '').toLowerCase();
+
+      let recommendedDept = departments.find(d => {
+        const dName = d.name.toLowerCase();
+        if (catName.includes('dịch bệnh') || catName.includes('bệnh')) {
+          return dName.includes('thủy sản') || dName.includes('nuôi trồng');
+        }
+        if (catName.includes('iuu') || catName.includes('khai thác') || catName.includes('hải sản')) {
+          return dName.includes('kiểm ngư') || dName.includes('khai thác');
+        }
+        if (catName.includes('ô nhiễm') || catName.includes('giống') || catName.includes('thức ăn')) {
+          return dName.includes('thanh tra') || dName.includes('chi cục');
+        }
+        return false;
+      });
+
+      if (!recommendedDept) {
+        recommendedDept = departments[0];
+      }
+
+      if (recommendedDept) {
+        setDepartmentId(recommendedDept.id);
+      }
+    }
+  }, [isOpen, departments, petition, departmentId, selectedStatus]);
+
+  // Auto select least loaded officer when officers list is loaded
+  const handleAutoAssignLeastLoadedOfficer = () => {
+    if (officers.length > 0) {
+      const recommended = officers.find(o => o.isRecommended) || officers[0];
+      if (recommended) {
+        setAssignedUserId(recommended.id);
+      }
+    }
+  };
 
   // Auto-select first allowed transition if available
   useEffect(() => {
@@ -147,6 +199,7 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
       const res = await adminApi.transitionStatus(petition.id, {
         toStatus: selectedStatus,
         departmentId: departmentId || undefined,
+        assignedUserId: assignedUserId || undefined,
         resolutionSummary: resolutionSummary.trim() || undefined,
         note: note.trim() || undefined,
       });
@@ -256,31 +309,136 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
             )}
           </div>
 
-          {/* Dynamic Input 1: Department Selection (if Assigned) */}
+          {/* Dynamic Input 1: Department & Officer Selection (if Assigned = 2) */}
           {selectedStatus === 2 && (
-            <div className="space-y-1.5 p-3.5 bg-indigo-50/50 rounded-2xl border border-indigo-100">
-              <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider">
-                Phòng ban / Cơ quan chuyên môn thụ lý <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <Building2 className="w-4 h-4 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <select
-                  value={departmentId}
-                  onChange={(e) => setDepartmentId(e.target.value)}
-                  required
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-indigo-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 font-medium text-slate-800"
-                >
-                  <option value="">-- Chọn cơ quan thụ lý --</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-3 p-4 bg-indigo-50/60 rounded-2xl border border-indigo-150">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider">
+                    Phòng ban / Cơ quan chuyên môn thụ lý <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-100/80 px-2 py-0.5 rounded-full flex items-center space-x-1">
+                    <Sparkles className="w-3 h-3 text-indigo-500" />
+                    <span>Gợi ý tự động theo lĩnh vực</span>
+                  </span>
+                </div>
+                <div className="relative">
+                  <Building2 className="w-4 h-4 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <select
+                    value={departmentId}
+                    onChange={(e) => {
+                      setDepartmentId(e.target.value);
+                      setAssignedUserId('');
+                    }}
+                    required
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-indigo-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 font-medium text-slate-800"
+                  >
+                    <option value="">-- Chọn cơ quan thụ lý --</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <p className="text-[10px] text-indigo-700">
-                Hồ sơ sẽ được chuyển trực tiếp vào danh sách việc cần xử lý của phòng ban được chọn.
-              </p>
+
+              {/* Smart Officer Workload List & Auto-Assign */}
+              {departmentId && (
+                <div className="pt-2 border-t border-indigo-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider flex items-center space-x-1">
+                      <UserCheck className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Phân công Chuyên viên phụ trách trực tiếp (Tùy chọn)</span>
+                    </label>
+
+                    {officers.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleAutoAssignLeastLoadedOfficer}
+                        className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition-all shadow-xs flex items-center space-x-1"
+                      >
+                        <Zap className="w-3 h-3 text-amber-300 fill-amber-300" />
+                        <span>Tự động chọn cán bộ nhàn rỗi nhất</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {isLoadingOfficers ? (
+                    <div className="py-2 text-center text-indigo-500 text-[11px] animate-pulse">
+                      Đang phân tích tải công việc các chuyên viên...
+                    </div>
+                  ) : officers.length === 0 ? (
+                    <div className="p-2.5 bg-white/80 rounded-xl border border-indigo-100 text-[11px] text-slate-500 text-center">
+                      Phòng ban hiện chưa có cán bộ hoặc chưa kích hoạt tài khoản.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                      {officers.map((officer) => {
+                        const isSelected = assignedUserId === officer.id;
+                        return (
+                          <div
+                            key={officer.id}
+                            onClick={() => setAssignedUserId(officer.id)}
+                            className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
+                              isSelected
+                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs'
+                                : 'bg-white text-slate-800 border-indigo-100 hover:border-indigo-300'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  isSelected
+                                    ? 'bg-amber-300'
+                                    : officer.workloadLevel === 'Low'
+                                    ? 'bg-emerald-500'
+                                    : officer.workloadLevel === 'Medium'
+                                    ? 'bg-sky-500'
+                                    : 'bg-amber-500'
+                                }`}
+                              />
+                              <div>
+                                <span className="font-bold">{officer.fullName}</span>
+                                <span className={`ml-1.5 text-[10px] ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                  ({officer.username})
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-1.5">
+                              {officer.isRecommended && (
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                                    isSelected
+                                      ? 'bg-amber-400 text-amber-950'
+                                      : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  }`}
+                                >
+                                  Khuyên chọn
+                                </span>
+                              )}
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                  isSelected
+                                    ? 'bg-indigo-500 text-white'
+                                    : officer.workloadLevel === 'Low'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    : officer.workloadLevel === 'Medium'
+                                    ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                }`}
+                              >
+                                {officer.activeCaseCount} đơn đang giữ
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

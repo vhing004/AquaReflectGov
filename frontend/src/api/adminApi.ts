@@ -9,7 +9,8 @@ import type {
   PaginatedResult,
   AllowedTransition,
   TransitionStatusRequest,
-  TransitionStatusResult
+  TransitionStatusResult,
+  DepartmentOfficer
 } from '../types';
 
 export const adminApi = {
@@ -94,6 +95,16 @@ export const adminApi = {
     const response = await axiosClient.post<ApiResponse<PetitionComment>>(
       `/admin/petitions/${petitionId}/comments`,
       { content }
+    );
+    return response.data;
+  },
+
+  /**
+   * Lấy danh sách cán bộ/chuyên viên thuộc phòng ban kèm chỉ số tải công việc (Workload Status)
+   */
+  getDepartmentOfficers: async (departmentId: string): Promise<ApiResponse<DepartmentOfficer[]>> => {
+    const response = await axiosClient.get<ApiResponse<DepartmentOfficer[]>>(
+      `/admin/departments/${departmentId}/officers`
     );
     return response.data;
   },

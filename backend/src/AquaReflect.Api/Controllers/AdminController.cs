@@ -165,6 +165,23 @@ public class AdminController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.PetitionCommentDto>.Ok(result, "Thêm ghi chú nội bộ thành công."));
     }
+
+    /// <summary>
+    /// Lấy danh sách cán bộ/chuyên viên thuộc phòng ban kèm chỉ số tải công việc (Workload Status) để tự động gợi ý phân công
+    /// </summary>
+    /// <param name="departmentId">ID phòng ban cần lấy danh sách cán bộ</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Danh sách cán bộ kèm chỉ số công việc đang thụ lý và đánh giá gợi ý</returns>
+    [HttpGet("departments/{departmentId:guid}/officers")]
+    [ProducesResponseType(typeof(ApiResponse<List<AquaReflect.Application.Features.Departments.Queries.GetDepartmentOfficers.DepartmentOfficerDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<AquaReflect.Application.Features.Departments.Queries.GetDepartmentOfficers.DepartmentOfficerDto>>>> GetDepartmentOfficers(
+        Guid departmentId,
+        CancellationToken cancellationToken)
+    {
+        var query = new AquaReflect.Application.Features.Departments.Queries.GetDepartmentOfficers.GetDepartmentOfficersQuery(departmentId);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(ApiResponse<List<AquaReflect.Application.Features.Departments.Queries.GetDepartmentOfficers.DepartmentOfficerDto>>.Ok(result, "Lấy danh sách cán bộ phòng ban thành công."));
+    }
 }
 
 public class IssueResolutionRequest

@@ -312,5 +312,18 @@ export interface AdminPetitionDetail {
   comments: PetitionComment[];
 }
 
+export interface DepartmentOfficer {
+  id: string;
+  username: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  departmentId?: string;
+  departmentName?: string;
+  activeCaseCount: number;
+  workloadLevel: 'Low' | 'Medium' | 'High';
+  isRecommended: boolean;
+}
+
 
 
