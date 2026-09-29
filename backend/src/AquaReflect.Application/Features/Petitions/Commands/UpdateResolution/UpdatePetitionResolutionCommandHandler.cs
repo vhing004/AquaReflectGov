@@ -44,6 +44,9 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
         if (role == UserRole.Citizen)
             throw new ForbiddenException("Người dân không có quyền ban hành kết luận xử lý hồ sơ.");
 
+        if (role == UserRole.Dispatcher)
+            throw new ForbiddenException("Bộ phận Điều phối không có quyền ban hành kết luận xử lý. Chức năng này dành cho Cán bộ chuyên trách thụ lý (Specialist) hoặc Quản trị viên.");
+
         if (string.IsNullOrWhiteSpace(request.ConclusionText))
             throw new ValidationException("Nội dung kết luận giải quyết không được để trống.");
 

@@ -30,6 +30,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { adminApi } from '../api/adminApi';
+import { useAuthStore } from '../store/useAuthStore';
 import { TransitionStatusModal } from '../components/admin/TransitionStatusModal';
 import { ResolutionModal } from '../components/admin/ResolutionModal';
 import { MediaLightbox } from '../components/admin/MediaLightbox';
@@ -37,6 +38,7 @@ import { MiniMapViewer } from '../components/admin/MiniMapViewer';
 import type { AdminPetitionItem } from '../types';
 
 export const AdminPetitionDetailPage: React.FC = () => {
+  const { user } = useAuthStore();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -225,28 +227,43 @@ export const AdminPetitionDetailPage: React.FC = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => window.print()}
-                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all border border-white/20"
+                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all border border-white/20 cursor-pointer"
                 title="In phiếu hồ sơ khổ A4"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">In hồ sơ</span>
               </button>
+
               <button
                 onClick={() => setIsTransitionOpen(true)}
                 disabled={petition.status === 6}
-                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white text-[#006194] hover:bg-sky-50 text-xs font-bold transition-all shadow-sm disabled:opacity-40"
+                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white text-[#006194] hover:bg-sky-50 text-xs font-bold transition-all shadow-sm disabled:opacity-40 cursor-pointer"
+                title="Chuyển trạng thái hồ sơ theo quy trình"
               >
                 <Layers className="w-3.5 h-3.5 text-[#006194]" />
                 <span>Luân chuyển trạng thái</span>
               </button>
+
               {petition.status !== 4 && petition.status !== 6 && (
-                <button
-                  onClick={() => setIsResolutionOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition-all shadow-md"
-                >
-                  <FileCheck2 className="w-3.5 h-3.5 text-slate-950" />
-                  <span>Ban hành kết luận</span>
-                </button>
+                (user?.role === 'Specialist' || user?.role === 'SuperAdmin') ? (
+                  <button
+                    onClick={() => setIsResolutionOpen(true)}
+                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition-all shadow-md cursor-pointer"
+                    title="Ban hành kết luận giải quyết chính thức"
+                  >
+                    <FileCheck2 className="w-3.5 h-3.5 text-slate-950" />
+                    <span>Ban hành kết luận</span>
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 text-white/50 text-xs font-semibold cursor-not-allowed border border-white/10 opacity-70"
+                    title="Chức năng ban hành kết luận chỉ dành cho Cán bộ chuyên trách thụ lý (Specialist) hoặc Quản trị viên"
+                  >
+                    <FileCheck2 className="w-3.5 h-3.5 text-white/40" />
+                    <span>Ban hành kết luận (Specialist)</span>
+                  </button>
+                )
               )}
             </div>
           </div>
@@ -287,6 +304,48 @@ export const AdminPetitionDetailPage: React.FC = () => {
               {getStatusBadge(petition.status, petition.statusName)}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* WORKFLOW STEPPER BAR */}
+      <div className="bg-slate-900 border-b border-slate-800 text-white py-3 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between text-xs">
+          {[
+            { status: 1, title: '1. Tiếp nhận', desc: 'Mới gửi' },
+            { status: 2, title: '2. Phân công', desc: petition.departmentName || 'Chờ phân công' },
+            { status: 3, title: '3. Thụ lý', desc: 'Đang xác minh' },
+            { status: 4, title: '4. Kết luận', desc: 'Đã giải quyết' },
+            { status: 6, title: '5. Hoàn tất', desc: 'Đóng/Lưu trữ' }
+          ].map((st, idx, arr) => {
+            const isCurrent = petition.status === st.status;
+            const isPassed = petition.status > st.status && petition.status !== 5;
+            return (
+              <React.Fragment key={st.status}>
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                      isCurrent
+                        ? 'bg-sky-400 text-slate-950 ring-2 ring-sky-300 font-extrabold scale-110'
+                        : isPassed
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {isPassed ? <Check className="w-3 h-3 stroke-[3]" /> : idx + 1}
+                  </div>
+                  <div className="hidden md:block">
+                    <div className={`font-bold text-[11px] ${isCurrent ? 'text-sky-300 font-bold' : isPassed ? 'text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                      {st.title}
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate max-w-[120px]">{st.desc}</div>
+                  </div>
+                </div>
+                {idx < arr.length - 1 && (
+                  <div className={`flex-1 h-0.5 mx-2 transition-colors ${isPassed ? 'bg-emerald-500' : 'bg-slate-800'}`} />
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
 

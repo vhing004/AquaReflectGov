@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../../api/adminApi';
 import { masterDataApi } from '../../api/masterDataApi';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { AdminPetitionItem, AllowedTransition, Department, DepartmentOfficer } from '../../types';
 import {
   X,
@@ -18,7 +19,9 @@ import {
   ShieldAlert,
   Sparkles,
   UserCheck,
-  Zap
+  Zap,
+  ShieldCheck,
+  Info
 } from 'lucide-react';
 
 interface TransitionStatusModalProps {
@@ -34,6 +37,7 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { user } = useAuthStore();
   const [selectedStatus, setSelectedStatus] = useState<number | null>(null);
   const [departmentId, setDepartmentId] = useState<string>('');
   const [assignedUserId, setAssignedUserId] = useState<string>('');
@@ -70,6 +74,33 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
   const allowedTransitions = allowedRes?.data || [];
   const departments: Department[] = deptsRes?.data || [];
   const officers: DepartmentOfficer[] = officersRes?.data || [];
+
+  // Stepper definition
+  const WORKFLOW_STEPS = [
+    { status: 1, title: 'Tiếp nhận', desc: 'Mới gửi' },
+    { status: 2, title: 'Phân công', desc: 'Chuyển đơn vị' },
+    { status: 3, title: 'Thụ lý', desc: 'Xác minh' },
+    { status: 4, title: 'Kết luận', desc: 'Giải quyết' },
+    { status: 6, title: 'Hoàn tất', desc: 'Đóng/Lưu trữ' },
+  ];
+
+  // Helper text mapping for transitions
+  const getHelperGuidance = (status: number | null) => {
+    switch (status) {
+      case 2:
+        return 'Nghiệp vụ (Điều phối viên / Admin): Xem xét nội dung phản ánh và phân công cơ quan/chi cục chuyên môn có thẩm quyền thụ lý.';
+      case 3:
+        return 'Nghiệp vụ (Cán bộ chuyên trách): Thụ lý hồ sơ, bắt đầu quá trình kiểm tra thực địa, thu thập chứng cứ và thẩm tra.';
+      case 4:
+        return 'Nghiệp vụ (Cán bộ chuyên trách / Admin): Tổng hợp kết quả xác minh, lập văn bản kết luận và công khai kết quả xử lý cho công dân.';
+      case 5:
+        return 'Nghiệp vụ: Từ chối tiếp nhận hồ sơ do không đủ điều kiện, trùng lặp hoặc không thuộc thẩm quyền giải quyết (bắt buộc nêu lý do).';
+      case 6:
+        return 'Nghiệp vụ: Đóng hồ sơ và chuyển vào lưu trữ vĩnh viễn sau khi đã hoàn tất mọi thủ tục.';
+      default:
+        return null;
+    }
+  };
 
   // Reset form when modal opens
   useEffect(() => {
@@ -241,14 +272,71 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Workflow Stepper Bar */}
+        <div className="bg-slate-900 text-white px-5 py-3 border-b border-slate-800">
+          <div className="flex items-center justify-between text-[11px]">
+            {WORKFLOW_STEPS.map((step, idx) => {
+              const isCurrent = petition.status === step.status;
+              const isPassed = petition.status > step.status && petition.status !== 5;
+              const isSelected = selectedStatus === step.status;
+
+              return (
+                <React.Fragment key={step.status}>
+                  <div className="flex flex-col items-center text-center">
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                        isCurrent
+                          ? 'bg-sky-400 text-slate-950 ring-2 ring-sky-300 scale-110 font-black'
+                          : isSelected
+                          ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 font-bold'
+                          : isPassed
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-700 text-slate-400'
+                      }`}
+                    >
+                      {isPassed ? <Check className="w-3 h-3 stroke-[3]" /> : idx + 1}
+                    </div>
+                    <span
+                      className={`mt-1 text-[10px] font-medium leading-tight ${
+                        isCurrent ? 'text-sky-300 font-bold' : isSelected ? 'text-amber-300 font-bold' : isPassed ? 'text-emerald-400' : 'text-slate-400'
+                      }`}
+                    >
+                      {step.title}
+                    </span>
+                  </div>
+                  {idx < WORKFLOW_STEPS.length - 1 && (
+                    <div
+                      className={`flex-1 h-0.5 mx-1.5 transition-colors ${
+                        petition.status > step.status && petition.status !== 5 ? 'bg-emerald-500' : 'bg-slate-700'
+                      }`}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[78vh] overflow-y-auto text-xs text-slate-700">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[72vh] overflow-y-auto text-xs text-slate-700">
+          {/* User Role Context Badge */}
+          <div className="flex items-center justify-between p-2.5 bg-sky-50/80 rounded-xl border border-sky-100 text-[11px] text-sky-900">
+            <div className="flex items-center space-x-1.5 font-medium">
+              <ShieldCheck className="w-4 h-4 text-[#006194] shrink-0" />
+              <span>
+                Thao tác với vai trò:{' '}
+                <strong className="font-bold text-slate-900">{user?.roleName || user?.role || 'Cán bộ'}</strong>
+                {user?.departmentName ? ` — ${user.departmentName}` : ''}
+              </span>
+            </div>
+          </div>
+
           {/* Petition Mini Context */}
           <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-xs">
             <p className="font-bold text-slate-900 line-clamp-1">{petition.title}</p>
@@ -308,6 +396,14 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Dynamic Helper Text / Operational Guidance */}
+          {selectedStatus && getHelperGuidance(selectedStatus) && (
+            <div className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-[11px] text-slate-700 flex items-start space-x-2">
+              <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+              <span>{getHelperGuidance(selectedStatus)}</span>
+            </div>
+          )}
 
           {/* Dynamic Input 1: Department & Officer Selection (if Assigned = 2) */}
           {selectedStatus === 2 && (
