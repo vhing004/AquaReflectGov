@@ -1,5 +1,6 @@
 using AquaReflect.Application.Common.Interfaces;
 using AquaReflect.Domain.Enums;
+using AquaReflect.Domain.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,14 +25,25 @@ public record GetDepartmentOfficersQuery(Guid DepartmentId) : IRequest<List<Depa
 public class GetDepartmentOfficersQueryHandler : IRequestHandler<GetDepartmentOfficersQuery, List<DepartmentOfficerDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetDepartmentOfficersQueryHandler(IApplicationDbContext context)
+    public GetDepartmentOfficersQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<List<DepartmentOfficerDto>> Handle(GetDepartmentOfficersQuery request, CancellationToken cancellationToken)
     {
+        // Bảo mật: Specialist chỉ được truy vấn danh sách cán bộ thuộc phòng ban của mình
+        if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist)
+        {
+            if (!_currentUser.DepartmentId.HasValue || _currentUser.DepartmentId != request.DepartmentId)
+            {
+                throw new ForbiddenException("Bạn không có quyền xem danh sách cán bộ của phòng ban khác.");
+            }
+        }
+
         // Lấy danh sách cán bộ/chuyên viên thuộc phòng ban
         var users = await _context.Users
             .Include(u => u.Department)

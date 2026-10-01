@@ -9,10 +9,12 @@ namespace AquaReflect.Application.Features.Dashboard.Queries.GetDashboardKpi;
 public class GetDashboardKpiQueryHandler : IRequestHandler<GetDashboardKpiQuery, DashboardReportDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetDashboardKpiQueryHandler(IApplicationDbContext context)
+    public GetDashboardKpiQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<DashboardReportDto> Handle(GetDashboardKpiQuery request, CancellationToken cancellationToken)
@@ -26,7 +28,19 @@ public class GetDashboardKpiQueryHandler : IRequestHandler<GetDashboardKpiQuery,
             .AsNoTracking()
             .Where(p => p.CreatedAt >= startDate);
 
-        if (request.DepartmentId.HasValue)
+        // Bảo mật: Nếu là Specialist, bắt buộc chỉ lọc theo phòng ban của mình
+        if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist)
+        {
+            if (_currentUser.DepartmentId.HasValue)
+            {
+                query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
+            }
+            else
+            {
+                query = query.Where(p => false);
+            }
+        }
+        else if (request.DepartmentId.HasValue)
         {
             query = query.Where(p => p.DepartmentId == request.DepartmentId.Value);
         }
@@ -157,10 +171,23 @@ public class GetDashboardKpiQueryHandler : IRequestHandler<GetDashboardKpiQuery,
             .ToList();
 
         // 4. ĐÁNH GIÁ HIỆU SUẤT THEO PHÒNG BAN (DEPARTMENT PERFORMANCE)
-        var allDepartments = await _context.Departments
+        var deptQuery = _context.Departments
             .AsNoTracking()
-            .Where(d => d.IsActive)
-            .ToListAsync(cancellationToken);
+            .Where(d => d.IsActive);
+
+        if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist)
+        {
+            if (_currentUser.DepartmentId.HasValue)
+            {
+                deptQuery = deptQuery.Where(d => d.Id == _currentUser.DepartmentId.Value);
+            }
+            else
+            {
+                deptQuery = deptQuery.Where(d => false);
+            }
+        }
+
+        var allDepartments = await deptQuery.ToListAsync(cancellationToken);
 
         var departmentPerformance = allDepartments
             .Select(d =>

@@ -1,6 +1,7 @@
 using AquaReflect.Application.Common.Interfaces;
 using AquaReflect.Application.Features.Reports.Queries.ExportPetitionsToExcel;
 using AquaReflect.Domain.Enums;
+using AquaReflect.Domain.Exceptions;
 using ClosedXML.Excel;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,12 @@ namespace AquaReflect.Infrastructure.Reports;
 public class ExportPetitionsToExcelQueryHandler : IRequestHandler<ExportPetitionsToExcelQuery, byte[]>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public ExportPetitionsToExcelQueryHandler(IApplicationDbContext context)
+    public ExportPetitionsToExcelQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<byte[]> Handle(ExportPetitionsToExcelQuery request, CancellationToken cancellationToken)
@@ -29,14 +32,25 @@ public class ExportPetitionsToExcelQueryHandler : IRequestHandler<ExportPetition
             .Include(p => p.AssignedUser)
             .Where(p => !p.IsDeleted);
 
+        // Bảo mật: Specialist chỉ xuất dữ liệu phòng ban của mình
+        if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist)
+        {
+            if (!_currentUser.DepartmentId.HasValue)
+            {
+                throw new ForbiddenException("Cán bộ chuyên viên chưa được gán phòng ban, không có quyền xuất báo cáo.");
+            }
+            query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
+        }
+        else if (request.DepartmentId.HasValue)
+        {
+            query = query.Where(p => p.DepartmentId == request.DepartmentId.Value);
+        }
+
         if (request.StartDate.HasValue)
             query = query.Where(p => p.CreatedAt >= request.StartDate.Value.ToUniversalTime());
 
         if (request.EndDate.HasValue)
             query = query.Where(p => p.CreatedAt <= request.EndDate.Value.ToUniversalTime().AddDays(1));
-
-        if (request.DepartmentId.HasValue)
-            query = query.Where(p => p.DepartmentId == request.DepartmentId.Value);
 
         if (request.Status.HasValue)
             query = query.Where(p => p.Status == request.Status.Value);

@@ -27,10 +27,12 @@ public record GetPetitionsGeoJsonQuery(
 public class GetPetitionsGeoJsonQueryHandler : IRequestHandler<GetPetitionsGeoJsonQuery, GeoJsonFeatureCollectionDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetPetitionsGeoJsonQueryHandler(IApplicationDbContext context)
+    public GetPetitionsGeoJsonQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<GeoJsonFeatureCollectionDto> Handle(GetPetitionsGeoJsonQuery request, CancellationToken cancellationToken)
@@ -42,6 +44,28 @@ public class GetPetitionsGeoJsonQueryHandler : IRequestHandler<GetPetitionsGeoJs
             .Include(p => p.Department)
             .Include(p => p.AdministrativeUnit)
             .Where(p => !p.IsDeleted && p.Latitude.HasValue && p.Longitude.HasValue);
+
+        // Bảo mật GIS: Nếu không phải Lãnh đạo/Điều phối (SuperAdmin/Dispatcher), không lộ hồ sơ mới gửi (Submitted)
+        bool isOfficerLeader = _currentUser.IsAuthenticated && 
+            (_currentUser.Role == UserRole.SuperAdmin || _currentUser.Role == UserRole.Dispatcher);
+
+        if (!isOfficerLeader)
+        {
+            query = query.Where(p => p.Status != PetitionStatus.Submitted);
+
+            // Nếu là Specialist thì chỉ xem hồ sơ thuộc phòng ban mình
+            if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist)
+            {
+                if (_currentUser.DepartmentId.HasValue)
+                {
+                    query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
+                }
+                else
+                {
+                    query = query.Where(p => false);
+                }
+            }
+        }
 
         // 2. Lọc theo Bounding Box (Viewport Bounds) nếu có
         if (request.MinLat.HasValue)
@@ -62,7 +86,12 @@ public class GetPetitionsGeoJsonQueryHandler : IRequestHandler<GetPetitionsGeoJs
 
         // 4. Lọc theo Trạng thái
         if (request.Status.HasValue)
-            query = query.Where(p => p.Status == request.Status.Value);
+        {
+            if (isOfficerLeader || request.Status.Value != PetitionStatus.Submitted)
+            {
+                query = query.Where(p => p.Status == request.Status.Value);
+            }
+        }
 
         // 5. Lọc theo Mức độ ưu tiên
         if (request.PriorityLevel.HasValue)

@@ -9,6 +9,8 @@ export interface ApiResponse<T> {
 
 export type UserRole = 'SuperAdmin' | 'Dispatcher' | 'Specialist' | 'Citizen';
 
+export type PetitionStatus = 'Submitted' | 'Assigned' | 'Investigating' | 'Resolved' | 'Rejected' | 'Closed';
+
 export interface UserInfo {
   id: string;
   username: string;
@@ -195,6 +197,7 @@ export interface AdminPetitionItem {
   priorityLevel: number;
   priorityName: string;
   departmentName?: string;
+  departmentId?: string;
   assignedUserName?: string;
   citizenName?: string;
   citizenPhone?: string;

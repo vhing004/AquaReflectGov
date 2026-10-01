@@ -135,7 +135,7 @@ export const App: React.FC = () => {
               <Route
                 path="/admin/gis-map"
                 element={
-                  <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher', 'Specialist']}>
+                  <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher']}>
                     <AdminGisMapPage />
                   </ProtectedRoute>
                 }

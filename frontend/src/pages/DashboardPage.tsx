@@ -20,19 +20,28 @@ import { TrendAreaChart } from '../components/dashboard/TrendAreaChart';
 import { CategoryPieChart } from '../components/dashboard/CategoryPieChart';
 import { DepartmentPerformanceTable } from '../components/dashboard/DepartmentPerformanceTable';
 import { SatisfactionWidget } from '../components/dashboard/SatisfactionWidget';
+import { hasRole, PERMISSIONS } from '../utils/permissions';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
   const [days, setDays] = useState<number>(30);
-  const [selectedDeptId, setSelectedDeptId] = useState<string>('');
+  const isSpecialist = user?.role === 'Specialist';
+  const canViewGis = hasRole(user?.role, PERMISSIONS.GIS_COMMAND_CENTER);
+  const canViewAllDepts = hasRole(user?.role, PERMISSIONS.DASHBOARD_FULL);
+
+  const [selectedDeptId, setSelectedDeptId] = useState<string>(
+    isSpecialist && user?.departmentId ? user.departmentId : ''
+  );
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+
+  const effectiveDeptId = isSpecialist ? (user?.departmentId || '') : selectedDeptId;
 
   const handleExportExcel = async () => {
     setExportingExcel(true);
     try {
       await reportsApi.exportPetitionsExcel(
-        selectedDeptId ? { departmentId: selectedDeptId } : undefined
+        effectiveDeptId ? { departmentId: effectiveDeptId } : undefined
       );
     } finally {
       setExportingExcel(false);
@@ -42,7 +51,7 @@ export const DashboardPage: React.FC = () => {
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
-      await reportsApi.exportKpiPdf(days, selectedDeptId || undefined);
+      await reportsApi.exportKpiPdf(days, effectiveDeptId || undefined);
     } finally {
       setExportingPdf(false);
     }
@@ -62,8 +71,8 @@ export const DashboardPage: React.FC = () => {
     isFetching, 
     refetch 
   } = useQuery({
-    queryKey: ['dashboard-kpi', days, selectedDeptId],
-    queryFn: () => dashboardApi.getKpiReport(days, selectedDeptId),
+    queryKey: ['dashboard-kpi', days, effectiveDeptId],
+    queryFn: () => dashboardApi.getKpiReport(days, effectiveDeptId || undefined),
   });
 
   const report = reportRes?.data;
@@ -87,34 +96,40 @@ export const DashboardPage: React.FC = () => {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-                Trung Tâm Chỉ Huy & Giám Sát Điều Hành KPI
+                {isSpecialist
+                  ? `Báo Cáo Hiệu Suất Thụ Lý — ${user?.departmentName || 'Phòng Ban'}`
+                  : 'Trung Tâm Chỉ Huy & Giám Sát Điều Hành KPI'}
               </h1>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                {user?.roleName || 'Điều Phối Viên'}
+                {user?.roleName || 'Cán Bộ'}
               </span>
             </div>
             <p className="text-xs text-sky-100 mt-1">
-              Hệ thống giám sát chỉ số cam kết SLA và mức độ hài lòng dịch vụ công thủy sản tỉnh Cà Mau
+              {isSpecialist
+                ? 'Theo dõi chỉ số giải quyết hồ sơ và mức độ hài lòng của công dân đối với phòng ban phụ trách'
+                : 'Hệ thống giám sát chỉ số cam kết SLA và mức độ hài lòng dịch vụ công thủy sản tỉnh Cà Mau'}
             </p>
           </div>
         </div>
 
         {/* Quick Navigation Shortcuts */}
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <Link
-            to="/admin/gis-map"
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 text-white backdrop-blur-xs transition-all border border-white/20 hover:scale-[1.02]"
-          >
-            <Compass className="w-4 h-4 text-cyan-300" />
-            <span>Bản Đồ Số GIS</span>
-          </Link>
+          {canViewGis && (
+            <Link
+              to="/admin/gis-map"
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 text-white backdrop-blur-xs transition-all border border-white/20 hover:scale-[1.02]"
+            >
+              <Compass className="w-4 h-4 text-cyan-300" />
+              <span>Bản Đồ Số GIS</span>
+            </Link>
+          )}
 
           <Link
             to="/admin/petitions"
             className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-[#006194] hover:bg-sky-50 shadow-md transition-all hover:scale-[1.02]"
           >
             <Layers className="w-4 h-4" />
-            <span>Bảng Điều Phối Kanban</span>
+            <span>Hồ Sơ Nghiệp Vụ</span>
           </Link>
         </div>
       </div>
@@ -141,38 +156,45 @@ export const DashboardPage: React.FC = () => {
 
         {/* Department Filter & Refresh Button */}
         <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-            <Building2 className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={selectedDeptId}
-              onChange={(e) => setSelectedDeptId(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-            >
-              <option value="">Tất cả phòng ban ({departments.length})</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-          </div>
+          {canViewAllDepts ? (
+            <div className="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={selectedDeptId}
+                onChange={(e) => setSelectedDeptId(e.target.value)}
+                className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+              >
+                <option value="">Tất cả phòng ban ({departments.length})</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-1.5 bg-sky-50 px-3 py-1.5 rounded-xl border border-sky-200 text-sky-800 text-xs font-bold">
+              <Building2 className="w-3.5 h-3.5 text-sky-600" />
+              <span>{user?.departmentName || 'Phòng ban chuyên môn'}</span>
+            </div>
+          )}
 
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all disabled:opacity-60 shadow-xs"
-            title="Xuất danh sách phản ánh ra Excel"
+            title={isSpecialist ? "Xuất danh sách phản ánh phòng ban ra Excel" : "Xuất danh sách phản ánh ra Excel"}
           >
             <FileSpreadsheet className={`w-3.5 h-3.5 ${exportingExcel ? 'animate-pulse' : ''}`} />
-            <span>{exportingExcel ? 'Đang xuất...' : 'Xuất Excel'}</span>
+            <span>{exportingExcel ? 'Đang xuất...' : (isSpecialist ? 'Xuất Excel Phòng Ban' : 'Xuất Excel')}</span>
           </button>
 
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf}
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-all disabled:opacity-60 shadow-xs"
-            title="Xuất báo cáo KPI ra PDF"
+            title={isSpecialist ? "Xuất báo cáo KPI phòng ban ra PDF" : "Xuất báo cáo KPI ra PDF"}
           >
             <FileText className={`w-3.5 h-3.5 ${exportingPdf ? 'animate-pulse' : ''}`} />
-            <span>{exportingPdf ? 'Đang xuất...' : 'Xuất PDF KPI'}</span>
+            <span>{exportingPdf ? 'Đang xuất...' : (isSpecialist ? 'Xuất PDF Phòng Ban' : 'Xuất PDF KPI')}</span>
           </button>
 
           <button

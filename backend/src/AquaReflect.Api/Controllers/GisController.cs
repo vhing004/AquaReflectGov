@@ -4,6 +4,7 @@ using AquaReflect.Application.Features.Gis.Queries.GetHeatmapData;
 using AquaReflect.Application.Features.Gis.Queries.GetPetitionsByRadius;
 using AquaReflect.Application.Features.Gis.Queries.GetPetitionsGeoJson;
 using AquaReflect.Application.Features.Gis.Queries.GetSpatialSummary;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AquaReflect.Api.Controllers;
@@ -35,13 +36,17 @@ public class GisController : BaseApiController
 
     /// <summary>
     /// Tìm kiếm và đo khoảng cách các điểm phản ánh lân cận theo bán kính không gian (Spatial Proximity Query)
+    /// Chỉ dành cho Cán bộ Lãnh đạo và Điều phối (SuperAdmin, Dispatcher)
     /// </summary>
     /// <param name="query">Tọa độ tâm (centerLat, centerLng), bán kính (radiusKm) và bộ lọc nghiệp vụ</param>
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Danh sách phản ánh trong bán kính kèm khoảng cách km chính xác</returns>
+    [Authorize(Roles = "SuperAdmin,Dispatcher")]
     [HttpGet("petitions-radius")]
     [ProducesResponseType(typeof(ApiResponse<SpatialRadiusResultDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ApiResponse<SpatialRadiusResultDto>>> GetPetitionsByRadius(
         [FromQuery] GetPetitionsByRadiusQuery query,
         CancellationToken cancellationToken)
@@ -74,12 +79,16 @@ public class GisController : BaseApiController
 
     /// <summary>
     /// Báo cáo tổng hợp số liệu không gian theo địa bàn hành chính (Huyện/Thị xã Cà Mau) và chuyên mục
+    /// Chỉ dành cho Cán bộ Lãnh đạo và Điều phối (SuperAdmin, Dispatcher)
     /// </summary>
     /// <param name="query">Khoảng thời gian thống kê</param>
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Thống kê mật độ phản ánh theo từng địa bàn và tỷ lệ chuyên mục</returns>
+    [Authorize(Roles = "SuperAdmin,Dispatcher")]
     [HttpGet("spatial-summary")]
     [ProducesResponseType(typeof(ApiResponse<SpatialSummaryResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ApiResponse<SpatialSummaryResultDto>>> GetSpatialSummary(
         [FromQuery] GetSpatialSummaryQuery query,
         CancellationToken cancellationToken)

@@ -45,11 +45,11 @@ public class AddPetitionCommentCommandHandler : IRequestHandler<AddPetitionComme
             throw new NotFoundException($"Không tìm thấy hồ sơ phản ánh với ID: {request.PetitionId}");
 
         // 3. Specialist chỉ thêm ghi chú vào hồ sơ thuộc phòng ban mình
-        if (role == UserRole.Specialist && _currentUser.DepartmentId.HasValue && petition.DepartmentId.HasValue)
+        if (role == UserRole.Specialist)
         {
-            if (petition.DepartmentId != _currentUser.DepartmentId)
+            if (!_currentUser.DepartmentId.HasValue || petition.DepartmentId != _currentUser.DepartmentId)
             {
-                throw new ForbiddenException("Bạn không thể thêm ghi chú cho hồ sơ thuộc phòng ban khác.");
+                throw new ForbiddenException("Bạn không thể thêm ghi chú cho hồ sơ không thuộc phạm vi quản lý của phòng ban mình.");
             }
         }
 

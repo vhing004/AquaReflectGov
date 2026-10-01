@@ -40,4 +40,24 @@ public class GisControllerTests : IClassFixture<CustomWebApplicationFactory<Prog
         var json = await response.Content.ReadAsStringAsync();
         json.Should().Contain("\"rawArray\":");
     }
+
+    [Fact]
+    public async Task GetPetitionsByRadius_WithoutAuth_ShouldReturn401Unauthorized()
+    {
+        // Act - Chưa đăng nhập cố truy cập endpoint bán kính không gian
+        var response = await _client.GetAsync("/api/v1/gis/petitions-radius?centerLat=9.176&centerLng=105.15&radiusKm=5");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetSpatialSummary_WithoutAuth_ShouldReturn401Unauthorized()
+    {
+        // Act - Chưa đăng nhập cố truy cập endpoint tổng hợp không gian
+        var response = await _client.GetAsync("/api/v1/gis/spatial-summary");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
 }

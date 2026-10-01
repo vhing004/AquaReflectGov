@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { AdminPetitionItem } from '../../types';
+import { useAuthStore } from '../../store/useAuthStore';
+import { canAccessPetition } from '../../utils/permissions';
 import {
   Clock,
   AlertTriangle,
@@ -100,8 +102,23 @@ const renderPriorityDot = (priority: number) => {
 };
 
 export const KanbanCard: React.FC<KanbanCardProps> = ({ item, onTransition, onViewDetail }) => {
+  const { user } = useAuthStore();
   const slaRing = getSlaRing(item);
   const isCompleted = item.status >= 4;
+
+  const canTransition = (() => {
+    if (item.status === 6) return false;
+    if (!user) return false;
+    if (user.role === 'SuperAdmin') return true;
+    if (user.role === 'Dispatcher') {
+      return item.status === 1 || item.status === 2 || item.status === 3 || item.status === 4 || item.status === 5;
+    }
+    if (user.role === 'Specialist') {
+      const isSameDept = canAccessPetition(user.role, user.departmentId, item.departmentId);
+      return (item.status === 2 || item.status === 3) && isSameDept;
+    }
+    return false;
+  })();
 
   return (
     <div
@@ -224,7 +241,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ item, onTransition, onVi
             >
               <Eye className="w-3.5 h-3.5" />
             </button>
-            {item.status !== 6 && (
+            {canTransition && (
               <button
                 onClick={() => onTransition(item)}
                 className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 hover:text-indigo-800 transition-colors"

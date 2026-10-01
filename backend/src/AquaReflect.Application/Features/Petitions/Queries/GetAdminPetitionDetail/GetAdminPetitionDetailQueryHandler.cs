@@ -52,12 +52,12 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
         if (petition == null)
             throw new NotFoundException($"Không tìm thấy hồ sơ phản ánh với mã định danh: {request.Id}");
 
-        // 3. Specialist chỉ được xem hồ sơ thuộc phòng ban phụ trách (nếu hồ sơ đã phân phòng ban)
-        if (role == UserRole.Specialist && _currentUser.DepartmentId.HasValue && petition.DepartmentId.HasValue)
+        // 3. Specialist chỉ được xem hồ sơ thuộc phòng ban phụ trách
+        if (role == UserRole.Specialist)
         {
-            if (petition.DepartmentId != _currentUser.DepartmentId)
+            if (!_currentUser.DepartmentId.HasValue || petition.DepartmentId != _currentUser.DepartmentId)
             {
-                throw new ForbiddenException("Bạn không có quyền truy cập hồ sơ thuộc phòng ban khác.");
+                throw new ForbiddenException("Bạn không có quyền truy cập hồ sơ này. Hồ sơ chưa được chuyển hoặc không thuộc phạm vi quản lý của phòng ban bạn.");
             }
         }
 

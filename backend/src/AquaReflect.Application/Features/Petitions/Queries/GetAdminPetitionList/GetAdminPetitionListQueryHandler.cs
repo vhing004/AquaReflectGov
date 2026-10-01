@@ -45,9 +45,16 @@ public class GetAdminPetitionListQueryHandler
             .AsNoTracking();
 
         // --- Specialist chỉ thấy hồ sơ của phòng ban mình ---
-        if (role == UserRole.Specialist && _currentUser.DepartmentId.HasValue)
+        if (role == UserRole.Specialist)
         {
-            query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
+            if (_currentUser.DepartmentId.HasValue)
+            {
+                query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
+            }
+            else
+            {
+                query = query.Where(p => false);
+            }
         }
 
         // --- Áp dụng bộ lọc ---
@@ -146,6 +153,7 @@ public class GetAdminPetitionListQueryHandler
                 StatusName = GetStatusDisplayName(p.Status),
                 PriorityLevel = (int)p.PriorityLevel,
                 PriorityName = GetPriorityDisplayName(p.PriorityLevel),
+                DepartmentId = p.DepartmentId,
                 DepartmentName = p.Department?.Name ?? "Chưa phân công",
                 AssignedUserName = p.AssignedUser?.FullName,
                 CitizenName = p.IsAnonymous ? "Ẩn danh" : p.CitizenName,

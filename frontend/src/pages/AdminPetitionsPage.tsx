@@ -38,9 +38,24 @@ import {
 } from 'lucide-react';
 import { TransitionStatusModal } from '../components/admin/TransitionStatusModal';
 import { KanbanBoard } from '../components/admin/KanbanBoard';
+import { canAccessPetition } from '../utils/permissions';
 
 export const AdminPetitionsPage: React.FC = () => {
   const { user } = useAuthStore();
+
+  const canTransitionItem = (item: AdminPetitionItem) => {
+    if (item.status === 6) return false;
+    if (!user) return false;
+    if (user.role === 'SuperAdmin') return true;
+    if (user.role === 'Dispatcher') {
+      return item.status === 1 || item.status === 2 || item.status === 3 || item.status === 4 || item.status === 5;
+    }
+    if (user.role === 'Specialist') {
+      const isSameDept = canAccessPetition(user.role, user.departmentId, item.departmentId);
+      return (item.status === 2 || item.status === 3) && isSameDept;
+    }
+    return false;
+  };
 
   // Filter state
   const [keyword, setKeyword] = useState('');
@@ -549,15 +564,25 @@ export const AdminPetitionsPage: React.FC = () => {
                     setDepartmentFilter(e.target.value || undefined);
                     setPageNumber(1);
                   }}
-                  disabled={user?.role === 'Specialist' && !!user.departmentId}
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100 bg-slate-50/50 focus:bg-white transition-all disabled:bg-slate-100 disabled:text-slate-500"
+                  disabled={user?.role === 'Specialist'}
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100 bg-slate-50/50 focus:bg-white transition-all disabled:bg-slate-100 disabled:text-slate-600 disabled:font-semibold"
                 >
-                  <option value="">Tất cả phòng ban</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </option>
-                  ))}
+                  {user?.role === 'Specialist' ? (
+                    departments.filter((d) => d.id === user.departmentId).map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="">Tất cả phòng ban</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </>
+                  )}
                 </select>
               </div>
             </div>
@@ -893,14 +918,15 @@ export const AdminPetitionsPage: React.FC = () => {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => setTransitionPetition(item)}
-                            disabled={item.status === 6}
-                            className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title={item.status === 6 ? 'Hồ sơ đã đóng' : 'Luân chuyển trạng thái / Phân công'}
-                          >
-                            <Layers className="w-4 h-4" />
-                          </button>
+                          {canTransitionItem(item) && (
+                            <button
+                              onClick={() => setTransitionPetition(item)}
+                              className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-100 transition-colors"
+                              title="Luân chuyển trạng thái / Phân công"
+                            >
+                              <Layers className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => setSelectedPetition(item)}
                             className="p-1.5 rounded-lg text-sky-700 hover:bg-sky-100 transition-colors"
@@ -1102,7 +1128,7 @@ export const AdminPetitionsPage: React.FC = () => {
               </button>
 
               <div className="flex items-center space-x-2">
-                {selectedPetition.status !== 6 && (
+                {canTransitionItem(selectedPetition) && (
                   <button
                     onClick={() => {
                       const target = selectedPetition;

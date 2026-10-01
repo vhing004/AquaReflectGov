@@ -58,12 +58,18 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
         if (petition == null)
             throw new NotFoundException($"Không tìm thấy hồ sơ phản ánh với ID: {request.PetitionId}");
 
-        // 3. Specialist chỉ được giải quyết hồ sơ thuộc phòng ban mình
-        if (role == UserRole.Specialist && _currentUser.DepartmentId.HasValue && petition.DepartmentId.HasValue)
+        // 3. Quy trình tuần tự: Chỉ được ban hành hoặc cập nhật kết luận khi hồ sơ đang Thẩm tra hoặc đã Giải quyết
+        if (petition.Status != PetitionStatus.Investigating && petition.Status != PetitionStatus.Resolved)
         {
-            if (petition.DepartmentId != _currentUser.DepartmentId)
+            throw new BadRequestException("Chỉ được ban hành kết luận giải quyết khi hồ sơ đang trong giai đoạn Thẩm tra (Investigating) hoặc đã Giải quyết (Resolved).");
+        }
+
+        // 4. Specialist chỉ được giải quyết hồ sơ thuộc phòng ban mình
+        if (role == UserRole.Specialist)
+        {
+            if (!_currentUser.DepartmentId.HasValue || petition.DepartmentId != _currentUser.DepartmentId)
             {
-                throw new ForbiddenException("Bạn không có quyền ban hành kết luận cho hồ sơ của phòng ban khác.");
+                throw new ForbiddenException("Bạn không có quyền ban hành kết luận cho hồ sơ này vì hồ sơ không thuộc thẩm quyền phòng ban bạn.");
             }
         }
 

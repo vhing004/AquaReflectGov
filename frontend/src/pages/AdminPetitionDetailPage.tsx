@@ -36,6 +36,7 @@ import { ResolutionModal } from '../components/admin/ResolutionModal';
 import { MediaLightbox } from '../components/admin/MediaLightbox';
 import { MiniMapViewer } from '../components/admin/MiniMapViewer';
 import type { AdminPetitionItem } from '../types';
+import { canAccessPetition } from '../utils/permissions';
 
 export const AdminPetitionDetailPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -62,6 +63,36 @@ export const AdminPetitionDetailPage: React.FC = () => {
   });
 
   const petition = response?.data;
+
+  // Tính toán quyền hạn theo State Machine và Vai trò
+  const canTransition = (() => {
+    if (!petition || petition.status === 6 || !user) return false;
+    if (user.role === 'SuperAdmin') return true;
+    if (user.role === 'Dispatcher') {
+      return petition.status >= 1 && petition.status <= 5;
+    }
+    if (user.role === 'Specialist') {
+      const isSameDept = canAccessPetition(user.role, user.departmentId, petition.departmentId);
+      return (petition.status === 2 || petition.status === 3) && isSameDept;
+    }
+    return false;
+  })();
+
+  const canResolve = (() => {
+    if (!petition || !user) return false;
+    // Tuần tự: Phải đang ở giai đoạn Thẩm tra (Investigating = 3)
+    if (petition.status !== 3) return false;
+    if (user.role === 'SuperAdmin') return true;
+    if (user.role === 'Specialist') {
+      return canAccessPetition(user.role, user.departmentId, petition.departmentId);
+    }
+    return false;
+  })();
+
+  const canReassign = (() => {
+    if (!petition || petition.status === 6 || !user) return false;
+    return user.role === 'SuperAdmin' || user.role === 'Dispatcher';
+  })();
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -234,36 +265,26 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 <span className="hidden sm:inline">In hồ sơ</span>
               </button>
 
-              <button
-                onClick={() => setIsTransitionOpen(true)}
-                disabled={petition.status === 6}
-                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white text-[#006194] hover:bg-sky-50 text-xs font-bold transition-all shadow-sm disabled:opacity-40 cursor-pointer"
-                title="Chuyển trạng thái hồ sơ theo quy trình"
-              >
-                <Layers className="w-3.5 h-3.5 text-[#006194]" />
-                <span>Luân chuyển trạng thái</span>
-              </button>
+              {canTransition && (
+                <button
+                  onClick={() => setIsTransitionOpen(true)}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white text-[#006194] hover:bg-sky-50 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  title="Chuyển trạng thái hồ sơ theo quy trình"
+                >
+                  <Layers className="w-3.5 h-3.5 text-[#006194]" />
+                  <span>Luân chuyển trạng thái</span>
+                </button>
+              )}
 
-              {petition.status !== 4 && petition.status !== 6 && (
-                (user?.role === 'Specialist' || user?.role === 'SuperAdmin') ? (
-                  <button
-                    onClick={() => setIsResolutionOpen(true)}
-                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition-all shadow-md cursor-pointer"
-                    title="Ban hành kết luận giải quyết chính thức"
-                  >
-                    <FileCheck2 className="w-3.5 h-3.5 text-slate-950" />
-                    <span>Ban hành kết luận</span>
-                  </button>
-                ) : (
-                  <button
-                    disabled
-                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 text-white/50 text-xs font-semibold cursor-not-allowed border border-white/10 opacity-70"
-                    title="Chức năng ban hành kết luận chỉ dành cho Cán bộ chuyên trách thụ lý (Specialist) hoặc Quản trị viên"
-                  >
-                    <FileCheck2 className="w-3.5 h-3.5 text-white/40" />
-                    <span>Ban hành kết luận (Specialist)</span>
-                  </button>
-                )
+              {canResolve && (
+                <button
+                  onClick={() => setIsResolutionOpen(true)}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition-all shadow-md cursor-pointer"
+                  title="Ban hành kết luận giải quyết chính thức"
+                >
+                  <FileCheck2 className="w-3.5 h-3.5 text-slate-950" />
+                  <span>Ban hành kết luận</span>
+                </button>
               )}
             </div>
           </div>
@@ -758,12 +779,14 @@ export const AdminPetitionDetailPage: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => setIsTransitionOpen(true)}
-                  className="w-full mt-2 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
-                >
-                  Điều chuyển phòng ban / Chuyên viên
-                </button>
+                {canReassign && (
+                  <button
+                    onClick={() => setIsTransitionOpen(true)}
+                    className="w-full mt-2 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Điều chuyển phòng ban / Chuyên viên
+                  </button>
+                )}
               </div>
             </div>
 

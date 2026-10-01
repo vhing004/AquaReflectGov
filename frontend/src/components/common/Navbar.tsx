@@ -19,6 +19,7 @@ import {
   Compass
 } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
+import { hasRole, PERMISSIONS } from '../../utils/permissions';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -42,6 +43,9 @@ export const Navbar: React.FC = () => {
   };
 
   const isOfficer = user && (user.role === 'SuperAdmin' || user.role === 'Dispatcher' || user.role === 'Specialist');
+  const canViewGis = hasRole(user?.role, PERMISSIONS.GIS_COMMAND_CENTER);
+  const isSpecialist = user?.role === 'Specialist';
+  const dashboardTitle = isSpecialist ? 'KPI Phòng Ban' : 'Điều Phối & Báo Cáo';
 
   const navLinks = [
     { to: '/', label: 'Trang chủ & Giám sát', icon: Waves },
@@ -176,16 +180,18 @@ export const Navbar: React.FC = () => {
                           className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50"
                         >
                           <Shield className="w-4 h-4 text-amber-600" />
-                          <span>Báo Cáo & Điều Phối</span>
+                          <span>{dashboardTitle}</span>
                         </Link>
-                        <Link
-                          to="/admin/gis-map"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"
-                        >
-                          <Compass className="w-4 h-4 text-emerald-600" />
-                          <span>Bản Đồ GIS Giám Sát</span>
-                        </Link>
+                        {canViewGis && (
+                          <Link
+                            to="/admin/gis-map"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"
+                          >
+                            <Compass className="w-4 h-4 text-emerald-600" />
+                            <span>Bản Đồ GIS Giám Sát</span>
+                          </Link>
+                        )}
                       </>
                     )}
 
@@ -272,19 +278,21 @@ export const Navbar: React.FC = () => {
                 }`}
               >
                 <Shield className="w-3.5 h-3.5 text-amber-500" />
-                <span>Điều Phối Cán Bộ</span>
+                <span>{dashboardTitle}</span>
               </Link>
-              <Link
-                to="/admin/gis-map"
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                  location.pathname === '/admin/gis-map'
-                    ? 'bg-[#006194] text-white shadow-xs'
-                    : 'text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
-                }`}
-              >
-                <Compass className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Bản Đồ GIS</span>
-              </Link>
+              {canViewGis && (
+                <Link
+                  to="/admin/gis-map"
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                    location.pathname === '/admin/gis-map'
+                      ? 'bg-[#006194] text-white shadow-xs'
+                      : 'text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
+                  }`}
+                >
+                  <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Bản Đồ GIS</span>
+                </Link>
+              )}
             </div>
           )}
         </div>
@@ -327,16 +335,18 @@ export const Navbar: React.FC = () => {
                 className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-amber-800 bg-amber-50"
               >
                 <Shield className="w-4 h-4 text-amber-600" />
-                <span>Bảng Điều Phối Cán Bộ</span>
+                <span>{dashboardTitle}</span>
               </Link>
-              <Link
-                to="/admin/gis-map"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-emerald-900 bg-emerald-50"
-              >
-                <Compass className="w-4 h-4 text-emerald-600" />
-                <span>Bản Đồ GIS Giám Sát</span>
-              </Link>
+              {canViewGis && (
+                <Link
+                  to="/admin/gis-map"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-emerald-900 bg-emerald-50"
+                >
+                  <Compass className="w-4 h-4 text-emerald-600" />
+                  <span>Bản Đồ GIS Giám Sát</span>
+                </Link>
+              )}
             </div>
           )}
         </div>

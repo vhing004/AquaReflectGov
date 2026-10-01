@@ -63,6 +63,7 @@ public class AdminPetitionListItemDto
     public int PriorityLevel { get; set; }
     public string PriorityName { get; set; } = string.Empty;
 
+    public Guid? DepartmentId { get; set; }
     public string? DepartmentName { get; set; }
     public string? AssignedUserName { get; set; }
 
