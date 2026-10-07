@@ -4,6 +4,7 @@ using AquaReflect.Application.Features.Petitions.Commands.CreatePetition;
 using AquaReflect.Application.Features.Petitions.Commands.SubmitFeedback;
 using AquaReflect.Application.Features.Petitions.DTOs;
 using AquaReflect.Application.Features.Petitions.Queries.GetPetitionsByPhone;
+using AquaReflect.Application.Features.Petitions.Queries.GetPublicResolvedPetitions;
 using AquaReflect.Application.Features.Petitions.Queries.TrackPetitionByCode;
 using AquaReflect.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,32 @@ namespace AquaReflect.Api.Controllers;
 
 public class PetitionsController : BaseApiController
 {
+    /// <summary>
+    /// Lấy danh sách hồ sơ phản ánh đã giải quyết công khai (hiển thị trên Trang chủ)
+    /// </summary>
+    /// <param name="categoryCode">Mã chuyên mục lọc (tùy chọn, ví dụ: VI_PHAM_IUU)</param>
+    /// <param name="sortBy">Sắp xếp: "latest" (mới nhất) hoặc "rating" (đánh giá cao nhất)</param>
+    /// <param name="limit">Số lượng tối đa (mặc định: 6, tối đa: 20)</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Danh sách hồ sơ đã giải quyết kèm kết luận thụ lý và đánh giá CSAT</returns>
+    [HttpGet("public-resolved")]
+    [ProducesResponseType(typeof(ApiResponse<List<PublicResolvedPetitionDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<PublicResolvedPetitionDto>>>> GetPublicResolvedPetitions(
+        [FromQuery] string? categoryCode,
+        [FromQuery] string sortBy = "latest",
+        [FromQuery] int limit = 6,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetPublicResolvedPetitionsQuery
+        {
+            CategoryCode = categoryCode,
+            SortBy = sortBy,
+            Limit = limit
+        };
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(ApiResponse<List<PublicResolvedPetitionDto>>.Ok(
+            result, $"Tìm thấy {result.Count} hồ sơ phản ánh đã giải quyết."));
+    }
     /// <summary>
     /// Tiếp nhận phản ánh kiến nghị mới từ người dân / cơ sở nuôi trồng thủy sản (Hỗ trợ kèm tệp ảnh/video thực địa)
     /// </summary>
