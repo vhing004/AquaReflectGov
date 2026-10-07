@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { masterDataApi } from '../api/masterDataApi';
+import { petitionApi } from '../api/petitionApi';
+import { ResolvedPetitionCard } from '../components/ResolvedPetitionCard';
 import { 
   Send, 
   Search, 
@@ -17,16 +19,68 @@ import {
   ShieldCheck,
   LifeBuoy,
   FileCheck2,
-  Radio
+  Radio,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  SlidersHorizontal,
 } from 'lucide-react';
 
+// Map ảnh đại diện cho từng chuyên mục
+const CATEGORY_IMAGES: Record<string, string> = {
+  O_NHIEM_NUOC: '/images/categories/water_pollution.jpg',
+  DICH_BENH: '/images/categories/aquatic_disease.jpg',
+  VI_PHAM_IUU: '/images/categories/iuu_fishing.jpg',
+  GIONG_THUC_AN: '/images/categories/seed_feed.jpg',
+  HA_TANG_CANG_CA: '/images/categories/port_infrastructure.jpg',
+  THU_TUC_HANH_CHINH: '/images/categories/admin_procedure.jpg',
+  KHAC: '/images/categories/other_fishery.jpg',
+};
+
 export const HomePage: React.FC = () => {
+  // State: Toggle mở rộng danh mục
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  // State: Tab filter cho section phản ánh đã xử lý
+  const [resolvedFilter, setResolvedFilter] = useState<string | undefined>(undefined);
+  // State: Sắp xếp phản ánh đã xử lý
+  const [resolvedSort, setResolvedSort] = useState<'latest' | 'rating'>('latest');
+
+  // Ref: Cuộn mượt đến section phản ánh đã xử lý
+  const resolvedSectionRef = useRef<HTMLDivElement>(null);
+  // Ref: Slider tab filter danh mục
+  const tabsSliderRef = useRef<HTMLDivElement>(null);
+
+  const scrollTabsLeft = () => {
+    if (tabsSliderRef.current) {
+      tabsSliderRef.current.scrollBy({ left: -260, behavior: 'smooth' });
+    }
+  };
+
+  const scrollTabsRight = () => {
+    if (tabsSliderRef.current) {
+      tabsSliderRef.current.scrollBy({ left: 260, behavior: 'smooth' });
+    }
+  };
+
+  // Fetch danh mục
   const { data: categoriesRes, isLoading: loadingCategories } = useQuery({
     queryKey: ['activeCategories'],
     queryFn: () => masterDataApi.getCategories(),
   });
 
+  // Fetch phản ánh đã giải quyết
+  const { data: resolvedRes, isLoading: loadingResolved } = useQuery({
+    queryKey: ['publicResolvedPetitions', resolvedFilter, resolvedSort],
+    queryFn: () => petitionApi.getPublicResolvedPetitions(resolvedFilter, resolvedSort, 6),
+  });
+
   const categories = categoriesRes?.data || [];
+  const resolvedPetitions = resolvedRes?.data || [];
+
+  // Mặc định chỉ hiển thị 4 danh mục, mở rộng ra tất cả khi bấm toggle
+  const visibleCategories = showAllCategories ? categories : categories.slice(0, 4);
 
   const getCategoryIcon = (code: string) => {
     switch (code) {
@@ -47,9 +101,18 @@ export const HomePage: React.FC = () => {
     }
   };
 
+  // Xử lý khi bấm nút "Xem phản ánh đã xử lý" trên card danh mục
+  const handleViewResolved = (categoryCode: string) => {
+    setResolvedFilter(categoryCode);
+    // Cuộn mượt đến section phản ánh đã xử lý
+    setTimeout(() => {
+      resolvedSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   return (
     <div className="space-y-10 pb-16">
-      {/* 1. TOP ANNOUNCEMENT STRIP (Theo mẫu Stitch Design 1) */}
+      {/* 1. TOP ANNOUNCEMENT STRIP */}
       <section className="bg-gradient-to-r from-sky-100 via-white to-teal-50 border-b border-sky-100 py-3 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center space-x-2.5">
@@ -71,7 +134,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. HERO BANNER (Đậm chất đại dương & Dịch vụ công biển đảo) */}
+      {/* 2. HERO BANNER */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-tr from-[#003c5c] via-[#006194] to-[#0284c7] text-white p-8 sm:p-12 lg:p-16 shadow-xl border border-sky-700/40">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]"></div>
@@ -112,7 +175,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. REALTIME STATS / KPI CARDS (Theo mẫu Stitch Dashboard) */}
+      {/* 3. REALTIME STATS / KPI CARDS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
@@ -161,7 +224,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. CHUYÊN MỤC DỊCH VỤ CÔNG THỦY SẢN (Kết nối trực tiếp API Backend .NET 9) */}
+      {/* 4. DANH MỤC CHUYÊN NGÀNH (4 mặc định + toggle xem tất cả) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-slate-200 pb-4">
           <div>
@@ -185,52 +248,216 @@ export const HomePage: React.FC = () => {
         </div>
 
         {loadingCategories ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="p-6 rounded-2xl bg-white border border-slate-200 animate-pulse h-40"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="rounded-2xl bg-white border border-slate-200 animate-pulse h-56"></div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                className="group p-6 rounded-2xl bg-white border border-slate-200/80 hover:border-sky-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      {getCategoryIcon(cat.code)}
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              {visibleCategories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="group rounded-2xl bg-white border border-slate-200/80 hover:border-sky-300 shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between"
+                >
+                  <div>
+                    {/* Ảnh đại diện chuyên ngành */}
+                    <div className="relative h-36 overflow-hidden">
+                    <img
+                      src={CATEGORY_IMAGES[cat.code] || CATEGORY_IMAGES['KHAC']}
+                      alt={cat.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                    
+                    {/* Overlay: Icon + SLA */}
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                        {getCategoryIcon(cat.code)}
+                      </div>
                     </div>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-[#006194] border border-sky-200">
-                      SLA: {cat.defaultSlaHours}h
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-[#006194] transition-colors leading-snug">
-                    {cat.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-2 line-clamp-3 leading-relaxed">
-                    {cat.description}
-                  </p>
-                </div>
+                    <div className="absolute top-3 right-3">
+                      <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#006194] shadow-sm">
+                        SLA: {cat.defaultSlaHours}h
+                      </span>
+                    </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400 font-mono">#{cat.code}</span>
-                  <Link
-                    to={`/submit?category=${cat.code}`}
-                    className="inline-flex items-center space-x-1 text-xs font-bold text-[#006194] group-hover:translate-x-1 transition-transform"
-                  >
-                    <span>Phản ánh ngay</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                    {/* Tên danh mục trên ảnh */}
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <h3 className="font-bold text-white text-sm leading-snug drop-shadow-md">
+                        {cat.name}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Nội dung bên dưới ảnh */}
+                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
+                      {cat.description}
+                    </p>
+                  </div>
+
+                  <div className="p-4 pt-0">
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                      {/* Nút: Xem phản ánh đã xử lý */}
+                      <button
+                        onClick={() => handleViewResolved(cat.code)}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Đã xử lý</span>
+                      </button>
+
+                      {/* Nút: Phản ánh ngay */}
+                      <Link
+                        to={`/submit?category=${cat.code}`}
+                        className="inline-flex items-center space-x-1 text-xs font-bold text-[#006194] group-hover:translate-x-1 transition-transform"
+                      >
+                        <span>Phản ánh ngay</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Nút toggle xem tất cả / thu gọn danh mục */}
+            {categories.length > 4 && (
+              <div className="flex justify-center pt-2">
+                <button
+                  onClick={() => setShowAllCategories(!showAllCategories)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                >
+                  {showAllCategories ? (
+                    <>
+                      <ChevronUp className="w-4 h-4" />
+                      <span>Thu gọn danh mục</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      <span>Xem tất cả danh mục ({categories.length})</span>
+                    </>
+                  )}
+                </button>
               </div>
+            )}
+          </>
+        )}
+      </section>
+
+      {/* 5. SECTION: HỒ SƠ PHẢN ÁNH ĐÃ GIẢI QUYẾT & CÔNG KHAI */}
+      <section ref={resolvedSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200 pb-4">
+          <div>
+            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+              Minh bạch & Công khai
+            </span>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              Hồ Sơ Phản Ánh Đã Giải Quyết Thành Công
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Văn bản kết luận chính thức, thời gian thụ lý thực tế và đánh giá mức độ hài lòng từ người dân.
+            </p>
+          </div>
+
+          {/* Bộ lọc sắp xếp */}
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={resolvedSort}
+              onChange={(e) => setResolvedSort(e.target.value as 'latest' | 'rating')}
+              className="text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-300"
+            >
+              <option value="latest">Mới giải quyết nhất</option>
+              <option value="rating">Đánh giá hài lòng nhất</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Tabs lọc theo chuyên mục (Slider cuộn ngang hiển thị đầy đủ tên chữ) */}
+        <div className="relative flex items-center group">
+          {/* Nút cuộn trái */}
+          <button
+            onClick={scrollTabsLeft}
+            className="hidden sm:flex shrink-0 w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md text-slate-600 hover:bg-slate-50 items-center justify-center -ml-3 z-10 cursor-pointer transition-transform hover:scale-110 active:scale-95"
+            title="Cuộn sang trái"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Slider Container */}
+          <div
+            ref={tabsSliderRef}
+            className="flex-1 flex items-center gap-2 overflow-x-auto py-2 px-1 scroll-smooth no-scrollbar scrollbar-none"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            <button
+              onClick={() => setResolvedFilter(undefined)}
+              className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                !resolvedFilter
+                  ? 'bg-[#006194] text-white shadow-md scale-[1.02]'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Tất cả chuyên mục
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setResolvedFilter(cat.code)}
+                className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  resolvedFilter === cat.code
+                    ? 'bg-[#006194] text-white shadow-md scale-[1.02]'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Nút cuộn phải */}
+          <button
+            onClick={scrollTabsRight}
+            className="hidden sm:flex shrink-0 w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md text-slate-600 hover:bg-slate-50 items-center justify-center -mr-3 z-10 cursor-pointer transition-transform hover:scale-110 active:scale-95"
+            title="Cuộn sang phải"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Grid các Card phản ánh đã giải quyết */}
+        {loadingResolved ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="rounded-2xl bg-white border border-slate-200 animate-pulse h-72"></div>
+            ))}
+          </div>
+        ) : resolvedPetitions.length === 0 ? (
+          <div className="text-center py-16 rounded-2xl bg-slate-50 border border-slate-200/80">
+            <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-slate-500">
+              {resolvedFilter
+                ? 'Chưa có hồ sơ nào được giải quyết trong danh mục này'
+                : 'Chưa có hồ sơ phản ánh nào đã được giải quyết'}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Dữ liệu sẽ được cập nhật khi có hồ sơ hoàn tất thụ lý.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {resolvedPetitions.map((p) => (
+              <ResolvedPetitionCard key={p.id} petition={p} />
             ))}
           </div>
         )}
       </section>
 
-      {/* 5. QUY TRÌNH 4 BƯỚC GIẢI QUYẾT MINH BẠCH (Theo chuẩn Stitch Design 1) */}
+      {/* 6. QUY TRÌNH 4 BƯỚC GIẢI QUYẾT MINH BẠCH */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -287,7 +514,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 6. CALL TO ACTION / HOTLINE CỨU HỘ BIỂN */}
+      {/* 7. CALL TO ACTION / HOTLINE CỨU HỘ BIỂN */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="rounded-3xl bg-slate-900 text-white p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800 shadow-lg">
           <div className="space-y-2">
