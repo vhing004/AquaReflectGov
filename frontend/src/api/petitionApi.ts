@@ -5,7 +5,8 @@ import type {
   CreatePetitionResult, 
   PetitionTrackingDetail, 
   PetitionSummary,
-  SubmitFeedbackResult
+  SubmitFeedbackResult,
+  PublicResolvedPetition
 } from '../types';
 
 export const petitionApi = {
@@ -47,6 +48,24 @@ export const petitionApi = {
     const res = await axiosClient.post<ApiResponse<SubmitFeedbackResult>>(
       `/petitions/${encodeURIComponent(trackingCode.trim())}/feedback`,
       { rating, comment }
+    );
+    return res.data;
+  },
+
+  getPublicResolvedPetitions: async (
+    categoryCode?: string,
+    sortBy: string = 'latest',
+    limit: number = 6
+  ): Promise<ApiResponse<PublicResolvedPetition[]>> => {
+    const res = await axiosClient.get<ApiResponse<PublicResolvedPetition[]>>(
+      '/petitions/public-resolved',
+      {
+        params: {
+          ...(categoryCode ? { categoryCode } : {}),
+          sortBy,
+          limit,
+        },
+      }
     );
     return res.data;
   },

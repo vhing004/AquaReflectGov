@@ -167,6 +167,30 @@ export interface PetitionSummary {
   departmentName?: string;
 }
 
+export interface PublicResolvedPetition {
+  id: string;
+  trackingCode: string;
+  title: string;
+  categoryName: string;
+  categoryCode: string;
+  statusName: string;
+  addressText: string;
+  administrativeUnitName?: string;
+  departmentName?: string;
+  createdAt: string;
+  resolvedAt?: string;
+  defaultSlaHours: number;
+  actualProcessingHours?: number;
+  slaMarginHours?: number;
+  isAheadOfSla: boolean;
+  thumbnailUrl?: string;
+  resolutionSummary?: string;
+  resolutionDocumentNumber?: string;
+  hasFeedback: boolean;
+  feedbackRating?: number;
+  feedbackComment?: string;
+}
+
 export interface SubmitFeedbackResult {
   feedbackId: string;
   trackingCode: string;
