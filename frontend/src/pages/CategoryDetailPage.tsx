@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { masterDataApi } from '../api/masterDataApi';
+import { LegalDocumentModal } from '../components/LegalDocumentModal';
+import { LEGAL_DOCUMENTS } from '../data/legalDocumentsData';
 import {
   Fish,
   Droplets,
@@ -20,6 +22,7 @@ import {
   HelpCircle,
   PhoneCall,
   Scale,
+  ExternalLink,
 } from 'lucide-react';
 
 // Map ảnh banner chất lượng cao cho từng chuyên ngành
@@ -259,6 +262,15 @@ export const CategoryDetailPage: React.FC = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
 
+  // State: Modal xem văn bản quy phạm pháp luật
+  const [selectedDocCode, setSelectedDocCode] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenDocument = (docCode: string) => {
+    setSelectedDocCode(docCode);
+    setIsModalOpen(true);
+  };
+
   // Fetch thông tin danh mục từ API
   const { data: categoriesRes, isLoading } = useQuery({
     queryKey: ['activeCategories'],
@@ -455,14 +467,29 @@ export const CategoryDetailPage: React.FC = () => {
 
             <div className="space-y-3">
               {detailInfo.regulations.map((reg, idx) => (
-                <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-slate-900">{reg.title}</h3>
-                    <span className="text-[10px] font-mono font-bold text-[#006194] px-2 py-0.5 rounded-md bg-sky-50">
+                <div
+                  key={idx}
+                  onClick={() => handleOpenDocument(reg.code)}
+                  className="group p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-sky-400 hover:bg-sky-50/50 shadow-2xs transition-all cursor-pointer space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-xs font-bold text-slate-900 group-hover:text-[#006194] transition-colors flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[#006194] shrink-0" />
+                      <span>{reg.title}</span>
+                    </h3>
+                    <span className="text-[10px] font-mono font-bold text-[#006194] px-2.5 py-1 rounded-lg bg-sky-100 group-hover:bg-[#006194] group-hover:text-white transition-colors shrink-0">
                       {reg.code}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed pt-1">{reg.desc}</p>
+
+                  <p className="text-xs text-slate-600 leading-relaxed pl-6">{reg.desc}</p>
+
+                  <div className="pt-2 flex items-center justify-end border-t border-slate-200/50">
+                    <span className="text-[11px] font-bold text-[#006194] group-hover:underline inline-flex items-center gap-1">
+                      <span>Xem toàn văn bản quy định</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -548,6 +575,13 @@ export const CategoryDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* MODAL XEM TOÀN VĂN BẢN QUY PHẠM PHÁP LUẬT */}
+      <LegalDocumentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        document={selectedDocCode ? LEGAL_DOCUMENTS[selectedDocCode] || null : null}
+      />
     </div>
   );
 };

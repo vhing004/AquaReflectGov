@@ -41,6 +41,13 @@
   2. **Trang Chi Tiết Chuyên Ngành (`/categories/:code`)**: Tạo mới trang `CategoryDetailPage.tsx` tích hợp thông tin giới thiệu, quy trình 4 bước thụ lý, văn bản pháp quy căn cứ và thông tin đơn vị phụ trách.
   3. **Điều hướng Sang Trang Danh Mục (`/categories`)**: Nút "Xem tất cả danh mục & SLA" dẫn thẳng sang `/categories`. Nâng cấp `CategoriesPage.tsx` hiển thị giao diện banner đẹp đồng bộ như Trang chủ.
 
+### ✅ Task 5.4: Popup Xem Toàn Văn Bản Pháp Lý Chuẩn Việt Nam (`PLAN-20261008-legal-document-modal`)
+- **Ngày hoàn thành**: `2026-10-08`
+- **Kết quả đạt được**:
+  1. **Tập Dữ Liệu Văn Bản Pháp Quy Thực Tế (`legalDocumentsData.ts`)**: Soạn thảo toàn văn nội dung Luật Thủy sản 2017, Luật Bảo vệ Môi trường 2020, Nghị định 26/2019/NĐ-CP, Nghị định 42/2019/NĐ-CP (khung phạt IUU 1 tỷ đồng), Thông tư 04/2016/TT-BNNPTNT và các Quy chuẩn QCVN.
+  2. **Component Modal Văn Bản Chuẩn (`LegalDocumentModal.tsx`)**: Trình bày theo thể thức văn bản hành chính nhà nước Việt Nam (Quốc hiệu, Tiêu ngữ, Cơ quan ban hành, Số hiệu, Trích yếu, Căn cứ pháp lý, Các Chương/Điều/Khoản, Dấu đỏ công vụ & Chữ ký thẩm quyền ban hành).
+  3. **Tích hợp Tương tác**: Nhấp vào bất kỳ văn bản căn cứ nào trên trang chi tiết chuyên ngành để bật Popup Modal xem toàn văn mượt mà, hỗ trợ in văn bản và tải bản lưu PDF.
+
 ---
 
 ## 🚀 Hướng Phát Triển Nâng Cao (Đề Xuất Phân Tích)
