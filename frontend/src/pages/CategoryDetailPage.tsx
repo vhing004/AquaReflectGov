@@ -24,6 +24,7 @@ import {
   Scale,
   ExternalLink,
   Eye,
+  ChevronRight,
 } from 'lucide-react';
 
 // Map ảnh banner chất lượng cao cho từng chuyên ngành
@@ -556,11 +557,20 @@ export const CategoryDetailPage: React.FC = () => {
           </div>
 
           {/* Các Chuyên Ngành Khác */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-3">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Các Chuyên Ngành Liên Quan
-            </h3>
-            <div className="space-y-2">
+          <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Các Chuyên Ngành Liên Quan
+              </h3>
+              <Link
+                to="/categories"
+                className="text-[11px] font-bold text-[#006194] hover:underline"
+              >
+                Xem tất cả
+              </Link>
+            </div>
+
+            <div className="space-y-2.5">
               {categories
                 .filter((c) => c.code !== currentCategory.code)
                 .slice(0, 5)
@@ -568,10 +578,25 @@ export const CategoryDetailPage: React.FC = () => {
                   <Link
                     key={cat.id}
                     to={`/categories/${cat.code}`}
-                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-xs font-semibold text-slate-700 transition-colors"
+                    className="group flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-sky-50 border border-slate-100 hover:border-sky-200 transition-all duration-200 shadow-2xs hover:shadow-xs"
                   >
-                    <span className="truncate max-w-[200px]">{cat.name}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">SLA {cat.defaultSlaHours}h</span>
+                    <div className="flex items-center space-x-3 truncate mr-2">
+                      <div className="w-8.5 h-8.5 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                        {getCategoryIcon(cat.code)}
+                      </div>
+                      <div className="truncate">
+                        <h4 className="text-xs font-bold text-slate-800 group-hover:text-[#006194] transition-colors truncate">
+                          {cat.name}
+                        </h4>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          Cam kết: {cat.defaultSlaHours}h SLA
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-6 h-6 rounded-full bg-white group-hover:bg-[#006194] text-slate-400 group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
                   </Link>
                 ))}
             </div>
