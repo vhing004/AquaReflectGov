@@ -179,7 +179,7 @@ const CATEGORY_DETAILS: Record<string, CategoryDetailInfo> = {
     scope: [
       'Luồng lạch cửa biển bị bồi lấp cát gây mắc cạn, hư hỏng chân vịt tàu cá khi ra vào.',
       'Hạ tầng cầu cảng, bờ kè bị nứt gãy, sạt lở nguy hiểm cho tàu thuyền neo buộc.',
-       me: 'Hệ thống cung cấp điện, nước ngọt, đá lạnh tại cảng cá bị gián đoạn hoặc thu phí sai quy định.',
+      'Hệ thống cung cấp điện, nước ngọt, đá lạnh tại cảng cá bị gián đoạn hoặc thu phí sai quy định.',
       'Tình trạng vứt rác thải, dầu thải bẩn trực tiếp xuống lòng vũng neo đậu tàu cá.',
     ],
     regulations: [
