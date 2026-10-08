@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { X, Printer, Download, FileText, CheckCircle2, Shield, Stamp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Printer, Download, FileText, CheckCircle2, Shield } from 'lucide-react';
 import type { LegalDocument } from '../data/legalDocumentsData';
 
 interface LegalDocumentModalProps {
@@ -13,39 +13,53 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
   onClose,
   document,
 }) => {
+  const [isRendered, setIsRendered] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Xử lý hiệu ứng mở/đóng mượt mượt (Smooth Fade-in / Scale-up & Fade-out / Scale-down)
+  useEffect(() => {
+    if (isOpen) {
+      setIsRendered(true);
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 20);
+      window.document.body.style.overflow = 'hidden';
+      return () => clearTimeout(timer);
+    } else {
+      setIsVisible(false);
+      const timer = setTimeout(() => {
+        setIsRendered(false);
+      }, 250);
+      window.document.body.style.overflow = 'unset';
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   // Đóng modal khi nhấn phím ESC
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
       }
     };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      documentUIBlockScroll(true);
-    }
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      documentUIBlockScroll(false);
-    };
-  }, [isOpen, onClose]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
-  const documentUIBlockScroll = (block: boolean) => {
-    if (block) {
-      window.document.body.style.overflow = 'hidden';
-    } else {
-      window.document.body.style.overflow = 'unset';
-    }
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      onClose();
+    }, 250);
   };
 
-  if (!isOpen || !document) return null;
+  if (!isRendered || !document) return null;
 
   const handlePrint = () => {
     window.print();
   };
 
   const handleDownload = () => {
-    // Giả lập tải xuống bản lưu PDF văn bản quy phạm pháp luật
     const element = window.document.createElement('a');
     const file = new Blob([`${document.title}\nSố hiệu: ${document.code}\n${document.summary}`], {
       type: 'text/plain;charset=utf-8',
@@ -58,12 +72,22 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto transition-opacity duration-300 ease-out ${
+        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
+    >
       {/* Background click listener */}
-      <div className="fixed inset-0 z-0" onClick={onClose} />
+      <div className="fixed inset-0 z-0" onClick={handleClose} />
 
-      {/* Main Modal Box Container */}
-      <div className="relative z-10 w-full max-w-4xl max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden my-auto">
+      {/* Main Modal Box Container với Animation Scale & Slide */}
+      <div
+        className={`relative z-10 w-full max-w-4xl max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden my-auto transform transition-all duration-300 ${
+          isVisible
+            ? 'opacity-100 scale-100 translate-y-0 ease-out'
+            : 'opacity-0 scale-95 translate-y-4 ease-in'
+        }`}
+      >
         {/* 1. MODAL HEADER BAR */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center space-x-3">
@@ -100,7 +124,7 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
             </button>
 
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="w-8 h-8 rounded-xl bg-white/10 hover:bg-rose-600 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               title="Đóng cửa sổ"
             >
@@ -203,7 +227,7 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
           </div>
 
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition-all cursor-pointer"
           >
             Đóng Cửa Sổ
