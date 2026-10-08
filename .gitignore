@@ -8,8 +8,8 @@ obj/
 .vs/
 logs/
 *.log
-appsettings.Development.json
-!appsettings.Development.json.example
+appsettings*.json
+appsettings*.json.example
 backend/src/AquaReflect.Api/wwwroot/uploads/*
 !backend/src/AquaReflect.Api/wwwroot/uploads/.gitkeep
 
@@ -25,16 +25,35 @@ node_modules/
 dist/
 dist-ssr/
 *.local
+
+## Environment Files (Tất cả file môi trường kể cả example)
 .env
 .env.*
-!.env.example
+*.env
+*.env.example
+.env.example
+
+## Python & Script Files
+*.py
+*.pyc
+__pycache__/
+
+## Diagram / Chart / Diagram Generator Files
+*.png
+*.jpg
+*.jpeg
+*.puml
+*.plantuml
+*.drawio
+!frontend/public/images/**
+
+## Agent Rules, Documents & Plans (Tất cả thư mục docs)
+.agents/
+docs/
+PROJECT_PLAN.md
+*.md
+!README.md
 
 ## OS generated files
 .DS_Store
 Thumbs.db
-
-## Agent rules & internal plans (local only)
-.agents/
-docs/
-PROJECT_PLAN.md
-
