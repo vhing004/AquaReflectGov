@@ -23,6 +23,7 @@ import {
   PhoneCall,
   Scale,
   ExternalLink,
+  Eye,
 } from 'lucide-react';
 
 // Map ảnh banner chất lượng cao cho từng chuyên ngành
@@ -469,26 +470,28 @@ export const CategoryDetailPage: React.FC = () => {
               {detailInfo.regulations.map((reg, idx) => (
                 <div
                   key={idx}
-                  onClick={() => handleOpenDocument(reg.code)}
-                  className="group p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-sky-400 hover:bg-sky-50/50 shadow-2xs transition-all cursor-pointer space-y-2"
+                  className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 shadow-2xs space-y-2"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-xs font-bold text-slate-900 group-hover:text-[#006194] transition-colors flex items-center gap-2">
+                    <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-[#006194] shrink-0" />
                       <span>{reg.title}</span>
                     </h3>
-                    <span className="text-[10px] font-mono font-bold text-[#006194] px-2.5 py-1 rounded-lg bg-sky-100 group-hover:bg-[#006194] group-hover:text-white transition-colors shrink-0">
+                    <span className="text-[10px] font-mono font-bold text-[#006194] px-2.5 py-1 rounded-lg bg-sky-100 shrink-0">
                       {reg.code}
                     </span>
                   </div>
 
                   <p className="text-xs text-slate-600 leading-relaxed pl-6">{reg.desc}</p>
 
-                  <div className="pt-2 flex items-center justify-end border-t border-slate-200/50">
-                    <span className="text-[11px] font-bold text-[#006194] group-hover:underline inline-flex items-center gap-1">
+                  <div className="pt-2 flex items-center justify-end border-t border-slate-200/60">
+                    <button
+                      onClick={() => handleOpenDocument(reg.code)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#006194] border border-slate-200 hover:border-[#006194] text-[#006194] hover:text-white text-[11px] font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-95"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
                       <span>Xem toàn văn bản quy định</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </span>
+                    </button>
                   </div>
                 </div>
               ))}
