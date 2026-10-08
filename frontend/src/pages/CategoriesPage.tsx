@@ -2,18 +2,29 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { masterDataApi } from '../api/masterDataApi';
 import { Link } from 'react-router-dom';
-import { 
-  Fish, 
-  Droplets, 
-  AlertOctagon, 
-  Anchor, 
-  MapPin, 
-  FileText, 
-  ArrowRight, 
-  Clock, 
+import {
+  Fish,
+  Droplets,
+  AlertOctagon,
+  Anchor,
+  MapPin,
+  FileText,
+  ArrowRight,
+  Clock,
   Building2,
-  CheckCircle2
+  BookOpen,
+  Send,
 } from 'lucide-react';
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  O_NHIEM_NUOC: '/images/categories/water_pollution.jpg',
+  DICH_BENH: '/images/categories/aquatic_disease.jpg',
+  VI_PHAM_IUU: '/images/categories/iuu_fishing.jpg',
+  GIONG_THUC_AN: '/images/categories/seed_feed.jpg',
+  HA_TANG_CANG_CA: '/images/categories/port_infrastructure.jpg',
+  THU_TUC_HANH_CHINH: '/images/categories/admin_procedure.jpg',
+  KHAC: '/images/categories/other_fishery.jpg',
+};
 
 export const CategoriesPage: React.FC = () => {
   const { data: categoriesRes, isLoading } = useQuery({
@@ -23,50 +34,41 @@ export const CategoriesPage: React.FC = () => {
 
   const categories = categoriesRes?.data || [];
 
-  const getCategoryTheme = (code: string) => {
+  const getCategoryIcon = (code: string) => {
     switch (code) {
       case 'O_NHIEM_NUOC':
-        return {
-          icon: <Droplets className="w-6 h-6 text-cyan-600" />,
-          dept: 'Chi cục Thủy sản & Phòng Tài nguyên MT',
-          badgeClass: 'bg-cyan-50 text-cyan-800 border-cyan-200',
-        };
+        return <Droplets className="w-5 h-5 text-cyan-600" />;
       case 'DICH_BENH':
-        return {
-          icon: <AlertOctagon className="w-6 h-6 text-rose-600" />,
-          dept: 'Trạm Thú y Thủy sản & Khuyến nông',
-          badgeClass: 'bg-rose-50 text-rose-800 border-rose-200',
-        };
+        return <AlertOctagon className="w-5 h-5 text-rose-600" />;
       case 'VI_PHAM_IUU':
-        return {
-          icon: <Anchor className="w-6 h-6 text-[#006194]" />,
-          dept: 'Thanh tra Chuyên ngành & Đồn Biên phòng',
-          badgeClass: 'bg-sky-50 text-[#006194] border-sky-200',
-        };
+        return <Anchor className="w-5 h-5 text-[#006194]" />;
       case 'GIONG_THUC_AN':
-        return {
-          icon: <Fish className="w-6 h-6 text-emerald-600" />,
-          dept: 'Phòng Quản lý Giống & Vật tư Thủy sản',
-          badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-        };
+        return <Fish className="w-5 h-5 text-emerald-600" />;
       case 'HA_TANG_CANG_CA':
-        return {
-          icon: <MapPin className="w-6 h-6 text-amber-600" />,
-          dept: 'Ban Quản lý Cảng cá & Luồng lạch',
-          badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
-        };
+        return <MapPin className="w-5 h-5 text-amber-600" />;
       case 'THU_TUC_HANH_CHINH':
-        return {
-          icon: <FileText className="w-6 h-6 text-purple-600" />,
-          dept: 'Bộ phận 1 Cửa & Đăng kiểm Tàu cá',
-          badgeClass: 'bg-purple-50 text-purple-800 border-purple-200',
-        };
+        return <FileText className="w-5 h-5 text-purple-600" />;
       default:
-        return {
-          icon: <Fish className="w-6 h-6 text-slate-600" />,
-          dept: 'Văn phòng Sở Nông nghiệp & PTNT',
-          badgeClass: 'bg-slate-50 text-slate-800 border-slate-200',
-        };
+        return <Fish className="w-5 h-5 text-slate-600" />;
+    }
+  };
+
+  const getDepartmentName = (code: string) => {
+    switch (code) {
+      case 'O_NHIEM_NUOC':
+        return 'Chi cục Thủy sản & Phòng TN&MT';
+      case 'DICH_BENH':
+        return 'Trạm Thú y Thủy sản & Khuyến nông';
+      case 'VI_PHAM_IUU':
+        return 'Thanh tra Kiểm ngư & Đồn Biên phòng';
+      case 'GIONG_THUC_AN':
+        return 'Phòng Quản lý Giống & Vật tư Thủy sản';
+      case 'HA_TANG_CANG_CA':
+        return 'Ban Quản lý Cảng cá & Luồng lạch';
+      case 'THU_TUC_HANH_CHINH':
+        return 'Bộ phận 1 Cửa & Đăng kiểm Tàu cá';
+      default:
+        return 'Văn phòng Sở Nông nghiệp & PTNT';
     }
   };
 
@@ -75,79 +77,100 @@ export const CategoriesPage: React.FC = () => {
       {/* Header Title */}
       <div className="border-b border-slate-200 pb-5">
         <span className="text-xs font-bold text-[#006194] uppercase tracking-wider">
-          Chuẩn Hóa Dịch Vụ Công Ngành Thủy Sản
+          Chuẩn Hóa Dịch Vụ Công Ngành Thủy Sản Quảng Ngãi
         </span>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
-          Danh Mục Lĩnh Vực Phản Ánh & Quy Định SLA
+          Tất Cả Danh Mục Chuyên Ngành Phản Ánh & Quy Định SLA
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
-          Mỗi chuyên mục phản ánh được thiết lập thời hạn cam kết giải quyết (SLA) từ 24h đến 120h làm việc, và tự động điều phối trực tiếp đến phòng ban chuyên môn theo quy định phân cấp quản lý.
+          Tra cứu toàn bộ các lĩnh vực tiếp nhận kiến nghị, thời hạn cam kết giải quyết (SLA từ 24h đến 120h), quy trình thụ lý 4 bước và căn cứ văn bản quy phạm pháp luật cho từng chuyên ngành.
         </p>
       </div>
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} className="h-52 bg-slate-200 animate-pulse rounded-3xl"></div>
+            <div key={n} className="h-64 bg-slate-200 animate-pulse rounded-3xl"></div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map((cat) => {
-            const theme = getCategoryTheme(cat.code);
-            return (
-              <div
-                key={cat.id}
-                className="p-6 rounded-3xl bg-white border border-slate-200/80 hover:border-sky-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
-              >
-                <div className="space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 group-hover:scale-105 transition-transform">
-                      {theme.icon}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {categories.map((cat) => (
+            <div
+              key={cat.id}
+              className="group rounded-3xl bg-white border border-slate-200/80 hover:border-sky-300 shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between"
+            >
+              <div className="flex flex-col flex-1">
+                {/* Banner ảnh minh họa chuyên ngành */}
+                <Link to={`/categories/${cat.code}`} className="relative h-44 overflow-hidden block">
+                  <img
+                    src={CATEGORY_IMAGES[cat.code] || CATEGORY_IMAGES['KHAC']}
+                    alt={cat.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+
+                  {/* Icon + SLA Badge */}
+                  <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-2xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                      {getCategoryIcon(cat.code)}
                     </div>
-                    <span
-                      className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold border ${theme.badgeClass}`}
-                    >
+                  </div>
+                  <div className="absolute top-3.5 right-3.5">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#006194] shadow-sm font-mono">
                       <Clock className="w-3.5 h-3.5" />
-                      <span>Cam kết: {cat.defaultSlaHours}h</span>
+                      <span>SLA: {cat.defaultSlaHours}h</span>
                     </span>
                   </div>
 
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#006194] transition-colors leading-snug">
+                  {/* Tên danh mục trên ảnh */}
+                  <div className="absolute bottom-3 left-4 right-4">
+                    <h2 className="font-extrabold text-white text-base leading-snug drop-shadow-md group-hover:text-cyan-200 transition-colors">
                       {cat.name}
-                    </h3>
-                    <p className="text-[11px] font-mono text-slate-400 mt-0.5">Mã số: #{cat.code}</p>
+                    </h2>
                   </div>
+                </Link>
 
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {cat.description || 'Tiếp nhận xử lý các kiến nghị thuộc lĩnh vực này.'}
+                {/* Nội dung bên dưới ảnh - Padding chuẩn p-5 */}
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                  <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
+                    {cat.description || 'Tiếp nhận xử lý và thụ lý các phản ánh thuộc lĩnh vực này.'}
                   </p>
 
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 flex items-center space-x-2">
-                    <Building2 className="w-3.5 h-3.5 text-[#006194] shrink-0" />
-                    <span className="truncate">Thụ lý: <strong>{theme.dept}</strong></span>
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-600 flex items-center space-x-2">
+                    <Building2 className="w-4 h-4 text-[#006194] shrink-0" />
+                    <span className="truncate">Thụ lý: <strong>{getDepartmentName(cat.code)}</strong></span>
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-emerald-600 font-semibold flex items-center space-x-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Đang trực tuyến</span>
-                  </span>
+              {/* Nút thao tác dưới cùng */}
+              <div className="px-5 pb-5 pt-0">
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <Link
+                    to={`/categories/${cat.code}`}
+                    className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-[#006194] text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Xem quy trình & văn bản</span>
+                  </Link>
+
                   <Link
                     to={`/submit?category=${cat.code}`}
-                    className="inline-flex items-center space-x-1 px-3.5 py-1.5 rounded-xl bg-[#006194] hover:bg-[#0284c7] text-white text-xs font-bold transition-all shadow-xs"
+                    className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-[#006194] hover:bg-[#0284c7] text-white text-xs font-bold transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98]"
                   >
+                    <Send className="w-3.5 h-3.5" />
                     <span>Phản ánh ngay</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 };
+
+export default CategoriesPage;
