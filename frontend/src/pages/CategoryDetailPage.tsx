@@ -19,10 +19,8 @@ import {
   BookOpen,
   ShieldCheck,
   FileCheck2,
-  HelpCircle,
   PhoneCall,
   Scale,
-  ExternalLink,
   Eye,
   ChevronRight,
 } from 'lucide-react';
@@ -274,7 +272,7 @@ export const CategoryDetailPage: React.FC = () => {
   };
 
   // Fetch thông tin danh mục từ API
-  const { data: categoriesRes, isLoading } = useQuery({
+  const { data: categoriesRes } = useQuery({
     queryKey: ['activeCategories'],
     queryFn: () => masterDataApi.getCategories(),
   });

@@ -9,7 +9,6 @@ import {
   Anchor,
   MapPin,
   FileText,
-  ArrowRight,
   Clock,
   Building2,
   BookOpen,

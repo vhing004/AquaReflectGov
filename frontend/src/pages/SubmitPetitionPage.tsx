@@ -38,7 +38,7 @@ import {
   Sparkles,
   Info
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 const LOCAL_STORAGE_DRAFT_KEY = 'aquareflect_petition_draft';
 
@@ -91,6 +91,8 @@ const LOCATION_PRESETS: LocationPreset[] = [
 
 export const SubmitPetitionPage: React.FC = () => {
   const { user } = useAuthStore();
+  const [searchParams] = useSearchParams();
+  const categoryParam = searchParams.get('category') || searchParams.get('categoryCode') || searchParams.get('categoryId');
 
   // Wizard or Full Form mode
   const [formMode, setFormMode] = useState<'wizard' | 'all'>('wizard');
@@ -194,8 +196,6 @@ export const SubmitPetitionPage: React.FC = () => {
 
         if (catRes.data && catRes.data.length > 0) {
           setCategories(catRes.data);
-          const defaultCat = catRes.data.find(c => c.code === 'VI_PHAM_IUU') || catRes.data[0];
-          setCategoryId(defaultCat.id);
         }
 
         if (provRes.data && provRes.data.length > 0) {
@@ -214,6 +214,31 @@ export const SubmitPetitionPage: React.FC = () => {
 
     fetchMasterData();
   }, []);
+
+  // Tự động chọn danh mục theo tham số trên URL (ví dụ: ?category=O_NHIEM_NUOC) hoặc mặc định
+  useEffect(() => {
+    if (categories.length > 0) {
+      if (categoryParam) {
+        const matchedCat = categories.find(
+          (c) =>
+            c.code.toLowerCase() === categoryParam.toLowerCase() ||
+            c.id.toLowerCase() === categoryParam.toLowerCase() ||
+            c.name.toLowerCase() === categoryParam.toLowerCase()
+        );
+        if (matchedCat) {
+          setCategoryId(matchedCat.id);
+          return;
+        }
+      }
+
+      // Nếu không có tham số URL hoặc không tìm thấy khớp, giữ categoryId hiện tại nếu hợp lệ, ngược lại dùng mặc định VI_PHAM_IUU
+      setCategoryId((prevId) => {
+        if (prevId && categories.some((c) => c.id === prevId)) return prevId;
+        const defaultCat = categories.find((c) => c.code === 'VI_PHAM_IUU') || categories[0];
+        return defaultCat ? defaultCat.id : '';
+      });
+    }
+  }, [categories, categoryParam]);
 
   // Update citizen details when user state changes
   useEffect(() => {

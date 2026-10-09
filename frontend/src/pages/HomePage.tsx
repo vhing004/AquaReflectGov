@@ -20,8 +20,6 @@ import {
   LifeBuoy,
   FileCheck2,
   Radio,
-  ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -40,8 +38,6 @@ const CATEGORY_IMAGES: Record<string, string> = {
 };
 
 export const HomePage: React.FC = () => {
-  // State: Toggle mở rộng danh mục
-  const [showAllCategories, setShowAllCategories] = useState(false);
   // State: Tab filter cho section phản ánh đã xử lý
   const [resolvedFilter, setResolvedFilter] = useState<string | undefined>(undefined);
   // State: Sắp xếp phản ánh đã xử lý
@@ -78,9 +74,6 @@ export const HomePage: React.FC = () => {
 
   const categories = categoriesRes?.data || [];
   const resolvedPetitions = resolvedRes?.data || [];
-
-  // Mặc định chỉ hiển thị 4 danh mục, mở rộng ra tất cả khi bấm toggle
-  const visibleCategories = showAllCategories ? categories : categories.slice(0, 4);
 
   const getCategoryIcon = (code: string) => {
     switch (code) {
