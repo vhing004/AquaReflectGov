@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { masterDataApi } from '../api/masterDataApi';
 import { petitionApi } from '../api/petitionApi';
@@ -36,58 +36,15 @@ import {
   Save,
   QrCode,
   Sparkles,
-  Info
+  Info,
+  Waves
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { MAJOR_FISHING_PORTS, SEA_ZONES, FISHING_GROUNDS } from '../data/maritimeData';
+
+export type LocationType = 'LAND_COASTAL' | 'FISHING_PORT' | 'OFFSHORE_SEA';
 
 const LOCAL_STORAGE_DRAFT_KEY = 'aquareflect_petition_draft';
-
-// Quick location presets for major fishing ports & hot spots
-interface LocationPreset {
-  label: string;
-  location: string;
-  coords: string;
-  provinceCode: string;
-}
-
-const LOCATION_PRESETS: LocationPreset[] = [
-  {
-    label: 'Cảng Sa Kỳ (Quảng Ngãi)',
-    location: 'Khu neo đậu tránh trú bão & Cảng cá Sa Kỳ, Xã Bình Châu, Huyện Bình Sơn, Tỉnh Quảng Ngãi',
-    coords: "15°13'45.2\"N, 108°52'10.5\"E",
-    provinceCode: 'QNG',
-  },
-  {
-    label: 'Cảng Thọ Quang (Đà Nẵng)',
-    location: 'Âu thuyền & Cảng cá Thọ Quang, Phường Thọ Quang, Quận Sơn Trà, TP. Đà Nẵng',
-    coords: "16°06'35.0\"N, 108°14'15.0\"E",
-    provinceCode: 'DNG',
-  },
-  {
-    label: 'Cảng Cửa Đại (Quảng Nam)',
-    location: 'Cửa biển & Khu bảo tồn biển Cù Lao Chàm, Phường Cửa Đại, TP. Hội An, Tỉnh Quảng Nam',
-    coords: "15°52'28.0\"N, 108°23'12.0\"E",
-    provinceCode: 'QNM',
-  },
-  {
-    label: 'Cảng cá Sông Đốc (Cà Mau)',
-    location: 'Cửa biển Sông Đốc, Thị trấn Sông Đốc, Huyện Trần Văn Thời, Tỉnh Cà Mau',
-    coords: "09°04'12.0\"N, 104°58'30.0\"E",
-    provinceCode: 'CMU',
-  },
-  {
-    label: 'Cảng An Thới (Phú Quốc)',
-    location: 'Khu neo đậu tàu thuyền An Thới, Phường An Thới, TP. Phú Quốc, Tỉnh Kiên Giang',
-    coords: "10°00'50.0\"N, 104°00'45.0\"E",
-    provinceCode: 'KGG',
-  },
-  {
-    label: 'Cảng Hòn Rớ (Nha Trang)',
-    location: 'Cảng cá Hòn Rớ, Xã Phước Đồng, TP. Nha Trang, Tỉnh Khánh Hòa',
-    coords: "12°12'18.0\"N, 109°11'42.0\"E",
-    provinceCode: 'KHA',
-  },
-];
 
 export const SubmitPetitionPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -112,6 +69,25 @@ export const SubmitPetitionPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isGettingGps, setIsGettingGps] = useState(false);
+
+  // Smart Location Selector State
+  const [locationType, setLocationType] = useState<LocationType>('LAND_COASTAL');
+
+  // State cho Đất liền / Ven bờ
+  const [districtName, setDistrictName] = useState('');
+  const [wardName, setWardName] = useState('');
+  const [detailAddress, setDetailAddress] = useState('');
+
+  // State cho Cảng cá
+  const [selectedPortId, setSelectedPortId] = useState<string>('PORT_SA_KY');
+  const [customPortName, setCustomPortName] = useState('');
+  const [portPosition, setPortPosition] = useState('');
+
+  // State cho Trên biển / Ngư trường
+  const [seaZoneId, setSeaZoneId] = useState<string>('ZONE_CENTRAL');
+  const [fishingGroundId, setFishingGroundId] = useState<string>('FG_HOANG_SA');
+  const [distanceNauticalMiles, setDistanceNauticalMiles] = useState<string>('');
+  const [oceanDirection, setOceanDirection] = useState<string>('Đông');
 
   // Citizen info state (for guests or pre-filled from user)
   const [citizenName, setCitizenName] = useState('');
@@ -240,6 +216,91 @@ export const SubmitPetitionPage: React.FC = () => {
     }
   }, [categories, categoryParam]);
 
+  // Helper tính toán và tạo chuỗi vị trí định dạng chuẩn
+  const computeFormattedLocation = useCallback((): string => {
+    const prov = provinces.find((p) => p.id === administrativeUnitId);
+    const provName = prov ? prov.name : '';
+
+    if (locationType === 'LAND_COASTAL') {
+      const parts = [
+        detailAddress.trim(),
+        wardName.trim() ? `Xã/Phường ${wardName.trim()}` : '',
+        districtName.trim() ? `Huyện/Quận ${districtName.trim()}` : '',
+        provName,
+      ].filter(Boolean);
+      return parts.length > 0 ? `[Ven bờ/Đất liền] ${parts.join(', ')}` : (location || 'Trên đất liền / Ven bờ');
+    }
+
+    if (locationType === 'FISHING_PORT') {
+      const port = MAJOR_FISHING_PORTS.find((p) => p.id === selectedPortId);
+      const portName = selectedPortId === 'PORT_OTHER' ? (customPortName.trim() || 'Cảng cá khác') : (port?.name || '');
+      const parts = [
+        portName,
+        portPosition.trim() ? `Vị trí: ${portPosition.trim()}` : '',
+        port?.wardName || wardName.trim(),
+        port?.districtName || districtName.trim(),
+        provName || port?.provinceName,
+      ].filter(Boolean);
+      return `[Cảng cá] ${parts.join(', ')}`;
+    }
+
+    if (locationType === 'OFFSHORE_SEA') {
+      const zone = SEA_ZONES.find((z) => z.id === seaZoneId);
+      const fg = FISHING_GROUNDS.find((f) => f.id === fishingGroundId);
+      const distStr = distanceNauticalMiles ? `Cách bờ ~${distanceNauticalMiles} hải lý (${oceanDirection})` : '';
+      const gpsStr = gpsCoordinates ? `(GPS: ${gpsCoordinates})` : '';
+
+      const parts = [
+        fg?.name || 'Ngư trường xa bờ',
+        distStr,
+        gpsStr,
+        zone?.name,
+        provName ? `Đơn vị tiếp nhận: ${provName}` : '',
+      ].filter(Boolean);
+      return `[Trên biển] ${parts.join(' - ')}`;
+    }
+
+    return location;
+  }, [
+    locationType,
+    administrativeUnitId,
+    provinces,
+    detailAddress,
+    wardName,
+    districtName,
+    selectedPortId,
+    customPortName,
+    portPosition,
+    seaZoneId,
+    fishingGroundId,
+    distanceNauticalMiles,
+    oceanDirection,
+    gpsCoordinates,
+  ]);
+
+  // Xử lý khi chọn một Cảng cá từ Dropdown
+  const handlePortChange = (portId: string) => {
+    setSelectedPortId(portId);
+    if (portId !== 'PORT_OTHER') {
+      const port = MAJOR_FISHING_PORTS.find((p) => p.id === portId);
+      if (port) {
+        if (port.provinceCode && provinces.length > 0) {
+          const matchedProv = provinces.find((p) => p.code === port.provinceCode);
+          if (matchedProv) setAdministrativeUnitId(matchedProv.id);
+        }
+        if (port.districtName) setDistrictName(port.districtName);
+        if (port.wardName) setWardName(port.wardName);
+        if (port.coords) setGpsCoordinates(port.coords);
+      }
+    }
+  };
+
+  // Tự động đồng bộ location string mỗi khi dữ liệu vị trí thay đổi
+  useEffect(() => {
+    const formatted = computeFormattedLocation();
+    setLocation(formatted);
+  }, [computeFormattedLocation]);
+
   // Update citizen details when user state changes
   useEffect(() => {
     if (user) {
@@ -282,15 +343,7 @@ export const SubmitPetitionPage: React.FC = () => {
     }
   };
 
-  // Select Quick Preset
-  const handleSelectPreset = (preset: LocationPreset) => {
-    setLocation(preset.location);
-    setGpsCoordinates(preset.coords);
-    const matchedProv = provinces.find((p) => p.code === preset.provinceCode);
-    if (matchedProv) {
-      setAdministrativeUnitId(matchedProv.id);
-    }
-  };
+
 
   // Draft helpers
   const handleSaveDraft = () => {
@@ -433,8 +486,28 @@ export const SubmitPetitionPage: React.FC = () => {
         setSubmitError('Tiêu đề phản ánh phải có ít nhất 5 ký tự.');
         return false;
       }
+      if (!administrativeUnitId) {
+        setSubmitError('Vui lòng chọn Tỉnh / Thành phố ven biển phụ trách hoặc nơi đăng ký tàu.');
+        return false;
+      }
+      if (locationType === 'LAND_COASTAL') {
+        if (!detailAddress.trim() && !wardName.trim() && !districtName.trim()) {
+          setSubmitError('Vui lòng nhập Địa chỉ chi tiết / Tên ao nuôi / Cơ sở trên đất liền.');
+          return false;
+        }
+      } else if (locationType === 'FISHING_PORT') {
+        if (selectedPortId === 'PORT_OTHER' && !customPortName.trim()) {
+          setSubmitError('Vui lòng nhập Tên cảng cá / bến cá khác.');
+          return false;
+        }
+      } else if (locationType === 'OFFSHORE_SEA') {
+        if (!distanceNauticalMiles.trim() && !gpsCoordinates.trim()) {
+          setSubmitError('Vui lòng bấm nút "GPS tự động" hoặc nhập "Khoảng cách ước tính (Hải lý)".');
+          return false;
+        }
+      }
       if (!location.trim() || location.trim().length < 5) {
-        setSubmitError('Vui lòng nhập rõ vị trí xảy ra sự việc hoặc cảng cá / vùng biển liên quan.');
+        setSubmitError('Vui lòng hoàn tất thông tin địa điểm xảy ra sự việc.');
         return false;
       }
       if (description.trim().length < 10) {
@@ -918,28 +991,290 @@ export const SubmitPetitionPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Địa bàn tỉnh & GPS */}
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  <div className="sm:col-span-5 space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800 flex items-center space-x-1">
-                      <Building2 className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Tỉnh / TP ven biển phụ trách</span>
-                    </label>
-                    <select
-                      value={administrativeUnitId || ''}
-                      onChange={(e) => setAdministrativeUnitId(e.target.value ? Number(e.target.value) : undefined)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006194] bg-slate-50/50 focus:bg-white transition-all"
-                    >
-                      <option value="">-- Chọn Tỉnh / TP ven biển --</option>
-                      {provinces.map((prov) => (
-                        <option key={prov.id} value={prov.id}>
-                          {prov.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                {/* LOẠI ĐỊA ĐIỂM (RADIO SELECTOR 3 CHẾ ĐỘ THÔNG MINH) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-800 block">
+                    Phân loại môi trường địa điểm xảy ra sự việc <span className="text-rose-500">*</span>
+                  </label>
 
-                  <div className="sm:col-span-7 space-y-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* Chế độ 1: Đất liền / Ven bờ */}
+                    <div
+                      onClick={() => setLocationType('LAND_COASTAL')}
+                      className={`cursor-pointer p-3 rounded-2xl border transition-all flex items-start space-x-3 select-none active:scale-[0.99] ${
+                        locationType === 'LAND_COASTAL'
+                          ? 'border-emerald-600 bg-emerald-50/80 ring-2 ring-emerald-600/20 shadow-xs'
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="locationType"
+                        checked={locationType === 'LAND_COASTAL'}
+                        onChange={() => setLocationType('LAND_COASTAL')}
+                        className="mt-1 accent-emerald-600 shrink-0"
+                      />
+                      <div>
+                        <div className="flex items-center space-x-1.5 font-bold text-xs text-slate-900">
+                          <Building2 className="w-4 h-4 text-emerald-600" />
+                          <span>Đất liền / Ven bờ</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          Ao nuôi, trại giống, kênh nước, cơ sở chế biến, ven ao...
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Chế độ 2: Cảng cá / Khu neo đậu */}
+                    <div
+                      onClick={() => setLocationType('FISHING_PORT')}
+                      className={`cursor-pointer p-3 rounded-2xl border transition-all flex items-start space-x-3 select-none active:scale-[0.99] ${
+                        locationType === 'FISHING_PORT'
+                          ? 'border-[#006194] bg-sky-50/80 ring-2 ring-[#006194]/20 shadow-xs'
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="locationType"
+                        checked={locationType === 'FISHING_PORT'}
+                        onChange={() => setLocationType('FISHING_PORT')}
+                        className="mt-1 accent-[#006194] shrink-0"
+                      />
+                      <div>
+                        <div className="flex items-center space-x-1.5 font-bold text-xs text-slate-900">
+                          <Anchor className="w-4 h-4 text-[#006194]" />
+                          <span>Cảng cá / Khu neo đậu</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          Cảng Sa Kỳ, Thọ Quang, Sông Đốc, Hòn Rớ, Cửa Đại...
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Chế độ 3: Trên biển / Ngư trường */}
+                    <div
+                      onClick={() => setLocationType('OFFSHORE_SEA')}
+                      className={`cursor-pointer p-3 rounded-2xl border transition-all flex items-start space-x-3 select-none active:scale-[0.99] ${
+                        locationType === 'OFFSHORE_SEA'
+                          ? 'border-indigo-600 bg-indigo-50/80 ring-2 ring-indigo-600/20 shadow-xs'
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="locationType"
+                        checked={locationType === 'OFFSHORE_SEA'}
+                        onChange={() => setLocationType('OFFSHORE_SEA')}
+                        className="mt-1 accent-indigo-600 shrink-0"
+                      />
+                      <div>
+                        <div className="flex items-center space-x-1.5 font-bold text-xs text-slate-900">
+                          <Waves className="w-4 h-4 text-indigo-600" />
+                          <span>Trên biển / Ngư trường</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          Ngư trường Hoàng Sa, Trường Sa, Vịnh Bắc Bộ, xa bờ...
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* === FORM INPUT CHI TIẾT TƯƠNG ỨNG TỪNG CHẾ ĐỘ === */}
+
+                {/* 1. TRÊN ĐẤT LIỀN / VEN BỜ */}
+                {locationType === 'LAND_COASTAL' && (
+                  <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-3 animate-in fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Tỉnh / Thành phố <span className="text-rose-500">*</span></label>
+                        <select
+                          value={administrativeUnitId || ''}
+                          onChange={(e) => setAdministrativeUnitId(e.target.value ? Number(e.target.value) : undefined)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-[#006194]"
+                        >
+                          <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                          {provinces.map((prov) => (
+                            <option key={prov.id} value={prov.id}>{prov.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Quận / Huyện / Thị xã</label>
+                        <input
+                          type="text"
+                          value={districtName}
+                          onChange={(e) => setDistrictName(e.target.value)}
+                          placeholder="Ví dụ: Huyện Bình Sơn"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-[#006194]"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Phường / Xã / Thị trấn</label>
+                        <input
+                          type="text"
+                          value={wardName}
+                          onChange={(e) => setWardName(e.target.value)}
+                          placeholder="Ví dụ: Xã Bình Châu"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-[#006194]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Địa chỉ chi tiết / Tên ao nuôi / Cơ sở <span className="text-rose-500">*</span></label>
+                      <input
+                        type="text"
+                        value={detailAddress}
+                        onChange={(e) => setDetailAddress(e.target.value)}
+                        placeholder="Ví dụ: Đầm nuôi tôm Thôn Định Tân, gần mương cấp nước số 3..."
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-[#006194]"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. TẠI CẢNG CÁ / KHU NEO ĐẬU */}
+                {locationType === 'FISHING_PORT' && (
+                  <div className="p-4 rounded-2xl bg-sky-50/50 border border-sky-200/80 space-y-3 animate-in fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Chọn Cảng cá / Khu neo đậu <span className="text-rose-500">*</span></label>
+                        <select
+                          value={selectedPortId}
+                          onChange={(e) => handlePortChange(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-[#006194] bg-white focus:ring-2 focus:ring-[#006194]"
+                        >
+                          {MAJOR_FISHING_PORTS.map((port) => (
+                            <option key={port.id} value={port.id}>
+                              {port.name} {port.provinceName ? `(${port.provinceName})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Tỉnh / Thành phố quản lý cảng</label>
+                        <select
+                          value={administrativeUnitId || ''}
+                          onChange={(e) => setAdministrativeUnitId(e.target.value ? Number(e.target.value) : undefined)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-[#006194]"
+                        >
+                          <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                          {provinces.map((prov) => (
+                            <option key={prov.id} value={prov.id}>{prov.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {selectedPortId === 'PORT_OTHER' && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Tên Cảng cá / Bến cá khác <span className="text-rose-500">*</span></label>
+                        <input
+                          type="text"
+                          value={customPortName}
+                          onChange={(e) => setCustomPortName(e.target.value)}
+                          placeholder="Nhập tên cảng cá / bến cá..."
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-[#006194]"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Vị trí cụ thể tại cảng cá</label>
+                      <input
+                        type="text"
+                        value={portPosition}
+                        onChange={(e) => setPortPosition(e.target.value)}
+                        placeholder="Ví dụ: Bến số 2, Cầu cảng bốc dỡ hải sản, Khu neo đậu âu thuyền phía Tây..."
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-[#006194]"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. TRÊN BIỂN / NGƯ TRƯỜNG */}
+                {locationType === 'OFFSHORE_SEA' && (
+                  <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 space-y-3 animate-in fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Ngư trường khai thác trọng điểm <span className="text-rose-500">*</span></label>
+                        <select
+                          value={fishingGroundId}
+                          onChange={(e) => setFishingGroundId(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-indigo-900 bg-white focus:ring-2 focus:ring-indigo-600"
+                        >
+                          {FISHING_GROUNDS.map((fg) => (
+                            <option key={fg.id} value={fg.id}>{fg.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Vùng biển nghề cá</label>
+                        <select
+                          value={seaZoneId}
+                          onChange={(e) => setSeaZoneId(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600"
+                        >
+                          {SEA_ZONES.map((zone) => (
+                            <option key={zone.id} value={zone.id}>{zone.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                      <div className="sm:col-span-4 space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Khoảng cách ước tính (Hải lý)</label>
+                        <input
+                          type="text"
+                          value={distanceNauticalMiles}
+                          onChange={(e) => setDistanceNauticalMiles(e.target.value)}
+                          placeholder="Ví dụ: 25 hoặc 45"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-4 space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Hướng hải lưu / Gió</label>
+                        <select
+                          value={oceanDirection}
+                          onChange={(e) => setOceanDirection(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600"
+                        >
+                          <option value="Đông">Hướng Đông</option>
+                          <option value="Đông Nam">Hướng Đông Nam</option>
+                          <option value="Đông Bắc">Hướng Đông Bắc</option>
+                          <option value="Nam">Hướng Nam</option>
+                          <option value="Tây Nam">Hướng Tây Nam</option>
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-4 space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Tỉnh ven biển tiếp nhận / Đăng ký tàu <span className="text-rose-500">*</span></label>
+                        <select
+                          value={administrativeUnitId || ''}
+                          onChange={(e) => setAdministrativeUnitId(e.target.value ? Number(e.target.value) : undefined)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600"
+                        >
+                          <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                          {provinces.map((prov) => (
+                            <option key={prov.id} value={prov.id}>{prov.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TỌA ĐỘ GPS & ĐƯỜNG DẪN ĐỊA ĐIỂM CHUẨN NÓNG */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
+                  <div className="sm:col-span-6 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-slate-800 flex items-center space-x-1">
                         <Compass className="w-3.5 h-3.5 text-slate-500" />
@@ -960,43 +1295,20 @@ export const SubmitPetitionPage: React.FC = () => {
                       value={gpsCoordinates}
                       onChange={(e) => setGpsCoordinates(e.target.value)}
                       placeholder="Ví dụ: 15°13'45.2&quot;N, 108°52'10.5&quot;E"
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006194] bg-slate-50/50 focus:bg-white transition-all shadow-2xs"
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006194] bg-white transition-all shadow-2xs"
                     />
                   </div>
-                </div>
 
-                {/* QUICK LOCATION PRESETS */}
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block">
-                    Gợi ý chọn nhanh tọa độ các cảng cá / ngư trường trọng điểm:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {LOCATION_PRESETS.map((preset, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSelectPreset(preset)}
-                        className="text-[11px] font-medium bg-slate-100 hover:bg-sky-50 hover:text-[#006194] text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200/80 transition-colors"
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Chi tiết địa điểm */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800">
-                    Vị trí chi tiết vùng biển / Cảng cá / Vùng nuôi trồng <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <div className="sm:col-span-6 space-y-1.5">
+                    <label className="text-xs font-bold text-slate-800 flex items-center space-x-1">
+                      <MapPin className="w-3.5 h-3.5 text-[#006194]" />
+                      <span>Chuỗi địa điểm tự động tổng hợp</span>
+                    </label>
                     <input
                       type="text"
-                      required
+                      readOnly
                       value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006194] bg-slate-50/50 focus:bg-white transition-all shadow-2xs"
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-[#006194] bg-slate-100/80 cursor-not-allowed"
                     />
                   </div>
                 </div>
