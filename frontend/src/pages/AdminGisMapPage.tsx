@@ -21,7 +21,7 @@ import { GisSummarySidebar } from '../components/gis/GisSummarySidebar';
 
 export const AdminGisMapPage: React.FC = () => {
   // Map control states
-  const [baseMap, setBaseMap] = useState<BaseMapType>('streets');
+  const [baseMap, setBaseMap] = useState<BaseMapType>('satellite');
   const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
   const [radiusMode, setRadiusMode] = useState<boolean>(false);
   const [radiusCenter, setRadiusCenter] = useState<{ lat: number; lng: number } | null>(null);

@@ -18,7 +18,7 @@ import { GisLeafletMap } from '../components/gis/GisLeafletMap';
 import type { BaseMapType } from '../components/gis/GisFilterPanel';
 
 export const MapPage: React.FC = () => {
-  const [baseMap, setBaseMap] = useState<BaseMapType>('streets');
+  const [baseMap, setBaseMap] = useState<BaseMapType>('satellite');
   const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
   const [activeType, setActiveType] = useState<string>('all');
   const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
