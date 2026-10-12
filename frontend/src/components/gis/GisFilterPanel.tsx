@@ -5,7 +5,6 @@ import {
   Compass, 
   AlertTriangle, 
   RotateCcw,
-  Map as MapIcon,
   Satellite
 } from 'lucide-react';
 import type { GisFilterParams } from '../../types/gis';
@@ -43,18 +42,6 @@ export const GisFilterPanel: React.FC<GisFilterPanelProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
         {/* Base Map Selector */}
         <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-xl">
-          <button
-            onClick={() => onBaseMapChange('streets')}
-            className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg font-semibold transition-all ${
-              baseMap === 'streets'
-                ? 'bg-white text-sky-800 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-            title="Bản đồ đường phố OpenStreetMap"
-          >
-            <MapIcon className="w-3.5 h-3.5 text-sky-600" />
-            <span>Đường phố</span>
-          </button>
           <button
             onClick={() => onBaseMapChange('satellite')}
             className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg font-semibold transition-all ${

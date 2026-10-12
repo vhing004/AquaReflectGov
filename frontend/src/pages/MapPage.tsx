@@ -18,7 +18,7 @@ import { GisLeafletMap } from '../components/gis/GisLeafletMap';
 import type { BaseMapType } from '../components/gis/GisFilterPanel';
 
 export const MapPage: React.FC = () => {
-  const [baseMap, setBaseMap] = useState<BaseMapType>('satellite');
+  const baseMap: BaseMapType = 'satellite';
   const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
   const [activeType, setActiveType] = useState<string>('all');
   const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
@@ -104,24 +104,10 @@ export const MapPage: React.FC = () => {
             <span>Lớp Nhiệt Mật Độ</span>
           </button>
 
-          {/* Base Map Switcher */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-xs font-semibold">
-            <button
-              onClick={() => setBaseMap('streets')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${
-                baseMap === 'streets' ? 'bg-white text-sky-800 shadow-xs' : 'text-slate-600'
-              }`}
-            >
-              Đường phố
-            </button>
-            <button
-              onClick={() => setBaseMap('satellite')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${
-                baseMap === 'satellite' ? 'bg-white text-emerald-800 shadow-xs' : 'text-slate-600'
-              }`}
-            >
-              Vệ tinh
-            </button>
+          {/* Satellite Mode Indicator */}
+          <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Ảnh Vệ Tinh</span>
           </div>
 
           <Link
