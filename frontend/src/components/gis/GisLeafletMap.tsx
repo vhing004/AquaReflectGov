@@ -18,11 +18,12 @@ interface GisLeafletMapProps {
 }
 
 // Cấu hình các lớp bản đồ nền TileLayer
-const TILE_LAYERS: Record<BaseMapType, { url: string; attribution: string; maxZoom: number }> = {
+const TILE_LAYERS: Record<BaseMapType, { url: string; attribution: string; maxZoom: number; subdomains?: string }> = {
   streets: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 19,
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 20,
+    subdomains: 'abcd',
   },
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -33,11 +34,25 @@ const TILE_LAYERS: Record<BaseMapType, { url: string; attribution: string; maxZo
     url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>',
     maxZoom: 20,
+    subdomains: 'abcd',
   },
 };
 
-// Hàm xác định màu sắc và biểu tượng theo loại chuyên mục
-const getCategoryStyling = (type?: string) => {
+// Hàm xác định màu sắc và biểu tượng theo loại chuyên mục và trạng thái
+const getCategoryStyling = (type?: string, status?: number | string, statusName?: string) => {
+  // Ưu tiên hiển thị trạng thái Đã giải quyết (Resolved = 4)
+  const isResolved = status === 4 || status === 'Resolved' || statusName?.toLowerCase().includes('đã giải quyết') || statusName?.toLowerCase().includes('đã xử lý');
+  if (isResolved) {
+    return {
+      color: '#10b981', // Xanh lá cây tươi (Emerald)
+      bgBadge: '#ecfdf5',
+      borderBadge: '#a7f3d0',
+      textBadge: '#065f46',
+      label: 'Đã giải quyết xong',
+      iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    };
+  }
+
   switch (type) {
     case 'IuuFishing':
       return {
@@ -107,13 +122,13 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
   const radiusCircleRef = useRef<L.Circle | null>(null);
   const radiusCenterMarkerRef = useRef<L.Marker | null>(null);
 
-  // 1. Khởi tạo bản đồ lần đầu (Cà Mau Center: 9.176, 105.150)
+  // 1. Khởi tạo bản đồ lần đầu (Căn giữa vùng biển & đất liền phía Nam / Cà Mau)
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [9.176, 105.150], // Tọa độ trung tâm tỉnh Cà Mau
-      zoom: 10,
+      center: [10.0, 106.0], // Tọa độ bao quát vùng duyên hải
+      zoom: 8,
       zoomControl: false,
     });
 
@@ -128,12 +143,29 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
     const tileLayer = L.tileLayer(initialConfig.url, {
       attribution: initialConfig.attribution,
       maxZoom: initialConfig.maxZoom,
+      subdomains: (initialConfig.subdomains as any) || 'abc',
     }).addTo(map);
 
     currentTileLayerRef.current = tileLayer;
     mapInstanceRef.current = map;
 
+    // Kích hoạt tính toán lại kích thước khung nhìn Leaflet ngay sau khi render
+    const t1 = setTimeout(() => map.invalidateSize(), 150);
+    const t2 = setTimeout(() => map.invalidateSize(), 500);
+
+    // Quan sát kích thước container bằng ResizeObserver để tự động cập nhật
+    let resizeObserver: ResizeObserver | null = null;
+    if (mapContainerRef.current && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize();
+      });
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
     return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      if (resizeObserver) resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -258,12 +290,12 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
     const layer = L.geoJSON(geoJsonData as any, {
       pointToLayer: (feature, latlng) => {
         const props = feature.properties;
-        const style = getCategoryStyling(props.categoryType);
+        const style = getCategoryStyling(props.categoryType, props.status, props.statusName);
         const isUrgent = props.priorityLevel === 'Urgent' || props.isOverdue;
 
         const pulseClass = isUrgent ? 'gis-pulse-urgent' : '';
 
-        // Tạo custom HTML Marker Pin với màu chuyên mục và icon SVG
+        // Tạo custom HTML Marker Pin với màu chuyên mục/trạng thái và icon SVG
         const customIcon = L.divIcon({
           className: 'gis-custom-pin',
           html: `
@@ -297,11 +329,12 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
       },
       onEachFeature: (feature: any, marker: L.Marker) => {
         const props = feature.properties;
-        const style = getCategoryStyling(props.categoryType);
+        const style = getCategoryStyling(props.categoryType, props.status, props.statusName);
+        const isResolved = props.status === 4 || props.status === 'Resolved' || props.statusName?.toLowerCase().includes('đã giải quyết') || props.statusName?.toLowerCase().includes('đã xử lý');
 
         // Tạo HTML Popup hiển thị đầy đủ thông tin chuẩn Chính quyền số
         const popupContent = `
-          <div style="width: 280px; font-family: inherit; font-size: 12px; color: #1e293b;">
+          <div style="width: 290px; font-family: inherit; font-size: 12px; color: #1e293b;">
             <!-- Popup Header -->
             <div style="background: #f8fafc; padding: 12px 14px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
               <span style="font-family: monospace; font-weight: 700; color: #006194; font-size: 11px;">
@@ -316,7 +349,7 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
                 color: ${style.textBadge};
                 border: 1px solid ${style.borderBadge};
               ">
-                ${props.priorityName || 'Bình thường'}
+                ${isResolved ? 'ĐÃ XỬ LÝ XONG' : (props.priorityName || 'Bình thường')}
               </span>
             </div>
 
@@ -337,9 +370,9 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
               <!-- Status Badge & Overdue Warning -->
               <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9;">
                 <span style="font-weight: 600; color: #334155; font-size: 11px;">
-                  Trạng thái: <b>${props.statusName || 'Tiếp nhận'}</b>
+                  Trạng thái: <b style="color: ${style.color}">${props.statusName || (isResolved ? 'Đã giải quyết' : 'Tiếp nhận')}</b>
                 </span>
-                ${props.isOverdue ? `
+                ${props.isOverdue && !isResolved ? `
                   <span style="font-size: 10px; font-weight: 800; color: #dc2626; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">
                     QUÁ HẠN SLA
                   </span>
@@ -349,7 +382,7 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
               <!-- View Details Action Button -->
               <div style="margin-top: 10px; text-align: right;">
                 <a 
-                  href="/admin/petitions/${props.id}" 
+                  href="/track/${props.trackingCode}" 
                   style="
                     display: inline-block;
                     padding: 6px 12px;
@@ -364,7 +397,7 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
                   onmouseover="this.style.background='#0284c7'"
                   onmouseout="this.style.background='#006194'"
                 >
-                  Xem hồ sơ chi tiết &rarr;
+                  Tra cứu tiến độ &rarr;
                 </a>
               </div>
             </div>
@@ -378,6 +411,18 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
         });
       },
     }).addTo(map);
+
+    // Tự động căn chỉnh bao quát tất cả các điểm ghi nhận thực tế trên bản đồ
+    if (layer.getLayers().length > 0) {
+      try {
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+        }
+      } catch {
+        // Bỏ qua lỗi tính bounds nếu tọa độ trùng nhau
+      }
+    }
 
     geoJsonLayerRef.current = layer;
   }, [geoJsonData, onSelectFeature]);
