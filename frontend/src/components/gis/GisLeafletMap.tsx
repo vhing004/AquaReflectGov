@@ -382,7 +382,7 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
               <!-- View Details Action Button -->
               <div style="margin-top: 10px; text-align: right;">
                 <a 
-                  href="/track/${props.trackingCode}" 
+                  href="/track?code=${encodeURIComponent(props.trackingCode)}" 
                   style="
                     display: inline-block;
                     padding: 6px 12px;

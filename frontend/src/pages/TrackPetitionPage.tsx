@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, useParams, Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { petitionApi } from '../api/petitionApi';
 import type { PetitionTrackingDetail, PetitionSummary } from '../types';
@@ -42,8 +42,9 @@ interface RecentSearchItem {
 }
 
 export const TrackPetitionPage: React.FC = () => {
+  const { code: paramCode } = useParams<{ code?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialCode = searchParams.get('code') || '';
+  const initialCode = paramCode || searchParams.get('code') || '';
 
   const [searchMode, setSearchMode] = useState<'code' | 'phone'>('code');
   const [queryInput, setQueryInput] = useState(initialCode || 'TS-202609-HGZH4');

@@ -107,6 +107,7 @@ export const App: React.FC = () => {
               <Route path="/categories/:code" element={<CategoryDetailPage />} />
               <Route path="/submit" element={<SubmitPetitionPage />} />
               <Route path="/track" element={<TrackPetitionPage />} />
+              <Route path="/track/:code" element={<TrackPetitionPage />} />
               <Route path="/map" element={<MapPage />} />
 
               {/* Protected Route cho Cán bộ & Lãnh đạo */}
