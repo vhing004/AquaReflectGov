@@ -69,3 +69,18 @@
 .leaflet-popup-tip-container {
   overflow: visible !important;
 }
+
+/* Ngăn chặn Leaflet map đè lên Header (Navbar) khi cuộn trang */
+.leaflet-container {
+  isolation: isolate;
+  z-index: 0 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 20 !important;
+}
+
+.leaflet-pane {
+  z-index: 10 !important;
+}

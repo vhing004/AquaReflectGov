@@ -182,7 +182,7 @@ export const AdminGisMapPage: React.FC = () => {
       {/* Main Content Layout: 9 Cols Map, 3 Cols Summary Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch min-h-[640px]">
         {/* === MAP CONTAINER (9 COLS) === */}
-        <div className="lg:col-span-9 relative h-[640px] rounded-3xl overflow-hidden shadow-md border border-slate-200">
+        <div className="lg:col-span-9 relative isolate z-0 h-[640px] rounded-3xl overflow-hidden shadow-md border border-slate-200">
           <GisLeafletMap
             geoJsonData={geoJsonData ?? null}
             heatmapPoints={heatmapRes?.data?.rawArray ?? null}
@@ -198,7 +198,7 @@ export const AdminGisMapPage: React.FC = () => {
 
           {/* Floating Radius Tool Widget */}
           {radiusMode && (
-            <div className="absolute top-4 left-4 z-1000">
+            <div className="absolute top-4 left-4 z-20">
               <GisRadiusTool
                 centerCoords={radiusCenter}
                 radiusKm={radiusKm}
@@ -212,7 +212,7 @@ export const AdminGisMapPage: React.FC = () => {
           )}
 
           {/* Map Color Legend (Góc dưới bên trái) */}
-          <div className="absolute bottom-6 left-4 z-1000 bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-slate-200/90 shadow-md text-xs space-y-1.5 hidden sm:block">
+          <div className="absolute bottom-6 left-4 z-20 bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-slate-200/90 shadow-md text-xs space-y-1.5 hidden sm:block">
             <span className="font-bold text-slate-800 text-[11px] uppercase block border-b border-slate-100 pb-1">
               Chú giải chuyên mục
             </span>

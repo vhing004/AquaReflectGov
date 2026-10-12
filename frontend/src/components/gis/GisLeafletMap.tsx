@@ -467,7 +467,7 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
   }, [flyToLocation]);
 
   return (
-    <div className="relative w-full h-full min-h-[500px] rounded-3xl overflow-hidden shadow-xl border border-slate-200">
+    <div className="relative w-full h-full min-h-[500px] rounded-3xl overflow-hidden shadow-xl border border-slate-200 isolate z-0">
       <div ref={mapContainerRef} className="w-full h-full" />
     </div>
   );

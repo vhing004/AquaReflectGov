@@ -181,7 +181,7 @@ export const MapPage: React.FC = () => {
       {/* Main Grid: 8 Cols Interactive Leaflet Map, 4 Cols Active Hotspots */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* === MAP CONTAINER (8 COLS) === */}
-        <div className="lg:col-span-8 relative h-[560px] rounded-3xl overflow-hidden shadow-xl border border-slate-200">
+        <div className="lg:col-span-8 relative h-[560px] rounded-3xl overflow-hidden shadow-xl border border-slate-200 isolate z-0">
           <GisLeafletMap
             geoJsonData={{ type: 'FeatureCollection', features: filteredFeatures, totalCount: filteredFeatures.length }}
             heatmapPoints={heatmapRes?.data?.rawArray ?? null}
@@ -197,7 +197,7 @@ export const MapPage: React.FC = () => {
           {/* Quick Refresh Button on Map */}
           <button
             onClick={() => refetch()}
-            className="absolute top-4 right-4 z-1000 p-2 rounded-xl bg-white/90 backdrop-blur-md hover:bg-white text-slate-700 shadow-md border border-slate-200 transition-colors"
+            className="absolute top-4 right-4 z-20 p-2 rounded-xl bg-white/90 backdrop-blur-md hover:bg-white text-slate-700 shadow-md border border-slate-200 transition-colors"
             title="Làm mới dữ liệu bản đồ"
           >
             <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
