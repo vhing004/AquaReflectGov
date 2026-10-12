@@ -8,11 +8,12 @@ import {
   PlusCircle,
   RotateCw,
   Compass,
-  MapPin
+  MapPin,
+  CheckCircle2
 } from 'lucide-react';
 
 import { gisApi } from '../api/gisApi';
-import type { GisFilterParams, GeoJsonFeature } from '../types/gis';
+import type { GeoJsonFeature } from '../types/gis';
 import { GisLeafletMap } from '../components/gis/GisLeafletMap';
 import type { BaseMapType } from '../components/gis/GisFilterPanel';
 
@@ -22,13 +23,6 @@ export const MapPage: React.FC = () => {
   const [activeType, setActiveType] = useState<string>('all');
   const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<GeoJsonFeature | null>(null);
-
-  // Xây dựng params lọc
-  const filters: GisFilterParams = {};
-  if (activeType !== 'all') {
-    // Mapping loại vi phạm
-    if (activeType === 'iuu') filters.status = undefined; // Category filter sẽ được áp dụng nếu cần
-  }
 
   // 1. Query GeoJSON data
   const { 
@@ -47,10 +41,20 @@ export const MapPage: React.FC = () => {
     enabled: showHeatmap,
   });
 
+  // Helper kiểm tra đã giải quyết
+  const isFeatureResolved = (f: GeoJsonFeature) => {
+    const s = f.properties.status;
+    const sName = f.properties.statusName?.toLowerCase() || '';
+    return s === 'Resolved' || s === '4' || sName.includes('đã giải quyết') || sName.includes('đã xử lý');
+  };
+
   // Lọc danh sách điểm hiển thị
   const allFeatures = geoJsonData?.features ?? [];
+  const resolvedCount = allFeatures.filter(isFeatureResolved).length;
+
   const filteredFeatures = allFeatures.filter((f) => {
     if (activeType === 'all') return true;
+    if (activeType === 'resolved') return isFeatureResolved(f);
     if (activeType === 'iuu') return f.properties.categoryType === 'IuuFishing';
     if (activeType === 'disease') return f.properties.categoryType === 'AquacultureDisease';
     if (activeType === 'pollution') return f.properties.categoryType === 'WaterPollution';
@@ -175,6 +179,17 @@ export const MapPage: React.FC = () => {
           <Droplets className="w-3.5 h-3.5 text-sky-500" />
           <span>Ô nhiễm nguồn nước</span>
         </button>
+        <button
+          onClick={() => setActiveType('resolved')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+            activeType === 'resolved'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <CheckCircle2 className={`w-3.5 h-3.5 ${activeType === 'resolved' ? 'text-white' : 'text-emerald-500'}`} />
+          <span>Đã xử lý xong ({resolvedCount})</span>
+        </button>
       </div>
 
       {/* Main Grid: 8 Cols Interactive Leaflet Map, 4 Cols Active Hotspots */}
@@ -220,6 +235,7 @@ export const MapPage: React.FC = () => {
               {filteredFeatures.length > 0 ? (
                 filteredFeatures.map((feat) => {
                   const isSelected = selectedFeature?.id === feat.id;
+                  const isResolved = isFeatureResolved(feat);
                   const p = feat.properties;
                   return (
                     <div
@@ -228,13 +244,21 @@ export const MapPage: React.FC = () => {
                       className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
                         isSelected
                           ? 'bg-sky-50/80 border-sky-400 shadow-sm ring-1 ring-sky-300'
+                          : isResolved
+                          ? 'bg-emerald-50/40 border-emerald-200/70 hover:bg-emerald-50/70'
                           : 'bg-slate-50/60 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-bold text-[#006194] text-xs">{p.trackingCode}</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-white text-slate-700 border border-slate-200">
-                          {p.statusName || 'Tiếp nhận'}
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                          isResolved
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : p.priorityLevel === 'Urgent' || p.isOverdue
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : 'bg-white text-slate-700 border-slate-200'
+                        }`}>
+                          {isResolved ? 'Đã giải quyết' : (p.statusName || 'Tiếp nhận')}
                         </span>
                       </div>
                       <p className="font-bold text-slate-800 text-xs leading-snug line-clamp-2">{p.title}</p>
