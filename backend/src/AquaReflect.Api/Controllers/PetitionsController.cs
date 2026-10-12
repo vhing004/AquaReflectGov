@@ -83,14 +83,48 @@ public class PetitionsController : BaseApiController
 
         var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
 
+        double? lat = request.Latitude;
+        double? lng = request.Longitude;
+
+        // Phân tích chuỗi GpsCoordinates nếu có mà chưa có lat/lng chuẩn
+        if ((!lat.HasValue || !lng.HasValue) && !string.IsNullOrWhiteSpace(request.GpsCoordinates))
+        {
+            var cleanGps = request.GpsCoordinates.Trim();
+            // Thử dạng số thập phân: "10.04167, 106.58333" hoặc "10.04167°N, 106.58333°E"
+            var decMatch = System.Text.RegularExpressions.Regex.Match(cleanGps, @"([+-]?\d+(?:\.\d+)?)\s*(?:°?\s*[NS])?\s*[,;]\s*([+-]?\d+(?:\.\d+)?)\s*(?:°?\s*[EW])?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (decMatch.Success &&
+                double.TryParse(decMatch.Groups[1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var pLat) &&
+                double.TryParse(decMatch.Groups[2].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var pLng))
+            {
+                lat = pLat;
+                lng = pLng;
+            }
+            else
+            {
+                // Thử dạng độ phút giây: 15°13'45.2"N, 108°52'10.5"E
+                var dmsMatch = System.Text.RegularExpressions.Regex.Match(cleanGps, @"(\d+)°\s*(\d+)'\s*([\d.]+)\""?\s*([NS])\s*[,;]\s*(\d+)°\s*(\d+)'\s*([\d.]+)\""?\s*([EW])", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (dmsMatch.Success)
+                {
+                    double dLat = double.Parse(dmsMatch.Groups[1].Value) + double.Parse(dmsMatch.Groups[2].Value) / 60.0 + double.Parse(dmsMatch.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture) / 3600.0;
+                    if (dmsMatch.Groups[4].Value.Equals("S", StringComparison.OrdinalIgnoreCase)) dLat = -dLat;
+
+                    double dLng = double.Parse(dmsMatch.Groups[5].Value) + double.Parse(dmsMatch.Groups[6].Value) / 60.0 + double.Parse(dmsMatch.Groups[7].Value, System.Globalization.CultureInfo.InvariantCulture) / 3600.0;
+                    if (dmsMatch.Groups[8].Value.Equals("W", StringComparison.OrdinalIgnoreCase)) dLng = -dLng;
+
+                    lat = dLat;
+                    lng = dLng;
+                }
+            }
+        }
+
         var command = new CreatePetitionCommand
         {
             Title = request.Title,
             Content = content,
             CategoryId = request.CategoryId,
             AddressText = addressText,
-            Latitude = request.Latitude,
-            Longitude = request.Longitude,
+            Latitude = lat,
+            Longitude = lng,
             AdministrativeUnitId = request.AdministrativeUnitId,
             IsAnonymous = request.IsAnonymous,
             CitizenName = request.CitizenName,
@@ -229,6 +263,11 @@ public class CreatePetitionRequest
     /// Kinh độ GPS thực địa (WGS84)
     /// </summary>
     public double? Longitude { get; set; }
+
+    /// <summary>
+    /// Chuỗi tọa độ GPS định dạng tự do từ client (vd: 10.04167°N, 106.58333°E hoặc 10.04167, 106.58333)
+    /// </summary>
+    public string? GpsCoordinates { get; set; }
 
     /// <summary>
     /// Mã đơn vị hành chính quản lý địa bàn (tùy chọn)

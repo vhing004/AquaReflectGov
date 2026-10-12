@@ -106,6 +106,29 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
             ? "Công dân (Ẩn danh)"
             : (!string.IsNullOrWhiteSpace(sanitizedCitizenName) ? sanitizedCitizenName : "Công dân");
 
+        // Tự động gán tọa độ fallback theo địa bàn hành chính nếu công dân chưa bật GPS
+        double? lat = command.Latitude;
+        double? lng = command.Longitude;
+
+        if (!lat.HasValue || !lng.HasValue)
+        {
+            string? unitName = null;
+            if (command.AdministrativeUnitId.HasValue)
+            {
+                var unit = await _context.AdministrativeUnits
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == command.AdministrativeUnitId.Value, cancellationToken);
+                unitName = unit?.Name;
+            }
+
+            var fallback = GetFallbackCoordinates(unitName, sanitizedAddressText);
+            if (fallback.HasValue)
+            {
+                lat = fallback.Value.Lat;
+                lng = fallback.Value.Lng;
+            }
+        }
+
         // 6. Khởi tạo đối tượng Petition với dữ liệu đã được khử độc an toàn
         var petition = new Petition
         {
@@ -114,8 +137,8 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
             Title = sanitizedTitle,
             Content = sanitizedContent,
             AddressText = sanitizedAddressText,
-            Latitude = command.Latitude,
-            Longitude = command.Longitude,
+            Latitude = lat,
+            Longitude = lng,
             AdministrativeUnitId = command.AdministrativeUnitId,
             IsAnonymous = command.IsAnonymous,
             CitizenName = command.IsAnonymous ? "Công dân (Ẩn danh)" : sanitizedCitizenName,
@@ -242,5 +265,22 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         var randomPart = RandomNumberGenerator.GetString(chars, 5);
         return $"TS-{DateTime.UtcNow:yyyyMM}-{randomPart}";
+    }
+
+    private static (double Lat, double Lng)? GetFallbackCoordinates(string? unitName, string? address)
+    {
+        var text = $"{unitName} {address}".ToLowerInvariant();
+        if (text.Contains("ngọc hiển")) return (8.4352, 104.8321);
+        if (text.Contains("đầm dơi")) return (8.9712, 105.1784);
+        if (text.Contains("cà mau")) return (9.1768, 105.1524);
+        if (text.Contains("sông đốc") || text.Contains("trần văn thời")) return (9.0521, 104.8214);
+        if (text.Contains("năm căn")) return (8.7541, 105.0215);
+        if (text.Contains("u minh") || text.Contains("khánh hội")) return (9.4215, 104.9124);
+        if (text.Contains("ba tri") || text.Contains("bến tre")) return (10.0416, 106.5833);
+        if (text.Contains("bình sơn") || text.Contains("sa kỳ") || text.Contains("quảng ngãi")) return (15.2289, 108.8685);
+        if (text.Contains("bình châu") || text.Contains("xuyên mộc") || text.Contains("vũng tàu")) return (10.5123, 107.5412);
+        if (text.Contains("kiên giang") || text.Contains("phú quốc")) return (10.2289, 103.9572);
+        if (text.Contains("bạc liêu")) return (9.2941, 105.7278);
+        return null;
     }
 }

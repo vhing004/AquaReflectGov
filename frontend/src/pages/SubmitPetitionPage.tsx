@@ -568,6 +568,26 @@ export const SubmitPetitionPage: React.FC = () => {
 
       if (gpsCoordinates) {
         formData.append('GpsCoordinates', gpsCoordinates);
+        // Tách chuỗi GPS để gửi Latitude và Longitude chuẩn số
+        const decMatch = gpsCoordinates.match(/([+-]?\d+(?:\.\d+)?)\s*(?:°?\s*[NS])?\s*[,;]\s*([+-]?\d+(?:\.\d+)?)\s*(?:°?\s*[EW])?/i);
+        if (decMatch) {
+          const lat = parseFloat(decMatch[1]);
+          const lng = parseFloat(decMatch[2]);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            formData.append('Latitude', lat.toString());
+            formData.append('Longitude', lng.toString());
+          }
+        } else {
+          const dmsMatch = gpsCoordinates.match(/(\d+)°\s*(\d+)'\s*([\d.]+)"?\s*([NS])\s*[,;]\s*(\d+)°\s*(\d+)'\s*([\d.]+)"?\s*([EW])/i);
+          if (dmsMatch) {
+            let lat = parseInt(dmsMatch[1]) + parseInt(dmsMatch[2]) / 60 + parseFloat(dmsMatch[3]) / 3600;
+            if (dmsMatch[4].toUpperCase() === 'S') lat = -lat;
+            let lng = parseInt(dmsMatch[5]) + parseInt(dmsMatch[6]) / 60 + parseFloat(dmsMatch[7]) / 3600;
+            if (dmsMatch[8].toUpperCase() === 'W') lng = -lng;
+            formData.append('Latitude', lat.toFixed(5));
+            formData.append('Longitude', lng.toFixed(5));
+          }
+        }
       }
       if (administrativeUnitId) {
         formData.append('AdministrativeUnitId', administrativeUnitId.toString());

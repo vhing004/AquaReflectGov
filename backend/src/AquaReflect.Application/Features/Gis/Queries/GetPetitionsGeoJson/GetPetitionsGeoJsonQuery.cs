@@ -45,26 +45,10 @@ public class GetPetitionsGeoJsonQueryHandler : IRequestHandler<GetPetitionsGeoJs
             .Include(p => p.AdministrativeUnit)
             .Where(p => !p.IsDeleted && p.Latitude.HasValue && p.Longitude.HasValue);
 
-        // Bảo mật GIS: Nếu không phải Lãnh đạo/Điều phối (SuperAdmin/Dispatcher), không lộ hồ sơ mới gửi (Submitted)
-        bool isOfficerLeader = _currentUser.IsAuthenticated && 
-            (_currentUser.Role == UserRole.SuperAdmin || _currentUser.Role == UserRole.Dispatcher);
-
-        if (!isOfficerLeader)
+        // Nếu là Specialist thì chỉ xem hồ sơ thuộc phòng ban mình khi đang đăng nhập nội bộ
+        if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist && _currentUser.DepartmentId.HasValue)
         {
-            query = query.Where(p => p.Status != PetitionStatus.Submitted);
-
-            // Nếu là Specialist thì chỉ xem hồ sơ thuộc phòng ban mình
-            if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist)
-            {
-                if (_currentUser.DepartmentId.HasValue)
-                {
-                    query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
-                }
-                else
-                {
-                    query = query.Where(p => false);
-                }
-            }
+            query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
         }
 
         // 2. Lọc theo Bounding Box (Viewport Bounds) nếu có
@@ -87,10 +71,7 @@ public class GetPetitionsGeoJsonQueryHandler : IRequestHandler<GetPetitionsGeoJs
         // 4. Lọc theo Trạng thái
         if (request.Status.HasValue)
         {
-            if (isOfficerLeader || request.Status.Value != PetitionStatus.Submitted)
-            {
-                query = query.Where(p => p.Status == request.Status.Value);
-            }
+            query = query.Where(p => p.Status == request.Status.Value);
         }
 
         // 5. Lọc theo Mức độ ưu tiên
