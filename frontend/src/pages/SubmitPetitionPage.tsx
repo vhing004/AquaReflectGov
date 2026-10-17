@@ -310,20 +310,68 @@ export const SubmitPetitionPage: React.FC = () => {
     }
   }, [user]);
 
-  // Handle GPS location detection
-  const handleGetGps = () => {
+  // Handle GPS location detection + Reverse Geocode tự động điền địa bàn
+  const handleGetGps = async () => {
     setIsGettingGps(true);
+
+    // Hàm reverse geocode qua Nominatim (OSM) - miễn phí, tiếng Việt
+    const reverseGeocode = async (lat: number, lng: number) => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=vi&addressdetails=1`,
+          { headers: { 'User-Agent': 'AquaReflect/1.0' } }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const addr = data?.address;
+        if (!addr) return;
+
+        // Chuyển sang chế độ Ven bờ / Đất liền
+        setLocationType('LAND_COASTAL');
+
+        // Match Tỉnh/Thành phố với danh sách provinces
+        const stateName = addr.state || addr.province || '';
+        if (stateName && provinces.length > 0) {
+          // Chuẩn hóa: bỏ prefix "Tỉnh ", "Thành phố " để so khớp linh hoạt
+          const normalize = (s: string) =>
+            s.replace(/^(Tỉnh|Thành phố|TP\.?)\s*/i, '').trim().toLowerCase();
+          const stateNorm = normalize(stateName);
+          const matched = provinces.find(
+            (p) => normalize(p.name) === stateNorm || p.name.toLowerCase().includes(stateNorm)
+          );
+          if (matched) setAdministrativeUnitId(matched.id);
+        }
+
+        // Điền Quận/Huyện
+        const district = addr.county || addr.city_district || addr.city || '';
+        if (district) setDistrictName(district);
+
+        // Điền Phường/Xã
+        const ward = addr.suburb || addr.village || addr.quarter || addr.town || '';
+        if (ward) setWardName(ward);
+
+        // Điền địa chỉ chi tiết
+        const parts: string[] = [];
+        if (addr.house_number) parts.push(addr.house_number);
+        if (addr.road) parts.push(addr.road);
+        if (addr.hamlet) parts.push(addr.hamlet);
+        if (parts.length > 0) setDetailAddress(parts.join(', '));
+      } catch {
+        // Geocode thất bại - không sao, tọa độ GPS vẫn được set
+      }
+    };
+
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setIsGettingGps(false);
-          const lat = pos.coords.latitude.toFixed(5);
-          const lng = pos.coords.longitude.toFixed(5);
-          const coordsStr = `${lat}°N, ${lng}°E`;
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const coordsStr = `${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`;
           setGpsCoordinates(coordsStr);
-          setLocation((prev) => 
-            prev.includes('GPS:') ? prev : `${prev} [GPS: ${coordsStr}]`
-          );
+
+          // Reverse geocode để tự điền Tỉnh/Huyện/Xã
+          await reverseGeocode(lat, lng);
+          setIsGettingGps(false);
         },
         () => {
           setIsGettingGps(false);
@@ -333,7 +381,7 @@ export const SubmitPetitionPage: React.FC = () => {
             prev.includes('GPS:') ? prev : `${prev} [GPS: ${fallbackCoords}]`
           );
         },
-        { timeout: 6000 }
+        { timeout: 8000, enableHighAccuracy: true }
       );
     } else {
       setIsGettingGps(false);
