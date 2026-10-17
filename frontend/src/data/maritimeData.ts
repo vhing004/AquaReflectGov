@@ -164,3 +164,53 @@ export const FISHING_GROUNDS: FishingGroundItem[] = [
   { id: 'FG_CON_DAO', name: 'Ngư trường Côn Đảo & Nam Biển Đông', region: 'Đông Nam Bộ', description: 'Vùng khai thác ghẹ, mực, cá ngừ vây vàng' },
   { id: 'FG_TAY_NAM', name: 'Ngư trường Tây Nam (Kiên Giang - Phú Quốc - Thổ Chu)', region: 'Tây Nam Bộ', description: 'Vùng biển nông giáp Campuchia & Malaysia' },
 ];
+
+export interface CoastalProvinceItem {
+  id: number;
+  code: string;
+  name: string;
+  region: 'Bắc Bộ' | 'Bắc Trung Bộ' | 'Duyên hải Nam Trung Bộ' | 'Đông Nam Bộ' | 'Đồng bằng sông Cửu Long';
+  hasAquaculture: boolean;
+}
+
+// Danh sách trọn bộ 28 Tỉnh / Thành phố Ven biển Việt Nam (Khu vực quản lý chuyên ngành thủy sản)
+export const VIETNAM_COASTAL_PROVINCES: CoastalProvinceItem[] = [
+  // Trọng điểm Quảng Ngãi và Duyên hải Nam Trung Bộ
+  { id: 14, code: 'QNG', name: 'Tỉnh Quảng Ngãi (Trọng điểm)', region: 'Duyên hải Nam Trung Bộ', hasAquaculture: true },
+  { id: 12, code: 'DNG', name: 'Thành phố Đà Nẵng', region: 'Duyên hải Nam Trung Bộ', hasAquaculture: true },
+  { id: 13, code: 'QNA', name: 'Tỉnh Quảng Nam', region: 'Duyên hải Nam Trung Bộ', hasAquaculture: true },
+  { id: 15, code: 'BDH', name: 'Tỉnh Bình Định', region: 'Duyên hải Nam Trung Bộ', hasAquaculture: true },
+  { id: 16, code: 'PYE', name: 'Tỉnh Phú Yên', region: 'Duyên hải Nam Trung Bộ', hasAquaculture: true },
+  { id: 17, code: 'KHA', name: 'Tỉnh Khánh Hòa', region: 'Duyên hải Nam Trung Bộ', hasAquaculture: true },
+  { id: 18, code: 'NTH', name: 'Tỉnh Ninh Thuận', region: 'Duyên hải Nam Trung Bộ', hasAquaculture: true },
+  { id: 19, code: 'BTH', name: 'Tỉnh Bình Thuận', region: 'Duyên hải Nam Trung Bộ', hasAquaculture: true },
+
+  // Miền Bắc (Bắc Bộ)
+  { id: 1, code: 'QNI', name: 'Tỉnh Quảng Ninh', region: 'Bắc Bộ', hasAquaculture: true },
+  { id: 2, code: 'HPH', name: 'Thành phố Hải Phòng', region: 'Bắc Bộ', hasAquaculture: true },
+  { id: 3, code: 'TBH', name: 'Tỉnh Thái Bình', region: 'Bắc Bộ', hasAquaculture: true },
+  { id: 4, code: 'NDH', name: 'Tỉnh Nam Định', region: 'Bắc Bộ', hasAquaculture: true },
+  { id: 5, code: 'NBH', name: 'Tỉnh Ninh Bình', region: 'Bắc Bộ', hasAquaculture: true },
+
+  // Bắc Trung Bộ
+  { id: 6, code: 'THA', name: 'Tỉnh Thanh Hóa', region: 'Bắc Trung Bộ', hasAquaculture: true },
+  { id: 7, code: 'NAN', name: 'Tỉnh Nghệ An', region: 'Bắc Trung Bộ', hasAquaculture: true },
+  { id: 8, code: 'HTI', name: 'Tỉnh Hà Tĩnh', region: 'Bắc Trung Bộ', hasAquaculture: true },
+  { id: 9, code: 'QBH', name: 'Tỉnh Quảng Bình', region: 'Bắc Trung Bộ', hasAquaculture: true },
+  { id: 10, code: 'QTR', name: 'Tỉnh Quảng Trị', region: 'Bắc Trung Bộ', hasAquaculture: true },
+  { id: 11, code: 'TTH', name: 'Tỉnh Thừa Thiên Huế', region: 'Bắc Trung Bộ', hasAquaculture: true },
+
+  // Đông Nam Bộ
+  { id: 20, code: 'BRV', name: 'Tỉnh Bà Rịa - Vũng Tàu', region: 'Đông Nam Bộ', hasAquaculture: true },
+  { id: 21, code: 'HCM', name: 'Thành phố Hồ Chí Minh (Cần Giờ)', region: 'Đông Nam Bộ', hasAquaculture: true },
+
+  // Đồng bằng sông Cửu Long (Trọng điểm nuôi tôm, cá tra & khai thác hải sản)
+  { id: 22, code: 'TGI', name: 'Tỉnh Tiền Giang', region: 'Đồng bằng sông Cửu Long', hasAquaculture: true },
+  { id: 23, code: 'BTE', name: 'Tỉnh Bến Tre', region: 'Đồng bằng sông Cửu Long', hasAquaculture: true },
+  { id: 24, code: 'TVH', name: 'Tỉnh Trà Vinh', region: 'Đồng bằng sông Cửu Long', hasAquaculture: true },
+  { id: 25, code: 'STR', name: 'Tỉnh Sóc Trăng', region: 'Đồng bằng sông Cửu Long', hasAquaculture: true },
+  { id: 26, code: 'BLI', name: 'Tỉnh Bạc Liêu', region: 'Đồng bằng sông Cửu Long', hasAquaculture: true },
+  { id: 27, code: 'CMA', name: 'Tỉnh Cà Mau', region: 'Đồng bằng sông Cửu Long', hasAquaculture: true },
+  { id: 28, code: 'KGI', name: 'Tỉnh Kiên Giang', region: 'Đồng bằng sông Cửu Long', hasAquaculture: true },
+];
+

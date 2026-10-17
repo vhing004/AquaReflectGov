@@ -40,11 +40,93 @@ import {
   Waves
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { MAJOR_FISHING_PORTS, SEA_ZONES, FISHING_GROUNDS } from '../data/maritimeData';
+import { MAJOR_FISHING_PORTS, SEA_ZONES, FISHING_GROUNDS, VIETNAM_COASTAL_PROVINCES } from '../data/maritimeData';
 
 export type LocationType = 'LAND_COASTAL' | 'FISHING_PORT' | 'OFFSHORE_SEA';
 
 const LOCAL_STORAGE_DRAFT_KEY = 'aquareflect_petition_draft';
+
+// Dữ liệu danh mục chuẩn hóa nghiệp vụ ngành thủy sản (fallback an toàn)
+const DEFAULT_PETITION_CATEGORIES: Category[] = [
+  {
+    id: 'VI_PHAM_IUU',
+    name: 'Vi phạm khai thác hải sản IUU / Giã cào xung điện',
+    code: 'VI_PHAM_IUU',
+    categoryType: 3,
+    categoryTypeName: 'IUUFishing',
+    description: 'Phản ánh tàu cá giã cào hủy diệt ven bờ, sử dụng xung điện, xiếc máy, khai thác sai vùng biển hoặc vi phạm thiết bị giám sát VMS.',
+    defaultSlaHours: 24,
+    displayOrder: 1,
+  },
+  {
+    id: 'O_NHIEM_NUOC',
+    name: 'Ô nhiễm nguồn nước nuôi trồng / Xả thải độc hại',
+    code: 'O_NHIEM_NUOC',
+    categoryType: 1,
+    categoryTypeName: 'WaterPollution',
+    description: 'Phản ánh hiện tượng nước kênh rạch, vùng nuôi bị ô nhiễm màu đen/hôi, xả thải trộm từ nhà máy xí nghiệp.',
+    defaultSlaHours: 48,
+    displayOrder: 2,
+  },
+  {
+    id: 'DICH_BENH',
+    name: 'Dịch bệnh trên thủy hải sản (Tôm, cá chết hàng loạt)',
+    code: 'DICH_BENH',
+    categoryType: 2,
+    categoryTypeName: 'AquaticDisease',
+    description: 'Phản ánh tôm cá nuôi đột ngột chết hàng loạt, có dấu hiệu lây lan diện rộng (đốm trắng, hoại tử gan tụy). Cần xử lý khẩn.',
+    defaultSlaHours: 24,
+    displayOrder: 3,
+  },
+  {
+    id: 'GIONG_THUC_AN',
+    name: 'Chất lượng con giống & Thức ăn thủy sản kém chất lượng',
+    code: 'GIONG_THUC_AN',
+    categoryType: 4,
+    categoryTypeName: 'SeedAndFeedQuality',
+    description: 'Phản ánh cơ sở kinh doanh giống tôm cá trôi nổi, thuốc thú y thủy sản giả hoặc thức ăn chăn nuôi không rõ nguồn gốc.',
+    defaultSlaHours: 72,
+    displayOrder: 4,
+  },
+  {
+    id: 'HA_TANG_CANG_CA',
+    name: 'Hạ tầng cảng cá, luồng lạch bồi lắng, khu neo đậu',
+    code: 'HA_TANG_CANG_CA',
+    categoryType: 5,
+    categoryTypeName: 'FisheryInfrastructure',
+    description: 'Phản ánh cửa biển bị bồi lắng cản trở tàu bè ra vào, hư hỏng cầu cảng hoặc thiếu dịch vụ bến bãi neo đậu tránh bão.',
+    defaultSlaHours: 120,
+    displayOrder: 5,
+  },
+  {
+    id: 'THU_TUC_HANH_CHINH',
+    name: 'Cơ chế chính sách, TTHC đăng kiểm & cấp phép',
+    code: 'THU_TUC_HANH_CHINH',
+    categoryType: 6,
+    categoryTypeName: 'AdministrativeProcedure',
+    description: 'Kiến nghị về thủ tục đăng ký, đăng kiểm tàu cá, cấp phép nuôi trồng biển, hỗ trợ thiên tai dịch bệnh.',
+    defaultSlaHours: 72,
+    displayOrder: 6,
+  },
+  {
+    id: 'KHAC',
+    name: 'Vấn đề thủy sản khác',
+    code: 'KHAC',
+    categoryType: 7,
+    categoryTypeName: 'Other',
+    description: 'Các kiến nghị và phản ánh khác liên quan đến đời sống và hoạt động sản xuất thủy sản.',
+    defaultSlaHours: 72,
+    displayOrder: 7,
+  },
+];
+
+// Danh sách trọn bộ 28 Tỉnh / Thành phố Ven biển Việt Nam
+const DEFAULT_COASTAL_PROVINCES: AdministrativeUnit[] = VIETNAM_COASTAL_PROVINCES.map((p) => ({
+  id: p.id,
+  code: p.code,
+  name: p.name,
+  level: 1,
+}));
 
 export const SubmitPetitionPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -55,20 +137,23 @@ export const SubmitPetitionPage: React.FC = () => {
   const [formMode, setFormMode] = useState<'wizard' | 'all'>('wizard');
   const [currentStep, setCurrentStep] = useState<number>(1);
 
-  // Master Data state
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [provinces, setProvinces] = useState<AdministrativeUnit[]>([]);
-  const [isLoadingMasterData, setIsLoadingMasterData] = useState(true);
+  // Master Data state - khởi tạo sẵn fallback 28 tỉnh ven biển để luôn có danh mục tức thì
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_PETITION_CATEGORIES);
+  const [provinces, setProvinces] = useState<AdministrativeUnit[]>(DEFAULT_COASTAL_PROVINCES);
+  const [isLoadingMasterData, setIsLoadingMasterData] = useState(false);
 
   // Form input state
-  const [categoryId, setCategoryId] = useState<string>('');
+  const [categoryId, setCategoryId] = useState<string>('VI_PHAM_IUU');
   const [title, setTitle] = useState('');
-  const [administrativeUnitId, setAdministrativeUnitId] = useState<number | undefined>(undefined);
+  const [administrativeUnitId, setAdministrativeUnitId] = useState<number | undefined>(14); // Mặc định Quảng Ngãi
   const [location, setLocation] = useState('Khu vực Cửa biển Sa Kỳ, Xã Bình Châu, Huyện Bình Sơn, Tỉnh Quảng Ngãi');
   const [gpsCoordinates, setGpsCoordinates] = useState<string>('');
   const [description, setDescription] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isGettingGps, setIsGettingGps] = useState(false);
+
+  // Cảnh báo khi tọa độ nằm ngoài vùng thủy hải sản (nội địa / không chăn nuôi thủy sản)
+  const [locationWarning, setLocationWarning] = useState<string | null>(null);
 
   // Smart Location Selector State
   const [locationType, setLocationType] = useState<LocationType>('LAND_COASTAL');
@@ -175,11 +260,22 @@ export const SubmitPetitionPage: React.FC = () => {
         }
 
         if (provRes.data && provRes.data.length > 0) {
-          setProvinces(provRes.data);
-          const qng = provRes.data.find(p => p.code === 'QNG') || provRes.data[0];
-          if (qng) {
-            setAdministrativeUnitId(qng.id);
-          }
+          // Merge thông minh: Cập nhật ID từ DB nhưng vẫn bảo tồn đủ 28 tỉnh ven biển
+          const dbProvinces = provRes.data;
+          const merged = VIETNAM_COASTAL_PROVINCES.map((cp) => {
+            const matchedDb = dbProvinces.find(
+              (dp) =>
+                dp.code.toUpperCase() === cp.code.toUpperCase() ||
+                dp.name.toLowerCase().includes(cp.name.toLowerCase().replace(/^(tỉnh|thành phố)\s*/i, ''))
+            );
+            return {
+              id: matchedDb ? matchedDb.id : cp.id,
+              code: cp.code,
+              name: cp.name,
+              level: 1,
+            };
+          });
+          setProvinces(merged);
         }
       } catch (err) {
         console.error('Lỗi tải danh mục hoặc đơn vị hành chính:', err);
@@ -222,11 +318,13 @@ export const SubmitPetitionPage: React.FC = () => {
     const provName = prov ? prov.name : '';
 
     if (locationType === 'LAND_COASTAL') {
+      const gpsPart = gpsCoordinates ? `[GPS: ${gpsCoordinates}]` : '';
       const parts = [
         detailAddress.trim(),
         wardName.trim() ? `Xã/Phường ${wardName.trim()}` : '',
         districtName.trim() ? `Huyện/Quận ${districtName.trim()}` : '',
         provName,
+        gpsPart,
       ].filter(Boolean);
       return parts.length > 0 ? `[Ven bờ/Đất liền] ${parts.join(', ')}` : (location || 'Trên đất liền / Ven bờ');
     }
@@ -314,51 +412,177 @@ export const SubmitPetitionPage: React.FC = () => {
   const handleGetGps = async () => {
     setIsGettingGps(true);
 
-    // Hàm reverse geocode qua Nominatim (OSM) - miễn phí, tiếng Việt
+    // Hàm reverse geocode đa tầng: BigDataCloud (chuẩn VN, cực nhanh, không chặn DNS) -> OSM -> Fallback nội bộ
     const reverseGeocode = async (lat: number, lng: number) => {
+      // Đảm bảo chuyển về chế độ Ven bờ / Đất liền để người dân thấy ngay các trường địa bàn
+      setLocationType('LAND_COASTAL');
+
+      let matchedProvId: number | undefined;
+      let detectedDistrict = '';
+      let detectedWard = '';
+      let detectedDetail = '';
+
+      // Tầng 1: BigDataCloud Client Reverse Geocode API (Miễn phí, hỗ trợ tiếng Việt bản xứ, không chặn DNS tại VN)
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=vi&addressdetails=1`,
-          { headers: { 'User-Agent': 'AquaReflect/1.0' } }
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        const addr = data?.address;
-        if (!addr) return;
+        const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=vi`;
+        const res = await fetch(bdcUrl, { signal: AbortSignal.timeout(4000) });
+        if (res.ok) {
+          const data = await res.json();
+          const stateName = data.principalSubdivision || '';
 
-        // Chuyển sang chế độ Ven bờ / Đất liền
-        setLocationType('LAND_COASTAL');
+          // Kiểm tra và so khớp với 28 Tỉnh/Thành phố ven biển Việt Nam
+          if (stateName) {
+            const normalize = (s: string) =>
+              s.replace(/^(Tỉnh|Thành phố|TP\.?)\s*/i, '').trim().toLowerCase();
+            const stateNorm = normalize(stateName);
+            const matched = provinces.find(
+              (p) =>
+                normalize(p.name) === stateNorm ||
+                p.name.toLowerCase().includes(stateNorm) ||
+                stateNorm.includes(normalize(p.name))
+            );
 
-        // Match Tỉnh/Thành phố với danh sách provinces
-        const stateName = addr.state || addr.province || '';
-        if (stateName && provinces.length > 0) {
-          // Chuẩn hóa: bỏ prefix "Tỉnh ", "Thành phố " để so khớp linh hoạt
-          const normalize = (s: string) =>
-            s.replace(/^(Tỉnh|Thành phố|TP\.?)\s*/i, '').trim().toLowerCase();
-          const stateNorm = normalize(stateName);
-          const matched = provinces.find(
-            (p) => normalize(p.name) === stateNorm || p.name.toLowerCase().includes(stateNorm)
-          );
-          if (matched) setAdministrativeUnitId(matched.id);
+            if (matched) {
+              matchedProvId = matched.id;
+              setLocationWarning(null); // Tỉnh ven biển hợp lệ!
+            } else {
+              // Tọa độ thuộc khu vực nội địa không có biển và không nuôi trồng thủy hải sản
+              setLocationWarning(
+                `Tọa độ định vị hiện tại thuộc địa bàn "${stateName}" - Đây là khu vực nội địa không thuộc phạm vi 28 tỉnh, thành phố ven biển và vùng quy hoạch bảo trợ nuôi trồng/khai thác thủy hải sản của Cục Thủy Sản. Hệ thống từ chối tiếp nhận xử lý phản ánh tại địa bàn này.`
+              );
+              setDistrictName('');
+              setWardName('');
+              setDetailAddress('');
+              return;
+            }
+          }
+
+          // Trích xuất Phường/Xã và Quận/Huyện từ administrative list
+          if (Array.isArray(data.localityInfo?.administrative)) {
+            for (const adm of data.localityInfo.administrative) {
+              const name = (adm.name || '').trim();
+              const desc = (adm.description || '').toLowerCase();
+              const nameLower = name.toLowerCase();
+
+              // Nhận diện Xã / Phường / Thị trấn
+              if (
+                desc.includes('xã') ||
+                desc.includes('phường') ||
+                desc.includes('thị trấn') ||
+                nameLower.startsWith('xã ') ||
+                nameLower.startsWith('phường ') ||
+                nameLower.startsWith('thị trấn ') ||
+                nameLower.startsWith('xa ') ||
+                nameLower.startsWith('phuong ')
+              ) {
+                detectedWard = name.replace(/\s*\([^)]*\)/g, '').trim();
+              }
+              // Nhận diện Huyện / Quận / Thị xã / Thành phố trực thuộc
+              else if (
+                desc.includes('huyện') ||
+                desc.includes('quận') ||
+                desc.includes('thị xã') ||
+                (desc.includes('thành phố') && adm.adminLevel && adm.adminLevel > 4) ||
+                nameLower.startsWith('huyện ') ||
+                nameLower.startsWith('quận ') ||
+                nameLower.startsWith('thị xã ')
+              ) {
+                detectedDistrict = name.replace(/\s*\([^)]*\)/g, '').trim();
+              }
+            }
+          }
+
+          // Fallback tên xã/phường nếu administrative list chưa có
+          if (!detectedWard && data.locality && !data.locality.toLowerCase().includes('việt nam')) {
+            detectedWard = data.locality.replace(/\s*\([^)]*\)/g, '').trim();
+          }
+
+          // Fallback tên huyện nếu chưa có
+          if (!detectedDistrict && data.city && data.city !== data.principalSubdivision && data.city !== detectedWard) {
+            detectedDistrict = data.city.replace(/\s*\([^)]*\)/g, '').trim();
+          }
+
+          // Tìm địa chỉ chi tiết (tổ dân phố, xóm, thôn)
+          if (Array.isArray(data.localityInfo?.administrative)) {
+            const microAdmins = data.localityInfo.administrative.filter(
+              (a: any) => a.adminLevel && a.adminLevel >= 7
+            );
+            if (microAdmins.length > 0) {
+              detectedDetail = microAdmins.map((m: any) => m.name).join(', ');
+            }
+          }
         }
-
-        // Điền Quận/Huyện
-        const district = addr.county || addr.city_district || addr.city || '';
-        if (district) setDistrictName(district);
-
-        // Điền Phường/Xã
-        const ward = addr.suburb || addr.village || addr.quarter || addr.town || '';
-        if (ward) setWardName(ward);
-
-        // Điền địa chỉ chi tiết
-        const parts: string[] = [];
-        if (addr.house_number) parts.push(addr.house_number);
-        if (addr.road) parts.push(addr.road);
-        if (addr.hamlet) parts.push(addr.hamlet);
-        if (parts.length > 0) setDetailAddress(parts.join(', '));
       } catch {
-        // Geocode thất bại - không sao, tọa độ GPS vẫn được set
+        // Tầng 1 gặp lỗi mạng, tiếp tục tầng 2
       }
+
+      // Tầng 2: Fallback qua Nominatim (nếu máy có thể kết nối được)
+      if (!detectedDistrict && !detectedWard && !matchedProvId) {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=vi&addressdetails=1`,
+            { headers: { 'User-Agent': 'AquaReflect/1.0' }, signal: AbortSignal.timeout(3000) }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data?.address;
+            if (addr) {
+              const stateName = addr.state || addr.province || '';
+              if (stateName && provinces.length > 0) {
+                const normalize = (s: string) =>
+                  s.replace(/^(Tỉnh|Thành phố|TP\.?)\s*/i, '').trim().toLowerCase();
+                const stateNorm = normalize(stateName);
+                const matched = provinces.find(
+                  (p) => normalize(p.name) === stateNorm || p.name.toLowerCase().includes(stateNorm)
+                );
+                if (matched) {
+                  matchedProvId = matched.id;
+                  setLocationWarning(null);
+                } else {
+                  setLocationWarning(
+                    `Tọa độ định vị hiện tại thuộc địa bàn "${stateName}" - Đây là khu vực nội địa không thuộc phạm vi 28 tỉnh, thành phố ven biển và vùng quy hoạch bảo trợ nuôi trồng/khai thác thủy hải sản của Cục Thủy Sản. Hệ thống từ chối tiếp nhận xử lý phản ánh tại địa bàn này.`
+                  );
+                  return;
+                }
+              }
+              detectedDistrict = addr.county || addr.city_district || addr.city || '';
+              detectedWard = addr.suburb || addr.village || addr.quarter || addr.town || '';
+              const parts: string[] = [];
+              if (addr.house_number) parts.push(addr.house_number);
+              if (addr.road) parts.push(addr.road);
+              if (addr.hamlet) parts.push(addr.hamlet);
+              if (parts.length > 0) detectedDetail = parts.join(', ');
+            }
+          }
+        } catch {
+          // Bỏ qua nếu Nominatim không kết nối được
+        }
+      }
+
+      // Tầng 3: Fallback địa bàn nội bộ cho vùng trọng điểm Quảng Ngãi & duyên hải miền Trung
+      if (!matchedProvId && provinces.length > 0) {
+        const qng = provinces.find((p) => p.code === 'QNG') || provinces[0];
+        if (qng) {
+          matchedProvId = qng.id;
+          setLocationWarning(null);
+        }
+      }
+      if (!detectedDistrict && lat >= 14.8 && lat <= 15.5 && lng >= 108.4 && lng <= 109.3) {
+        detectedDistrict = 'Huyện Bình Sơn';
+      }
+      if (!detectedWard && lat >= 15.15 && lat <= 15.35 && lng >= 108.75 && lng <= 108.95) {
+        detectedWard = 'Xã Bình Châu';
+      }
+      if (!detectedDetail) {
+        const areaName = detectedWard ? `${detectedWard}, ${detectedDistrict || ''}`.trim() : 'ven biển';
+        detectedDetail = `Thực địa khu vực ${areaName} (tọa độ GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+      }
+
+      // Cập nhật toàn bộ các trường địa bàn vào Form
+      if (matchedProvId) setAdministrativeUnitId(matchedProvId);
+      if (detectedDistrict) setDistrictName(detectedDistrict);
+      if (detectedWard) setWardName(detectedWard);
+      if (detectedDetail) setDetailAddress(detectedDetail);
     };
 
     if ('geolocation' in navigator) {
@@ -369,25 +593,31 @@ export const SubmitPetitionPage: React.FC = () => {
           const coordsStr = `${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`;
           setGpsCoordinates(coordsStr);
 
-          // Reverse geocode để tự điền Tỉnh/Huyện/Xã
+          // Reverse geocode tự động điền Tỉnh / Huyện / Xã / Địa chỉ chi tiết
           await reverseGeocode(lat, lng);
           setIsGettingGps(false);
         },
-        () => {
-          setIsGettingGps(false);
-          const fallbackCoords = "15°13'45.2\"N, 108°52'10.5\"E";
+        async () => {
+          // Xử lý khi trình duyệt không có GPS hoặc người dùng chặn định vị:
+          // Dùng tọa độ thực địa Cửa biển Sa Kỳ làm vị trí giả lập chuẩn mực
+          const fallbackLat = 15.2286;
+          const fallbackLng = 108.8924;
+          const fallbackCoords = "15.22860°N, 108.89240°E";
           setGpsCoordinates(fallbackCoords);
-          setLocation((prev) => 
-            prev.includes('GPS:') ? prev : `${prev} [GPS: ${fallbackCoords}]`
-          );
+
+          await reverseGeocode(fallbackLat, fallbackLng);
+          setIsGettingGps(false);
         },
-        { timeout: 8000, enableHighAccuracy: true }
+        { timeout: 7000, enableHighAccuracy: true }
       );
     } else {
-      setIsGettingGps(false);
-      const fallbackCoords = "15°13'45.2\"N, 108°52'10.5\"E";
+      const fallbackLat = 15.2286;
+      const fallbackLng = 108.8924;
+      const fallbackCoords = "15.22860°N, 108.89240°E";
       setGpsCoordinates(fallbackCoords);
-      setLocation((prev) => `${prev} [GPS: ${fallbackCoords}]`);
+
+      await reverseGeocode(fallbackLat, fallbackLng);
+      setIsGettingGps(false);
     }
   };
 
@@ -530,6 +760,10 @@ export const SubmitPetitionPage: React.FC = () => {
       return true;
     }
     if (step === 2) {
+      if (locationWarning) {
+        setSubmitError('Vị trí tọa độ nằm ngoài phạm vi 28 tỉnh ven biển. Hệ thống từ chối tiếp nhận xử lý.');
+        return false;
+      }
       if (title.trim().length < 5) {
         setSubmitError('Tiêu đề phản ánh phải có ít nhất 5 ký tự.');
         return false;
@@ -1044,6 +1278,33 @@ export const SubmitPetitionPage: React.FC = () => {
                   <span className="text-[11px] text-slate-400">Thông tin thực địa</span>
                 </div>
 
+                {/* Thẻ chuyên mục đang chọn (giúp người dân luôn thấy lĩnh vực phản ánh) */}
+                {selectedCategory && (
+                  <div className="flex items-center justify-between p-2.5 px-3 bg-sky-50/80 border border-sky-200/80 rounded-xl text-xs animate-in fade-in">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className="text-[10px] uppercase font-bold text-[#006194] bg-sky-100 px-1.5 py-0.5 rounded">
+                        Lĩnh vực đã chọn
+                      </span>
+                      <div className="flex items-center space-x-1.5 font-bold text-slate-800 truncate">
+                        {getCategoryIcon(selectedCategory.code)}
+                        <span className="truncate">{selectedCategory.name}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-medium shrink-0 hidden sm:inline">
+                        (Cam kết SLA: {selectedCategory.defaultSlaHours}h)
+                      </span>
+                    </div>
+                    {formMode === 'wizard' && (
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(1)}
+                        className="text-[11px] font-bold text-[#006194] hover:underline shrink-0 ml-2 cursor-pointer"
+                      >
+                        Đổi lĩnh vực
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* Tiêu đề */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-800">
@@ -1159,7 +1420,11 @@ export const SubmitPetitionPage: React.FC = () => {
                         <label className="text-xs font-bold text-slate-700">Tỉnh / Thành phố <span className="text-rose-500">*</span></label>
                         <select
                           value={administrativeUnitId || ''}
-                          onChange={(e) => setAdministrativeUnitId(e.target.value ? Number(e.target.value) : undefined)}
+                          onChange={(e) => {
+                            const val = e.target.value ? Number(e.target.value) : undefined;
+                            setAdministrativeUnitId(val);
+                            if (val) setLocationWarning(null);
+                          }}
                           className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-[#006194]"
                         >
                           <option value="">-- Chọn Tỉnh / Thành phố --</option>
@@ -1228,7 +1493,11 @@ export const SubmitPetitionPage: React.FC = () => {
                         <label className="text-xs font-bold text-slate-700">Tỉnh / Thành phố quản lý cảng</label>
                         <select
                           value={administrativeUnitId || ''}
-                          onChange={(e) => setAdministrativeUnitId(e.target.value ? Number(e.target.value) : undefined)}
+                          onChange={(e) => {
+                            const val = e.target.value ? Number(e.target.value) : undefined;
+                            setAdministrativeUnitId(val);
+                            if (val) setLocationWarning(null);
+                          }}
                           className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-[#006194]"
                         >
                           <option value="">-- Chọn Tỉnh / Thành phố --</option>
@@ -1327,7 +1596,11 @@ export const SubmitPetitionPage: React.FC = () => {
                         <label className="text-xs font-bold text-slate-700">Tỉnh ven biển tiếp nhận / Đăng ký tàu <span className="text-rose-500">*</span></label>
                         <select
                           value={administrativeUnitId || ''}
-                          onChange={(e) => setAdministrativeUnitId(e.target.value ? Number(e.target.value) : undefined)}
+                          onChange={(e) => {
+                            const val = e.target.value ? Number(e.target.value) : undefined;
+                            setAdministrativeUnitId(val);
+                            if (val) setLocationWarning(null);
+                          }}
                           className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600"
                         >
                           <option value="">-- Chọn Tỉnh / Thành phố --</option>
@@ -1352,10 +1625,10 @@ export const SubmitPetitionPage: React.FC = () => {
                         type="button"
                         onClick={handleGetGps}
                         disabled={isGettingGps}
-                        className="inline-flex items-center space-x-1 text-[11px] font-bold text-[#006194] bg-sky-50 hover:bg-sky-100 px-2.5 py-0.5 rounded-lg transition-colors border border-sky-200"
+                        className="inline-flex items-center space-x-1.5 text-[11px] font-bold text-[#006194] bg-sky-50 hover:bg-sky-100 active:scale-95 px-2.5 py-0.5 rounded-lg transition-all border border-sky-200 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed shadow-2xs"
                       >
-                        <MapPin className="w-3 h-3 text-[#006194]" />
-                        <span>{isGettingGps ? 'Đang đọc...' : 'GPS tự động 1 chạm'}</span>
+                        <MapPin className={`w-3 h-3 text-[#006194] ${isGettingGps ? 'animate-bounce' : ''}`} />
+                        <span>{isGettingGps ? 'Đang định vị & quét địa chỉ...' : 'GPS tự động 1 chạm'}</span>
                       </button>
                     </div>
                     <input
@@ -1380,6 +1653,34 @@ export const SubmitPetitionPage: React.FC = () => {
                     />
                   </div>
                 </div>
+
+                {/* CẢNH BÁO TỪ CHỐI TIẾP NHẬN NẾU TỌA ĐỘ NGOÀI PHẠM VI 28 TỈNH VEN BIỂN */}
+                {locationWarning && (
+                  <div className="p-4 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-950 text-xs space-y-2 animate-in fade-in shadow-xs">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs font-bold text-base">
+                        ⚠️
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-extrabold text-sm text-rose-900">
+                            Thông Báo: Ngoài Phạm Vi Tiếp Nhận & Xử Lý Thủy Sản
+                          </h4>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-200/70 px-2 py-0.5 rounded-md border border-rose-300">
+                            Từ chối thụ lý
+                          </span>
+                        </div>
+                        <p className="text-rose-800 leading-relaxed font-medium">
+                          {locationWarning}
+                        </p>
+                        <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-rose-700">
+                          <span className="font-bold">Quy định thẩm quyền:</span>
+                          <span>Hệ thống chỉ tiếp nhận xử lý sự cố tại 28 tỉnh, thành phố ven biển và vùng biển Việt Nam. Nếu phát hiện sai sót định vị, vui lòng chọn lại tỉnh ven biển hoặc tắt định vị để nhập thủ công.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Nội dung chi tiết */}
                 <div className="space-y-1.5">

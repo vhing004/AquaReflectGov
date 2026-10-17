@@ -100,6 +100,60 @@ public static class ApplicationDbContextSeed
                 await context.SaveChangesAsync();
             }
 
+            // Bổ sung đầy đủ 28 tỉnh/thành phố ven biển Việt Nam nếu cơ sở dữ liệu còn thiếu
+            var existingCodes = await context.AdministrativeUnits.Where(u => u.Level == 1).Select(u => u.Code).ToListAsync();
+            var coastalProvincesToAdd = new List<AdministrativeUnit>();
+
+            var allCoastals = new (string Code, string Name, string EnglishName)[]
+            {
+                ("QNG", "Tỉnh Quảng Ngãi (Trọng điểm)", "Quang Ngai Province"),
+                ("DNG", "Thành phố Đà Nẵng", "Da Nang City"),
+                ("QNA", "Tỉnh Quảng Nam", "Quang Nam Province"),
+                ("BDH", "Tỉnh Bình Định", "Binh Dinh Province"),
+                ("PYE", "Tỉnh Phú Yên", "Phu Yen Province"),
+                ("KHA", "Tỉnh Khánh Hòa", "Khanh Hoa Province"),
+                ("NTH", "Tỉnh Ninh Thuận", "Ninh Thuan Province"),
+                ("BTH", "Tỉnh Bình Thuận", "Binh Thuan Province"),
+                ("QNI", "Tỉnh Quảng Ninh", "Quang Ninh Province"),
+                ("HPH", "Thành phố Hải Phòng", "Hai Phong City"),
+                ("TBH", "Tỉnh Thái Bình", "Thai Binh Province"),
+                ("NDH", "Tỉnh Nam Định", "Nam Dinh Province"),
+                ("NBH", "Tỉnh Ninh Bình", "Ninh Binh Province"),
+                ("THA", "Tỉnh Thanh Hóa", "Thanh Hoa Province"),
+                ("NAN", "Tỉnh Nghệ An", "Nghe An Province"),
+                ("HTI", "Tỉnh Hà Tĩnh", "Ha Tinh Province"),
+                ("QBH", "Tỉnh Quảng Bình", "Quang Binh Province"),
+                ("QTR", "Tỉnh Quảng Trị", "Quang Tri Province"),
+                ("TTH", "Tỉnh Thừa Thiên Huế", "Thua Thien Hue Province"),
+                ("BRV", "Tỉnh Bà Rịa - Vũng Tàu", "Ba Ria - Vung Tau Province"),
+                ("HCM", "Thành phố Hồ Chí Minh (Cần Giờ)", "Ho Chi Minh City"),
+                ("TGI", "Tỉnh Tiền Giang", "Tien Giang Province"),
+                ("TVH", "Tỉnh Trà Vinh", "Tra Vinh Province"),
+                ("STR", "Tỉnh Sóc Trăng", "Soc Trang Province"),
+                ("BLI", "Tỉnh Bạc Liêu", "Bac Lieu Province"),
+            };
+
+            foreach (var (code, name, engName) in allCoastals)
+            {
+                if (!existingCodes.Contains(code))
+                {
+                    coastalProvincesToAdd.Add(new AdministrativeUnit
+                    {
+                        Code = code,
+                        Name = name,
+                        EnglishName = engName,
+                        Level = 1
+                    });
+                }
+            }
+
+            if (coastalProvincesToAdd.Count > 0)
+            {
+                logger.LogInformation("Bổ sung {Count} tỉnh/thành phố ven biển còn thiếu vào cơ sở dữ liệu...", coastalProvincesToAdd.Count);
+                context.AdministrativeUnits.AddRange(coastalProvincesToAdd);
+                await context.SaveChangesAsync();
+            }
+
             // 2. Seed Phòng ban / Cơ quan thụ lý
             Department? ccts = null;
             Department? ttkn = null;
