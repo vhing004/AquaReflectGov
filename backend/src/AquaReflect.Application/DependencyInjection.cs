@@ -22,6 +22,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<Common.Interfaces.IPetitionWorkflowService, Services.PetitionWorkflowService>();
+        services.AddScoped<Common.Interfaces.IWorkingDaysService, Services.WorkingDaysService>();
 
         return services;
     }
