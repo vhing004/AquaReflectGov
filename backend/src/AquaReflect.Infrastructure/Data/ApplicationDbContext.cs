@@ -105,6 +105,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.CitizenPhone).HasMaxLength(20);
             entity.Property(e => e.CitizenEmail).HasMaxLength(100);
             entity.Property(e => e.CitizenIdCard).HasMaxLength(25);
+            entity.Property(e => e.AccessPinHash).HasMaxLength(128);
+            entity.Property(e => e.ForwardToOrganization).HasMaxLength(250);
+            entity.Property(e => e.ForwardReason).HasMaxLength(1000);
+            entity.Property(e => e.WithdrawnReason).HasMaxLength(1000);
+            entity.Property(e => e.NeedInfoReason).HasMaxLength(1000);
+            entity.Property(e => e.PublicSummary).HasMaxLength(2000);
+            entity.Property(e => e.ReopenReason).HasMaxLength(1000);
 
             // Bỏ qua LocationGeometry nếu không có PostGIS C-extension trên host
             entity.Ignore(e => e.LocationGeometry);
@@ -121,6 +128,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasIndex(e => e.CategoryId);
             entity.HasIndex(e => e.DepartmentId);
             entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.DuplicateOfId);
 
             // Các mối quan hệ ngoại khóa
             entity.HasOne(e => e.Category)
@@ -142,6 +150,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .WithMany(a => a.Petitions)
                 .HasForeignKey(e => e.AdministrativeUnitId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Quan hệ tự tham chiếu: Gộp đơn trùng lặp
+            entity.HasOne(e => e.DuplicateOf)
+                .WithMany(p => p.MergedPetitions)
+                .HasForeignKey(e => e.DuplicateOfId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Resolution)
                 .WithOne(r => r.Petition)

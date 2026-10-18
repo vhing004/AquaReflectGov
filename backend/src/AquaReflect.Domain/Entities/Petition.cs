@@ -28,6 +28,9 @@ public class Petition : BaseEntity, IAuditableEntity
     public string? CitizenEmail { get; set; }
     public string? CitizenIdCard { get; set; }
 
+    // Mã PIN truy cập bảo mật một lần cho đơn vô danh (Lưu bản băm SHA-256)
+    public string? AccessPinHash { get; set; }
+
     // Trạng thái và mức độ ưu tiên
     public PetitionStatus Status { get; set; } = PetitionStatus.Submitted;
     public PriorityLevel PriorityLevel { get; set; } = PriorityLevel.Normal;
@@ -42,10 +45,41 @@ public class Petition : BaseEntity, IAuditableEntity
     public Guid? AssignedUserId { get; set; }
     public virtual User? AssignedUser { get; set; }
 
-    // Quản lý thời hạn SLA
+    // Xử lý Gộp đơn trùng lặp (Merged)
+    public Guid? DuplicateOfId { get; set; }
+    public virtual Petition? DuplicateOf { get; set; }
+    public virtual ICollection<Petition> MergedPetitions { get; set; } = new List<Petition>();
+
+    // Xử lý Chuyển cơ quan khác (Forwarded)
+    public string? ForwardToOrganization { get; set; }
+    public string? ForwardReason { get; set; }
+
+    // Xử lý Rút đơn (Withdrawn)
+    public string? WithdrawnReason { get; set; }
+    public DateTime? WithdrawnAt { get; set; }
+
+    // Xử lý Yêu cầu bổ sung thông tin (NeedInfo)
+    public string? NeedInfoReason { get; set; }
+    public DateTime? NeedInfoDeadline { get; set; }
+    public int NeedInfoCount { get; set; } = 0;
+
+    // Quản lý thời hạn và Tạm dừng SLA
     public DateTime? DueDate { get; set; }
+    public DateTime? SlaPausedAt { get; set; }
+    public double TotalSlaPausedMinutes { get; set; } = 0;
+
+    // Kết luận giải quyết (Resolved)
     public DateTime? ResolvedAt { get; set; }
     public string? ResolutionSummary { get; set; }
+    public ConclusionType? ConclusionType { get; set; }
+
+    // Tóm tắt công khai (sau khi Dispatcher duyệt hiển thị ra bản đồ cộng đồng)
+    public string? PublicSummary { get; set; }
+
+    // Xử lý Xem xét lại / Mở lại hồ sơ (Reopen - Tối đa 1 lần nếu CSAT <= 2)
+    public int ReopenCount { get; set; } = 0;
+    public string? ReopenReason { get; set; }
+    public DateTime? ReopenedAt { get; set; }
 
     public string? CreatedBy { get; set; }
     public string? LastModifiedBy { get; set; }

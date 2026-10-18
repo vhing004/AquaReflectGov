@@ -173,6 +173,10 @@ public class PetitionWorkflowService : IPetitionWorkflowService
         PetitionStatus.Resolved => "Đã giải quyết",
         PetitionStatus.Rejected => "Từ chối thụ lý",
         PetitionStatus.Closed => "Đã đóng",
+        PetitionStatus.NeedInfo => "Yêu cầu bổ sung thông tin",
+        PetitionStatus.Merged => "Đã gộp đơn trùng",
+        PetitionStatus.Forwarded => "Đã chuyển cơ quan khác",
+        PetitionStatus.Withdrawn => "Người dân đã rút đơn",
         _ => status.ToString()
     };
 }

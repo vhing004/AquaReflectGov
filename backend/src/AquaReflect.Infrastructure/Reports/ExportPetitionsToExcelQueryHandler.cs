@@ -115,6 +115,10 @@ public class ExportPetitionsToExcelQueryHandler : IRequestHandler<ExportPetition
                 PetitionStatus.Resolved => "Đã giải quyết",
                 PetitionStatus.Rejected => "Từ chối",
                 PetitionStatus.Closed => "Đã đóng",
+                PetitionStatus.NeedInfo => "Yêu cầu bổ sung",
+                PetitionStatus.Merged => "Đã gộp đơn",
+                PetitionStatus.Forwarded => "Đã chuyển cơ quan khác",
+                PetitionStatus.Withdrawn => "Đã rút đơn",
                 _ => p.Status.ToString()
             };
 

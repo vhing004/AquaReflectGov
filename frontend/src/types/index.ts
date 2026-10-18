@@ -9,7 +9,19 @@ export interface ApiResponse<T> {
 
 export type UserRole = 'SuperAdmin' | 'Dispatcher' | 'Specialist' | 'Citizen';
 
-export type PetitionStatus = 'Submitted' | 'Assigned' | 'Investigating' | 'Resolved' | 'Rejected' | 'Closed';
+export type PetitionStatus =
+  | 'Submitted'
+  | 'Assigned'
+  | 'Investigating'
+  | 'Resolved'
+  | 'Rejected'
+  | 'Closed'
+  | 'NeedInfo'
+  | 'Merged'
+  | 'Forwarded'
+  | 'Withdrawn';
+
+export type ConclusionType = 'Valid' | 'PartiallyValid' | 'InsufficientEvidence';
 
 export interface UserInfo {
   id: string;
@@ -143,6 +155,23 @@ export interface PetitionTrackingDetail {
   isOverdue: boolean;
   remainingHours?: number;
   resolutionSummary?: string;
+  duplicateOfId?: string;
+  duplicateOfTrackingCode?: string;
+  forwardToOrganization?: string;
+  forwardReason?: string;
+  withdrawnReason?: string;
+  withdrawnAt?: string;
+  needInfoReason?: string;
+  needInfoDeadline?: string;
+  needInfoCount?: number;
+  slaPausedAt?: string;
+  totalSlaPausedMinutes?: number;
+  conclusionType?: ConclusionType;
+  conclusionTypeName?: string;
+  publicSummary?: string;
+  reopenCount?: number;
+  reopenReason?: string;
+  reopenedAt?: string;
   attachments: PetitionAttachment[];
   timeline: PetitionTimelineItem[];
   resolution?: PetitionResolution;
@@ -329,6 +358,23 @@ export interface AdminPetitionDetail {
   isOverdue: boolean;
   remainingHours?: number;
   resolutionSummary?: string;
+  duplicateOfId?: string;
+  duplicateOfTrackingCode?: string;
+  forwardToOrganization?: string;
+  forwardReason?: string;
+  withdrawnReason?: string;
+  withdrawnAt?: string;
+  needInfoReason?: string;
+  needInfoDeadline?: string;
+  needInfoCount?: number;
+  slaPausedAt?: string;
+  totalSlaPausedMinutes?: number;
+  conclusionType?: ConclusionType;
+  conclusionTypeName?: string;
+  publicSummary?: string;
+  reopenCount?: number;
+  reopenReason?: string;
+  reopenedAt?: string;
   attachments: PetitionAttachment[];
   timeline: PetitionTimelineItem[];
   resolution?: PetitionResolution;
