@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useParams, Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { petitionApi } from '../api/petitionApi';
+import { WithdrawPetitionModal } from '../components/petition/WithdrawPetitionModal';
 import type { PetitionTrackingDetail, PetitionSummary } from '../types';
 import { 
   Search, 
@@ -30,7 +31,8 @@ import {
   History,
   Sparkles,
   ChevronRight,
-  CheckCircle
+  CheckCircle,
+  FileX
 } from 'lucide-react';
 
 const LOCAL_STORAGE_RECENT_KEY = 'aquareflect_recent_searches';
@@ -82,6 +84,10 @@ export const TrackPetitionPage: React.FC = () => {
   const [feedbackIsSubmitting, setFeedbackIsSubmitting] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<{ rating: number; comment?: string } | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+
+  // Withdraw petition state (Task 2.3)
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
 
   // Load recent searches on mount
   useEffect(() => {
@@ -584,7 +590,7 @@ export const TrackPetitionPage: React.FC = () => {
               </h2>
             </div>
 
-            {/* ACTION BUTTONS: QR, SHARE, PRINT, COPY */}
+            {/* ACTION BUTTONS: QR, SHARE, PRINT, COPY, RÚT ĐƠN */}
             <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button
                 type="button"
@@ -623,8 +629,35 @@ export const TrackPetitionPage: React.FC = () => {
                 <Printer className="w-3.5 h-3.5" />
                 <span>In phiếu</span>
               </button>
+
+              {/* NÚT RÚT ĐƠN — chỉ hiện khi đơn đang ở Submitted (1) hoặc Assigned (2) */}
+              {(trackingDetail.status === 1 || trackingDetail.status === 2) && !withdrawSuccess && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWithdrawSuccess(null);
+                    setShowWithdrawModal(true);
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors shadow-xs"
+                  title="Yêu cầu rút đơn phản ánh này"
+                >
+                  <FileX className="w-3.5 h-3.5" />
+                  <span>Rút đơn</span>
+                </button>
+              )}
             </div>
           </div>
+
+          {/* SUCCESS BANNER sau khi rút đơn thành công */}
+          {withdrawSuccess && (
+            <div className="flex items-start space-x-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs animate-in fade-in print:hidden">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-emerald-900">Đã rút đơn thành công!</p>
+                <p className="text-emerald-700 mt-0.5">{withdrawSuccess}</p>
+              </div>
+            </div>
+          )}
 
           {/* B. BẢNG TIẾN TRÌNH 4 GIAI ĐOẠN LIÊN KẾT (ENHANCED STEPPER) */}
           {(() => {
@@ -1429,6 +1462,31 @@ export const TrackPetitionPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* MODAL XÁC NHẬN RÚT ĐƠN BẢO MẬT (Task 2.3)                        */}
+      {/* ================================================================ */}
+      {showWithdrawModal && trackingDetail && (
+        <WithdrawPetitionModal
+          trackingCode={trackingDetail.trackingCode}
+          isAnonymous={trackingDetail.isAnonymous}
+          currentStatus={trackingDetail.status === 1 ? 'Submitted' : 'Assigned'}
+          onClose={() => setShowWithdrawModal(false)}
+          onSuccess={(msg) => {
+            setShowWithdrawModal(false);
+            setWithdrawSuccess(msg);
+            setTrackingDetail((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: 6,
+                    statusName: 'Đã rút đơn',
+                  }
+                : null
+            );
+          }}
+        />
       )}
 
       {/* ================================================================ */}

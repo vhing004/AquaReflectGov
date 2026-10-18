@@ -7,9 +7,7 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
-  X,
   Printer,
-  Download,
 } from 'lucide-react';
 
 interface AnonymousPinModalProps {
