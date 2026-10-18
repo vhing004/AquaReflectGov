@@ -16,6 +16,8 @@ public interface IApplicationDbContext
     DbSet<PetitionResolution> PetitionResolutions { get; }
     DbSet<CitizenFeedback> CitizenFeedbacks { get; }
     DbSet<Notification> Notifications { get; }
+    DbSet<SystemSetting> SystemSettings { get; }
+    DbSet<HolidayCalendar> HolidayCalendars { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

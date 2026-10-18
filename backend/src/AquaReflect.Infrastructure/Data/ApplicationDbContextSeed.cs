@@ -527,6 +527,55 @@ public static class ApplicationDbContextSeed
                 }
             }
 
+            // 8. Seed Cấu hình Hệ thống (SystemSettings)
+            if (!await context.SystemSettings.AnyAsync())
+            {
+                logger.LogInformation("Đang khởi tạo cấu hình hệ thống mặc định...");
+                var defaultSettings = new List<SystemSetting>
+                {
+                    new() { Key = "SLA_Urgent_Days", Value = "2", GroupName = "SLA", Description = "Thời hạn xử lý hồ sơ mức độ Khẩn cấp (ngày làm việc)" },
+                    new() { Key = "SLA_High_Days", Value = "5", GroupName = "SLA", Description = "Thời hạn xử lý hồ sơ mức độ Cao (ngày làm việc)" },
+                    new() { Key = "SLA_Normal_Days", Value = "10", GroupName = "SLA", Description = "Thời hạn xử lý hồ sơ mức độ Bình thường (ngày làm việc)" },
+                    new() { Key = "Workflow_NeedInfo_Days", Value = "7", GroupName = "Workflow", Description = "Thời hạn tối đa để người dân bổ sung thông tin hồ sơ (ngày làm việc)" },
+                    new() { Key = "Workflow_Max_NeedInfo_Count", Value = "2", GroupName = "Workflow", Description = "Số lần tối đa cán bộ được yêu cầu người dân bổ sung thông tin" },
+                    new() { Key = "Workflow_Auto_Close_Days", Value = "5", GroupName = "Workflow", Description = "Thời hạn tự động đóng hồ sơ nếu Dispatcher không thao tác duyệt (ngày làm việc)" },
+                    new() { Key = "Workflow_Csat_Window_Days", Value = "14", GroupName = "Workflow", Description = "Thời hạn người dân có thể đánh giá CSAT hoặc đề nghị xem xét lại sau khi đóng đơn (ngày)" },
+                    new() { Key = "Workflow_Max_Reopen_Count", Value = "1", GroupName = "Workflow", Description = "Số lần tối đa hồ sơ được phép mở lại sau khi công dân không hài lòng (CSAT <= 2)" },
+                    new() { Key = "Security_Daily_Rate_Limit_Per_Ip", Value = "10", GroupName = "Security", Description = "Giới hạn số đơn tối đa có thể nộp từ cùng một IP/thiết bị mỗi ngày" }
+                };
+
+                context.SystemSettings.AddRange(defaultSettings);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Khởi tạo 09 cấu hình hệ thống thành công!");
+            }
+
+            // 9. Seed Lịch Nghỉ lễ Việt Nam (HolidayCalendars)
+            if (!await context.HolidayCalendars.AnyAsync())
+            {
+                logger.LogInformation("Đang khởi tạo danh mục ngày nghỉ lễ Việt Nam...");
+                var holidays = new List<HolidayCalendar>
+                {
+                    // Năm 2026
+                    new() { HolidayDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Tết Dương lịch 2026", IsRecurringSolar = true },
+                    new() { HolidayDate = new DateTime(2026, 2, 14, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Tết Nguyên đán Bính Ngọ 2026 (Nghỉ bù)" },
+                    new() { HolidayDate = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Tết Nguyên đán Bính Ngọ 2026 (Nghỉ bù)" },
+                    new() { HolidayDate = new DateTime(2026, 2, 16, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Tết Nguyên đán Bính Ngọ 2026 (29 Tết)" },
+                    new() { HolidayDate = new DateTime(2026, 2, 17, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Tết Nguyên đán Bính Ngọ 2026 (Mùng 1 Tết)" },
+                    new() { HolidayDate = new DateTime(2026, 2, 18, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Tết Nguyên đán Bính Ngọ 2026 (Mùng 2 Tết)" },
+                    new() { HolidayDate = new DateTime(2026, 2, 19, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Tết Nguyên đán Bính Ngọ 2026 (Mùng 3 Tết)" },
+                    new() { HolidayDate = new DateTime(2026, 2, 20, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Tết Nguyên đán Bính Ngọ 2026 (Mùng 4 Tết)" },
+                    new() { HolidayDate = new DateTime(2026, 4, 26, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Giỗ tổ Hùng Vương (10/03 Âm lịch)" },
+                    new() { HolidayDate = new DateTime(2026, 4, 30, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Ngày Giải phóng Miền Nam", IsRecurringSolar = true },
+                    new() { HolidayDate = new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Ngày Quốc tế Lao động", IsRecurringSolar = true },
+                    new() { HolidayDate = new DateTime(2026, 9, 2, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Ngày Quốc khánh", IsRecurringSolar = true },
+                    new() { HolidayDate = new DateTime(2026, 9, 3, 0, 0, 0, DateTimeKind.Utc), Year = 2026, Description = "Nghỉ liền kề Quốc khánh", IsRecurringSolar = true }
+                };
+
+                context.HolidayCalendars.AddRange(holidays);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Khởi tạo 13 ngày nghỉ lễ Việt Nam năm 2026 thành công!");
+            }
+
             logger.LogInformation("Khởi tạo dữ liệu mẫu thành công!");
         }
         catch (Exception ex)

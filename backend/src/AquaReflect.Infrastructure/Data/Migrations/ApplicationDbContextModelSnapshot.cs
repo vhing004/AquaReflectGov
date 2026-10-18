@@ -17,7 +17,7 @@ namespace AquaReflect.Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.20")
+                .HasAnnotation("ProductVersion", "9.0.21")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -158,6 +158,44 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.ToTable("Departments", (string)null);
                 });
 
+            modelBuilder.Entity("AquaReflect.Domain.Entities.HolidayCalendar", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("HolidayDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRecurringSolar")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HolidayDate");
+
+                    b.HasIndex("Year");
+
+                    b.ToTable("HolidayCalendars", (string)null);
+                });
+
             modelBuilder.Entity("AquaReflect.Domain.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -229,6 +267,10 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AccessPinHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<string>("AddressText")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -259,6 +301,9 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<int?>("ConclusionType")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("text");
@@ -275,6 +320,17 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("DuplicateOfId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ForwardReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("ForwardToOrganization")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
                     b.Property<bool>("IsAnonymous")
                         .HasColumnType("boolean");
 
@@ -290,13 +346,40 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.Property<double?>("Longitude")
                         .HasColumnType("double precision");
 
+                    b.Property<int>("NeedInfoCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("NeedInfoDeadline")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NeedInfoReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<int>("PriorityLevel")
                         .HasColumnType("integer");
+
+                    b.Property<string>("PublicSummary")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("ReopenCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReopenReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("ReopenedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ResolutionSummary")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("SlaPausedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Status")
@@ -307,6 +390,9 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
+                    b.Property<double>("TotalSlaPausedMinutes")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("TrackingCode")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -314,6 +400,13 @@ namespace AquaReflect.Infrastructure.Data.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("WithdrawnAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("WithdrawnReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.HasKey("Id");
 
@@ -326,6 +419,8 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("DepartmentId");
+
+                    b.HasIndex("DuplicateOfId");
 
                     b.HasIndex("PriorityLevel");
 
@@ -587,6 +682,50 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.ToTable("PetitionResolutions", (string)null);
                 });
 
+            modelBuilder.Entity("AquaReflect.Domain.Entities.SystemSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("GroupName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupName");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("SystemSettings", (string)null);
+                });
+
             modelBuilder.Entity("AquaReflect.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -744,6 +883,11 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("AquaReflect.Domain.Entities.Petition", "DuplicateOf")
+                        .WithMany("MergedPetitions")
+                        .HasForeignKey("DuplicateOfId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("AdministrativeUnit");
 
                     b.Navigation("AssignedUser");
@@ -751,6 +895,8 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("Department");
+
+                    b.Navigation("DuplicateOf");
                 });
 
             modelBuilder.Entity("AquaReflect.Domain.Entities.PetitionAttachment", b =>
@@ -853,6 +999,8 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.Navigation("Feedback");
 
                     b.Navigation("Histories");
+
+                    b.Navigation("MergedPetitions");
 
                     b.Navigation("Resolution");
                 });

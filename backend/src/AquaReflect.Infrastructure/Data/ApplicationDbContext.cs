@@ -23,6 +23,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<PetitionResolution> PetitionResolutions => Set<PetitionResolution>();
     public DbSet<CitizenFeedback> CitizenFeedbacks => Set<CitizenFeedback>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<HolidayCalendar> HolidayCalendars => Set<HolidayCalendar>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -271,6 +273,32 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasIndex(e => e.TargetUserId);
             entity.HasIndex(e => e.IsRead);
             entity.HasIndex(e => e.CreatedAt);
+        });
+
+        // 12. Cấu hình SystemSetting
+        modelBuilder.Entity<SystemSetting>(entity =>
+        {
+            entity.ToTable("SystemSettings");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Key).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Value).HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.GroupName).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(500);
+
+            entity.HasIndex(e => e.Key).IsUnique();
+            entity.HasIndex(e => e.GroupName);
+        });
+
+        // 13. Cấu hình HolidayCalendar
+        modelBuilder.Entity<HolidayCalendar>(entity =>
+        {
+            entity.ToTable("HolidayCalendars");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.HolidayDate).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(200).IsRequired();
+
+            entity.HasIndex(e => e.HolidayDate);
+            entity.HasIndex(e => e.Year);
         });
     }
 
