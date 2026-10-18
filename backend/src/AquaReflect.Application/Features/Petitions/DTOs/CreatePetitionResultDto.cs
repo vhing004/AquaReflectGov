@@ -20,4 +20,10 @@ public class CreatePetitionResultDto
     public int AttachmentsCount { get; set; }
     public List<PetitionAttachmentDto> Attachments { get; set; } = new();
     public string Message { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Mã PIN bảo mật plain-text — CHỈ trả về 1 lần duy nhất khi IsAnonymous = true.
+    /// Sau khi hiển thị, frontend phải yêu cầu công dân tự lưu; server không bao giờ lưu giá trị này.
+    /// </summary>
+    public string? AccessPin { get; set; }
 }

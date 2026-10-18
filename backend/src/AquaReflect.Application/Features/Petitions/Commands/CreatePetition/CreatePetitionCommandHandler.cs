@@ -129,7 +129,16 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
             }
         }
 
-        // 6. Khởi tạo đối tượng Petition với dữ liệu đã được khử độc an toàn
+        // 6. Sinh mã PIN bảo mật cho đơn vô danh (plain-text chỉ tồn tại trong bộ nhớ, KHÔNG lưu DB)
+        string? accessPin = null;
+        string? accessPinHash = null;
+        if (command.IsAnonymous)
+        {
+            accessPin = GenerateAccessPin();
+            accessPinHash = HashPin(accessPin);
+        }
+
+        // 7. Khởi tạo đối tượng Petition với dữ liệu đã được khử độc an toàn
         var petition = new Petition
         {
             Id = Guid.NewGuid(),
@@ -145,6 +154,7 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
             CitizenPhone = command.IsAnonymous ? null : sanitizedCitizenPhone,
             CitizenEmail = command.IsAnonymous ? null : sanitizedCitizenEmail,
             CitizenIdCard = command.IsAnonymous ? null : sanitizedCitizenIdCard,
+            AccessPinHash = accessPinHash,   // Chỉ lưu bản băm
             CategoryId = category.Id,
             Status = PetitionStatus.Submitted,
             PriorityLevel = priority,
@@ -226,6 +236,12 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
             "Tiếp nhận thành công phản ánh {TrackingCode}: {Title} (SLA: {SlaHours}h, Danh mục: {Category})",
             petition.TrackingCode, petition.Title, category.DefaultSlaHours, category.Name);
 
+        var message = petition.IsAnonymous
+            ? $"Nộp phản ánh kiến nghị ẩn danh thành công! Mã hồ sơ: {petition.TrackingCode}. " +
+              $"Mã PIN bảo mật chỉ hiển thị MỘT LẦN DUY NHẤT — vui lòng sao chép và lưu lại ngay. " +
+              $"Quý khách cần mã PIN này để tra cứu chi tiết, bổ sung tài liệu hoặc rút đơn khi cần."
+            : $"Nộp phản ánh kiến nghị thành công! Mã hồ sơ của bạn là {petition.TrackingCode}. Vui lòng lưu lại mã này để tra cứu tiến độ giải quyết.";
+
         return new CreatePetitionResultDto
         {
             Id = petition.Id,
@@ -245,7 +261,8 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
             CreatedAt = petition.CreatedAt,
             AttachmentsCount = petition.Attachments.Count,
             Attachments = attachmentDtos,
-            Message = $"Nộp phản ánh kiến nghị thành công! Mã hồ sơ của bạn là {petition.TrackingCode}. Vui lòng lưu lại mã này để tra cứu tiến độ giải quyết."
+            AccessPin = accessPin,   // plain-text PIN — null nếu không phải đơn vô danh
+            Message = message
         };
     }
 
@@ -265,6 +282,26 @@ public class CreatePetitionCommandHandler : IRequestHandler<CreatePetitionComman
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         var randomPart = RandomNumberGenerator.GetString(chars, 5);
         return $"TS-{DateTime.UtcNow:yyyyMM}-{randomPart}";
+    }
+
+    /// <summary>
+    /// Sinh mã PIN 8 ký tự [A-Z0-9] an toàn bằng RandomNumberGenerator (CSPRNG).
+    /// Loại bỏ ký tự dễ nhầm: I, O, 0, 1.
+    /// </summary>
+    private static string GenerateAccessPin()
+    {
+        const string pinChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        return RandomNumberGenerator.GetString(pinChars, 8);
+    }
+
+    /// <summary>
+    /// Băm mã PIN bằng SHA-256. Chỉ lưu bản băm này vào DB — không bao giờ lưu plain-text.
+    /// </summary>
+    private static string HashPin(string pin)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(pin);
+        var hash = SHA256.HashData(bytes);
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
     private static (double Lat, double Lng)? GetFallbackCoordinates(string? unitName, string? address)

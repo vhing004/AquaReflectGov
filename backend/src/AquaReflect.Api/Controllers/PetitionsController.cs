@@ -2,6 +2,7 @@ using AquaReflect.Api.Extensions;
 using AquaReflect.Application.Common.Models;
 using AquaReflect.Application.Features.Petitions.Commands.CreatePetition;
 using AquaReflect.Application.Features.Petitions.Commands.SubmitFeedback;
+using AquaReflect.Application.Features.Petitions.Commands.WithdrawPetition;
 using AquaReflect.Application.Features.Petitions.DTOs;
 using AquaReflect.Application.Features.Petitions.Queries.GetPetitionsByPhone;
 using AquaReflect.Application.Features.Petitions.Queries.GetPublicResolvedPetitions;
@@ -207,6 +208,35 @@ public class PetitionsController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(ApiResponse<SubmitFeedbackResultDto>.Created(result, result.Message));
     }
+
+    /// <summary>
+    /// Rút phản ánh kiến nghị (Submitted hoặc Assigned → Withdrawn).
+    /// - Đơn định danh: Cần đăng nhập với tư cách chủ sở hữu đơn hoặc cán bộ Dispatcher/SuperAdmin.
+    /// - Đơn vô danh: Cần cung cấp mã PIN bảo mật đã nhận lúc nộp đơn.
+    /// </summary>
+    /// <param name="trackingCode">Mã hồ sơ tra cứu (ví dụ: TS-202610-AB3KZ)</param>
+    /// <param name="request">Mã PIN (nếu vô danh) và lý do rút đơn (tùy chọn)</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    [HttpPost("{trackingCode}/withdraw")]
+    [EnableRateLimiting(RateLimiterExtensions.FeedbackPolicy)]
+    [ProducesResponseType(typeof(ApiResponse<WithdrawPetitionResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<WithdrawPetitionResultDto>>> WithdrawPetition(
+        string trackingCode,
+        [FromBody] WithdrawPetitionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new WithdrawPetitionCommand
+        {
+            TrackingCode = trackingCode,
+            AccessPin = request.AccessPin,
+            Reason = request.Reason
+        };
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<WithdrawPetitionResultDto>.Ok(result, result.Message));
+    }
 }
 
 public class SubmitFeedbackRequest
@@ -318,4 +348,17 @@ public class CreatePetitionRequest
     /// Bẫy Bot ẩn (Honeypot). Người dùng thật sẽ bỏ trống trường này.
     /// </summary>
     public string? Honeypot { get; set; }
+}
+
+public class WithdrawPetitionRequest
+{
+    /// <summary>
+    /// Mã PIN bảo mật plain-text (bắt buộc với đơn vô danh, bỏ trống với đơn định danh).
+    /// </summary>
+    public string? AccessPin { get; set; }
+
+    /// <summary>
+    /// Lý do rút đơn (tùy chọn, tối đa 500 ký tự).
+    /// </summary>
+    public string? Reason { get; set; }
 }
