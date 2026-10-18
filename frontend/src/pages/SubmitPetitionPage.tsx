@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { masterDataApi } from '../api/masterDataApi';
 import { petitionApi } from '../api/petitionApi';
 import { PetitionReceiptModal } from '../components/petition/PetitionReceiptModal';
+import { AnonymousPinModal } from '../components/petition/AnonymousPinModal';
 import { TurnstileWidget } from '../components/common/TurnstileWidget';
 import type { Category, AdministrativeUnit, CreatePetitionResult, PetitionTrackingDetail } from '../types';
 import { 
@@ -200,6 +201,10 @@ export const SubmitPetitionPage: React.FC = () => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
   const [honeypot, setHoneypot] = useState<string>('');
+
+  // State cho Modal PIN vô danh — hiển thị trước ReceiptModal
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pendingPin, setPendingPin] = useState<{ trackingCode: string; accessPin: string } | null>(null);
 
   // Tracking query on the right side
   const [trackingCodeInput, setTrackingCodeInput] = useState('TS-202609-HGZH4');
@@ -910,10 +915,22 @@ export const SubmitPetitionPage: React.FC = () => {
       });
 
       if (response.success && response.data) {
-        setSubmittedPetition(response.data);
-        setActiveTrackingCode(response.data.trackingCode);
-        setTrackingCodeInput(response.data.trackingCode);
-        setShowReceiptModal(true); // Open modal with QR Code
+        const petitionData = response.data;
+        setSubmittedPetition(petitionData);
+        setActiveTrackingCode(petitionData.trackingCode);
+        setTrackingCodeInput(petitionData.trackingCode);
+
+        // Nếu đơn vô danh và có PIN → hiển thị PIN Modal trước
+        // Sau khi người dùng đóng PIN Modal mới mở Receipt Modal
+        if (petitionData.isAnonymous && petitionData.accessPin) {
+          setPendingPin({
+            trackingCode: petitionData.trackingCode,
+            accessPin: petitionData.accessPin,
+          });
+          setShowPinModal(true);
+        } else {
+          setShowReceiptModal(true);
+        }
 
         // Clear local storage draft
         localStorage.removeItem(LOCAL_STORAGE_DRAFT_KEY);
@@ -2245,6 +2262,22 @@ export const SubmitPetitionPage: React.FC = () => {
           </div>
         </section>
       </div>
+
+      {/* ================================================================ */}
+      {/* MODAL PIN BẢO MẬT VÔ DANH — Hiển thị TRƯỚC biên nhận               */}
+      {/* Sau khi người dùng xác nhận lưu PIN, mới mở PetitionReceiptModal    */}
+      {/* ================================================================ */}
+      {showPinModal && pendingPin && (
+        <AnonymousPinModal
+          trackingCode={pendingPin.trackingCode}
+          accessPin={pendingPin.accessPin}
+          onClose={() => {
+            setShowPinModal(false);
+            setPendingPin(null);
+            setShowReceiptModal(true); // Mở receipt modal sau khi đóng PIN modal
+          }}
+        />
+      )}
 
       {/* ======================================================== */}
       {/* MODAL BIÊN NHẬN ĐIỆN TỬ KÈM MÃ QR SAU KHI NỘP THÀNH CÔNG */}

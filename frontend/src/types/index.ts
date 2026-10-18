@@ -102,6 +102,10 @@ export interface CreatePetitionResult {
   dueDate: string;
   defaultSlaHours: number;
   attachments: PetitionAttachment[];
+  isAnonymous: boolean;
+  message: string;
+  /** Mã PIN plain-text — CHỈ có khi isAnonymous=true, chỉ trả về 1 lần duy nhất. */
+  accessPin?: string;
 }
 
 export interface PetitionTimelineItem {
@@ -226,6 +230,15 @@ export interface SubmitFeedbackResult {
   rating: number;
   comment?: string;
   feedbackAt: string;
+  message: string;
+}
+
+export interface WithdrawPetitionResult {
+  petitionId: string;
+  trackingCode: string;
+  previousStatus: string;
+  newStatus: string;
+  withdrawnAt: string;
   message: string;
 }
 
