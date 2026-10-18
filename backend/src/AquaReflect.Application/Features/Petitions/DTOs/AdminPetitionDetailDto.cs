@@ -49,6 +49,19 @@ public class AdminPetitionDetailDto
     public double? RemainingHours { get; set; }
     public string? ResolutionSummary { get; set; }
 
+    // Thông tin các luồng xử lý ngoại lệ
+    public Guid? DuplicateOfId { get; set; }
+    public string? DuplicateOfTrackingCode { get; set; }
+    public string? ForwardToOrganization { get; set; }
+    public string? ForwardReason { get; set; }
+    public string? WithdrawnReason { get; set; }
+    public DateTime? WithdrawnAt { get; set; }
+    public string? NeedInfoReason { get; set; }
+    public DateTime? NeedInfoDeadline { get; set; }
+    public int NeedInfoCount { get; set; }
+    public DateTime? SlaPausedAt { get; set; }
+    public double TotalSlaPausedMinutes { get; set; }
+
     // Tệp minh chứng thực địa (ảnh/video/tài liệu)
     public List<PetitionAttachmentDto> Attachments { get; set; } = new();
 

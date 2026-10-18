@@ -35,6 +35,10 @@ import {
   X,
   LayoutList,
   Kanban,
+  AlertCircle,
+  GitMerge,
+  CornerUpRight,
+  FileX,
 } from 'lucide-react';
 import { TransitionStatusModal } from '../components/admin/TransitionStatusModal';
 import { KanbanBoard } from '../components/admin/KanbanBoard';
@@ -224,6 +228,34 @@ export const AdminPetitionsPage: React.FC = () => {
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
             <Check className="w-3.5 h-3.5 text-slate-500" />
             {statusName || 'Đã đóng'}
+          </span>
+        );
+      case 7: // NeedInfo
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+            {statusName || 'Cần bổ sung'}
+          </span>
+        );
+      case 8: // Merged
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-900 border border-purple-300">
+            <GitMerge className="w-3.5 h-3.5 text-purple-600" />
+            {statusName || 'Đã gộp đơn'}
+          </span>
+        );
+      case 9: // Forwarded
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-900 border border-cyan-300">
+            <CornerUpRight className="w-3.5 h-3.5 text-cyan-600" />
+            {statusName || 'Đã chuyển cơ quan'}
+          </span>
+        );
+      case 10: // Withdrawn
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-800 border border-slate-300">
+            <FileX className="w-3.5 h-3.5 text-slate-600" />
+            {statusName || 'Người dân rút đơn'}
           </span>
         );
       default:
@@ -478,6 +510,70 @@ export const AdminPetitionsPage: React.FC = () => {
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Đã giải quyết</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setStatusFilter(7);
+              setIsOverdueOnly(false);
+              setPageNumber(1);
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+              statusFilter === 7 && !isOverdueOnly
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-amber-50'
+            }`}
+          >
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>Cần bổ sung</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setStatusFilter(8);
+              setIsOverdueOnly(false);
+              setPageNumber(1);
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+              statusFilter === 8 && !isOverdueOnly
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-purple-50'
+            }`}
+          >
+            <GitMerge className="w-3.5 h-3.5" />
+            <span>Đã gộp</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setStatusFilter(9);
+              setIsOverdueOnly(false);
+              setPageNumber(1);
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+              statusFilter === 9 && !isOverdueOnly
+                ? 'bg-cyan-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-cyan-50'
+            }`}
+          >
+            <CornerUpRight className="w-3.5 h-3.5" />
+            <span>Chuyển cơ quan</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setStatusFilter(10);
+              setIsOverdueOnly(false);
+              setPageNumber(1);
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+              statusFilter === 10 && !isOverdueOnly
+                ? 'bg-slate-700 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <FileX className="w-3.5 h-3.5" />
+            <span>Đã rút đơn</span>
           </button>
 
           <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block"></div>

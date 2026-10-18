@@ -278,6 +278,10 @@ export interface AdminPetitionItem {
   attachmentsCount: number;
   hasFeedback: boolean;
   feedbackRating?: number;
+  needInfoCount?: number;
+  needInfoDeadline?: string;
+  duplicateOfId?: string;
+  forwardToOrganization?: string;
 }
 
 export interface AdminPetitionFilterParams {
@@ -302,6 +306,9 @@ export interface AllowedTransition {
   requiresDepartment: boolean;
   requiresResolution: boolean;
   requiresReason: boolean;
+  requiresNeedInfoReason?: boolean;
+  requiresDuplicateTrackingCode?: boolean;
+  requiresForwardOrg?: boolean;
 }
 
 export interface TransitionStatusRequest {
@@ -310,6 +317,12 @@ export interface TransitionStatusRequest {
   assignedUserId?: string;
   resolutionSummary?: string;
   note?: string;
+  duplicateOfTrackingCode?: string;
+  duplicateOfId?: string;
+  forwardToOrganization?: string;
+  forwardReason?: string;
+  needInfoReason?: string;
+  needInfoDays?: number;
 }
 
 export interface TransitionStatusResult {

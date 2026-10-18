@@ -18,19 +18,22 @@ public class TransitionPetitionStatusCommandHandler
     private readonly IPetitionWorkflowService _workflowService;
     private readonly INotificationService _notificationService;
     private readonly IEmailService _emailService;
+    private readonly IWorkingDaysService _workingDaysService;
 
     public TransitionPetitionStatusCommandHandler(
         IApplicationDbContext context,
         ICurrentUserService currentUser,
         IPetitionWorkflowService workflowService,
         INotificationService notificationService,
-        IEmailService emailService)
+        IEmailService emailService,
+        IWorkingDaysService workingDaysService)
     {
         _context = context;
         _currentUser = currentUser;
         _workflowService = workflowService;
         _notificationService = notificationService;
         _emailService = emailService;
+        _workingDaysService = workingDaysService;
     }
 
     public async Task<TransitionPetitionStatusResultDto> Handle(
@@ -62,7 +65,10 @@ public class TransitionPetitionStatusCommandHandler
             _currentUser.DepartmentId,
             request.DepartmentId,
             request.ResolutionSummary,
-            request.Note);
+            request.Note,
+            request.NeedInfoReason,
+            request.DuplicateOfTrackingCode,
+            request.ForwardToOrganization);
 
         // 4. Nếu chỉ định hoặc thay đổi phòng ban thụ lý
         if (request.DepartmentId.HasValue && request.DepartmentId.Value != petition.DepartmentId)
@@ -97,15 +103,73 @@ public class TransitionPetitionStatusCommandHandler
             petition.AssignedUser = targetUser;
         }
 
-        // 6. Cập nhật trạng thái và thông tin kết luận giải quyết
-        petition.Status = request.ToStatus;
+        // 6. Xử lý các nghiệp vụ ngoại lệ và cập nhật trạng thái
+        if (previousStatus == PetitionStatus.NeedInfo && request.ToStatus != PetitionStatus.NeedInfo)
+        {
+            // Bỏ tạm dừng SLA và cộng dồn số phút đã tạm dừng
+            if (petition.SlaPausedAt.HasValue)
+            {
+                var pausedMinutes = (int)(DateTime.UtcNow - petition.SlaPausedAt.Value).TotalMinutes;
+                if (pausedMinutes > 0)
+                {
+                    petition.TotalSlaPausedMinutes += pausedMinutes;
+                }
+                petition.SlaPausedAt = null;
+            }
+        }
 
-        if (request.ToStatus == PetitionStatus.Resolved)
+        if (request.ToStatus == PetitionStatus.NeedInfo)
+        {
+            var days = request.NeedInfoDays.GetValueOrDefault(5);
+            petition.NeedInfoReason = request.NeedInfoReason ?? request.Note;
+            petition.NeedInfoDeadline = await _workingDaysService.AddWorkingDaysAsync(DateTime.UtcNow, days, cancellationToken);
+            petition.NeedInfoCount++;
+            petition.SlaPausedAt = DateTime.UtcNow;
+        }
+        else if (request.ToStatus == PetitionStatus.Merged)
+        {
+            Guid? targetDuplicateId = request.DuplicateOfId;
+            if (!targetDuplicateId.HasValue && !string.IsNullOrWhiteSpace(request.DuplicateOfTrackingCode))
+            {
+                var cleanCode = request.DuplicateOfTrackingCode.Trim().ToUpperInvariant();
+                var rootPetition = await _context.Petitions
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.TrackingCode == cleanCode && !p.IsDeleted, cancellationToken);
+
+                if (rootPetition == null)
+                    throw new NotFoundException($"Không tìm thấy hồ sơ phản ánh gốc với mã tra cứu: {cleanCode}");
+
+                if (rootPetition.Id == petition.Id)
+                    throw new BadRequestException("Không thể gộp hồ sơ vào chính nó.");
+
+                targetDuplicateId = rootPetition.Id;
+            }
+
+            if (!targetDuplicateId.HasValue)
+                throw new ValidationException("Vui lòng cung cấp mã biên nhận hồ sơ gốc để thực hiện gộp đơn trùng lặp.");
+
+            petition.DuplicateOfId = targetDuplicateId.Value;
+        }
+        else if (request.ToStatus == PetitionStatus.Forwarded)
+        {
+            petition.ForwardToOrganization = request.ForwardToOrganization?.Trim();
+            petition.ForwardReason = (request.ForwardReason ?? request.Note)?.Trim();
+        }
+        else if (request.ToStatus == PetitionStatus.Assigned)
+        {
+            // Tự động tính hạn SLA chuẩn theo ngày làm việc nếu chưa có
+            if (!petition.DueDate.HasValue)
+            {
+                petition.DueDate = await _workingDaysService.CalculateDueDateAsync(petition.CreatedAt, petition.PriorityLevel, cancellationToken);
+            }
+        }
+        else if (request.ToStatus == PetitionStatus.Resolved)
         {
             petition.ResolvedAt = DateTime.UtcNow;
             petition.ResolutionSummary = request.ResolutionSummary;
         }
 
+        petition.Status = request.ToStatus;
         petition.UpdatedAt = DateTime.UtcNow;
         petition.LastModifiedBy = _currentUser.Username ?? _currentUser.UserId?.ToString();
 
@@ -126,7 +190,9 @@ public class TransitionPetitionStatusCommandHandler
         var actionDescription = _workflowService.GetActionDescription(previousStatus, request.ToStatus);
         var historyNote = !string.IsNullOrWhiteSpace(request.Note)
             ? request.Note.Trim()
-            : (!string.IsNullOrWhiteSpace(request.ResolutionSummary) ? request.ResolutionSummary.Trim() : actionDescription);
+            : (!string.IsNullOrWhiteSpace(request.NeedInfoReason)
+                ? $"Yêu cầu: {request.NeedInfoReason.Trim()}"
+                : (!string.IsNullOrWhiteSpace(request.ResolutionSummary) ? request.ResolutionSummary.Trim() : actionDescription));
 
         var history = new PetitionHistory
         {
@@ -151,7 +217,7 @@ public class TransitionPetitionStatusCommandHandler
             petition,
             previousStatus,
             request.ToStatus,
-            request.Note ?? request.ResolutionSummary,
+            request.Note ?? request.ResolutionSummary ?? request.NeedInfoReason,
             cancellationToken);
 
         // 11. Nếu có phân công chuyên viên, gửi thông báo đích danh cho chuyên viên đó
@@ -170,7 +236,7 @@ public class TransitionPetitionStatusCommandHandler
                 petition.Title,
                 GetStatusName(previousStatus),
                 GetStatusName(petition.Status),
-                request.Note ?? request.ResolutionSummary,
+                request.Note ?? request.ResolutionSummary ?? request.NeedInfoReason,
                 cancellationToken);
         }
 
@@ -198,6 +264,10 @@ public class TransitionPetitionStatusCommandHandler
         PetitionStatus.Resolved => "Đã giải quyết",
         PetitionStatus.Rejected => "Từ chối thụ lý",
         PetitionStatus.Closed => "Đã đóng",
+        PetitionStatus.NeedInfo => "Yêu cầu bổ sung thông tin",
+        PetitionStatus.Merged => "Đã gộp đơn trùng",
+        PetitionStatus.Forwarded => "Đã chuyển cơ quan khác",
+        PetitionStatus.Withdrawn => "Người dân đã rút đơn",
         _ => status.ToString()
     };
 }

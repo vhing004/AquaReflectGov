@@ -25,4 +25,22 @@ public class TransitionPetitionStatusCommand : IRequest<TransitionPetitionStatus
 
     /// <summary>Ghi chú nghiệp vụ / lý do xử lý (ghi nhận vào lịch sử luân chuyển)</summary>
     public string? Note { get; set; }
+
+    /// <summary>Mã hồ sơ gốc khi gộp đơn trùng lặp (Status = Merged)</summary>
+    public string? DuplicateOfTrackingCode { get; set; }
+
+    /// <summary>ID hồ sơ gốc khi gộp đơn trùng lặp (nếu đã biết Guid)</summary>
+    public Guid? DuplicateOfId { get; set; }
+
+    /// <summary>Cơ quan / Tổ chức chuyển tiếp ngoài ngành (Status = Forwarded)</summary>
+    public string? ForwardToOrganization { get; set; }
+
+    /// <summary>Lý do chuyển tiếp cơ quan ngoài (Status = Forwarded)</summary>
+    public string? ForwardReason { get; set; }
+
+    /// <summary>Chi tiết yêu cầu người dân bổ sung thông tin (Status = NeedInfo)</summary>
+    public string? NeedInfoReason { get; set; }
+
+    /// <summary>Số ngày làm việc cho hạn bổ sung (mặc định 5 ngày làm việc)</summary>
+    public int? NeedInfoDays { get; set; }
 }

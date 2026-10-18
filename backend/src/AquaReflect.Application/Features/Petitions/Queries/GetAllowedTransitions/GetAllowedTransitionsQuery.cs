@@ -14,6 +14,9 @@ public class AllowedTransitionDto
     public bool RequiresDepartment { get; set; }
     public bool RequiresResolution { get; set; }
     public bool RequiresReason { get; set; }
+    public bool RequiresNeedInfoReason { get; set; }
+    public bool RequiresDuplicateTrackingCode { get; set; }
+    public bool RequiresForwardOrg { get; set; }
 }
 
 public class GetAllowedTransitionsQuery : IRequest<List<AllowedTransitionDto>>
@@ -78,6 +81,9 @@ public class GetAllowedTransitionsQueryHandler : IRequestHandler<GetAllowedTrans
             RequiresDepartment = s == PetitionStatus.Assigned,
             RequiresResolution = s == PetitionStatus.Resolved,
             RequiresReason = s == PetitionStatus.Rejected,
+            RequiresNeedInfoReason = s == PetitionStatus.NeedInfo,
+            RequiresDuplicateTrackingCode = s == PetitionStatus.Merged,
+            RequiresForwardOrg = s == PetitionStatus.Forwarded
         }).ToList();
     }
 
@@ -89,6 +95,10 @@ public class GetAllowedTransitionsQueryHandler : IRequestHandler<GetAllowedTrans
         PetitionStatus.Resolved => "Đã giải quyết",
         PetitionStatus.Rejected => "Từ chối thụ lý",
         PetitionStatus.Closed => "Đã đóng",
+        PetitionStatus.NeedInfo => "Yêu cầu bổ sung thông tin",
+        PetitionStatus.Merged => "Đã gộp đơn trùng",
+        PetitionStatus.Forwarded => "Đã chuyển cơ quan khác",
+        PetitionStatus.Withdrawn => "Người dân đã rút đơn",
         _ => status.ToString()
     };
 }

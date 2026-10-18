@@ -80,6 +80,15 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
             }
         }
 
+        string? duplicateOfTrackingCode = null;
+        if (petition.DuplicateOfId.HasValue)
+        {
+            duplicateOfTrackingCode = await _context.Petitions
+                .Where(p => p.Id == petition.DuplicateOfId.Value)
+                .Select(p => p.TrackingCode)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
         // 5. Khởi tạo DTO chi tiết
         var dto = new AdminPetitionDetailDto
         {
@@ -124,6 +133,19 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
             IsOverdue = isOverdue,
             RemainingHours = remainingHours,
             ResolutionSummary = petition.ResolutionSummary,
+
+            // Thông tin ngoại lệ
+            DuplicateOfId = petition.DuplicateOfId,
+            DuplicateOfTrackingCode = duplicateOfTrackingCode,
+            ForwardToOrganization = petition.ForwardToOrganization,
+            ForwardReason = petition.ForwardReason,
+            WithdrawnReason = petition.WithdrawnReason,
+            WithdrawnAt = petition.WithdrawnAt,
+            NeedInfoReason = petition.NeedInfoReason,
+            NeedInfoDeadline = petition.NeedInfoDeadline,
+            NeedInfoCount = petition.NeedInfoCount,
+            SlaPausedAt = petition.SlaPausedAt,
+            TotalSlaPausedMinutes = petition.TotalSlaPausedMinutes,
 
             // Tệp đính kèm
             Attachments = petition.Attachments.Select(a => new PetitionAttachmentDto
@@ -204,6 +226,10 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
         PetitionStatus.Resolved => "Đã giải quyết",
         PetitionStatus.Rejected => "Từ chối tiếp nhận",
         PetitionStatus.Closed => "Đã đóng",
+        PetitionStatus.NeedInfo => "Yêu cầu bổ sung thông tin",
+        PetitionStatus.Merged => "Đã gộp đơn trùng",
+        PetitionStatus.Forwarded => "Đã chuyển cơ quan khác",
+        PetitionStatus.Withdrawn => "Người dân đã rút đơn",
         _ => status.ToString()
     };
 

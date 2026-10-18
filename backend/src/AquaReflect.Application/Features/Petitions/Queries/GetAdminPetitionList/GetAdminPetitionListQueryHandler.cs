@@ -183,6 +183,10 @@ public class GetAdminPetitionListQueryHandler
         PetitionStatus.Resolved     => "Đã giải quyết",
         PetitionStatus.Rejected     => "Từ chối thụ lý",
         PetitionStatus.Closed       => "Đã đóng hồ sơ",
+        PetitionStatus.NeedInfo     => "Yêu cầu bổ sung",
+        PetitionStatus.Merged       => "Đã gộp đơn trùng",
+        PetitionStatus.Forwarded    => "Đã chuyển cơ quan",
+        PetitionStatus.Withdrawn    => "Người dân rút đơn",
         _ => status.ToString()
     };
 

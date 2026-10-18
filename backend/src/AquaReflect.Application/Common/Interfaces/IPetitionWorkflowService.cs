@@ -28,7 +28,10 @@ public interface IPetitionWorkflowService
         Guid? userDepartmentId,
         Guid? targetDepartmentId,
         string? resolutionSummary,
-        string? note);
+        string? note,
+        string? needInfoReason = null,
+        string? duplicateOfTrackingCode = null,
+        string? forwardToOrganization = null);
 
     /// <summary>
     /// Sinh tên hành động chuẩn hóa tiếng Việt cho nhật ký PetitionHistory

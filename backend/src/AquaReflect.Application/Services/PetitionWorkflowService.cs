@@ -31,6 +31,9 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
                 {
                     result.Add(PetitionStatus.Assigned);
+                    result.Add(PetitionStatus.NeedInfo);
+                    result.Add(PetitionStatus.Merged);
+                    result.Add(PetitionStatus.Forwarded);
                     result.Add(PetitionStatus.Rejected);
                 }
                 break;
@@ -39,10 +42,14 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 if (role == UserRole.Specialist || role == UserRole.SuperAdmin)
                 {
                     result.Add(PetitionStatus.Investigating);
+                    result.Add(PetitionStatus.NeedInfo);
                 }
                 if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
                 {
                     result.Add(PetitionStatus.Assigned); // Phân công lại
+                    result.Add(PetitionStatus.NeedInfo);
+                    result.Add(PetitionStatus.Merged);
+                    result.Add(PetitionStatus.Forwarded);
                     result.Add(PetitionStatus.Rejected);
                 }
                 break;
@@ -51,10 +58,25 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 if (role == UserRole.Specialist || role == UserRole.SuperAdmin)
                 {
                     result.Add(PetitionStatus.Resolved);
+                    result.Add(PetitionStatus.NeedInfo);
                 }
                 if (role == UserRole.Dispatcher || role == UserRole.Specialist || role == UserRole.SuperAdmin)
                 {
                     result.Add(PetitionStatus.Assigned); // Điều chuyển đơn vị khác
+                }
+                break;
+
+            case PetitionStatus.NeedInfo:
+                // Khi người dân bổ sung thông tin hoặc cán bộ xác nhận nhận bổ sung
+                if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
+                {
+                    result.Add(PetitionStatus.Submitted);
+                    result.Add(PetitionStatus.Assigned);
+                    result.Add(PetitionStatus.Rejected);
+                }
+                if (role == UserRole.Specialist || role == UserRole.SuperAdmin)
+                {
+                    result.Add(PetitionStatus.Investigating);
                 }
                 break;
 
@@ -66,6 +88,9 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 break;
 
             case PetitionStatus.Rejected:
+            case PetitionStatus.Merged:
+            case PetitionStatus.Forwarded:
+            case PetitionStatus.Withdrawn:
                 if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
                 {
                     result.Add(PetitionStatus.Closed);
@@ -87,7 +112,10 @@ public class PetitionWorkflowService : IPetitionWorkflowService
         Guid? userDepartmentId,
         Guid? targetDepartmentId,
         string? resolutionSummary,
-        string? note)
+        string? note,
+        string? needInfoReason = null,
+        string? duplicateOfTrackingCode = null,
+        string? forwardToOrganization = null)
     {
         if (role == UserRole.Citizen)
         {
@@ -132,6 +160,41 @@ public class PetitionWorkflowService : IPetitionWorkflowService
             }
         }
 
+        if (toStatus == PetitionStatus.NeedInfo)
+        {
+            if (petition.NeedInfoCount >= 2)
+            {
+                throw new BadRequestException("Hồ sơ đã đạt giới hạn tối đa 02 lần yêu cầu bổ sung thông tin. Cán bộ vui lòng thụ lý hoặc xử lý theo quy định hiện hành.");
+            }
+
+            var reason = needInfoReason ?? note;
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                throw new ValidationException("Vui lòng nêu rõ lý do và danh mục thông tin/chứng cứ cần người dân bổ sung.");
+            }
+        }
+
+        if (toStatus == PetitionStatus.Merged)
+        {
+            if (string.IsNullOrWhiteSpace(duplicateOfTrackingCode))
+            {
+                throw new ValidationException("Vui lòng cung cấp Mã biên nhận hồ sơ gốc để thực hiện gộp phản ánh trùng lặp.");
+            }
+
+            if (duplicateOfTrackingCode.Trim().Equals(petition.TrackingCode, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new BadRequestException("Không thể gộp hồ sơ vào chính nó. Vui lòng kiểm tra lại mã hồ sơ gốc.");
+            }
+        }
+
+        if (toStatus == PetitionStatus.Forwarded)
+        {
+            if (string.IsNullOrWhiteSpace(forwardToOrganization))
+            {
+                throw new ValidationException("Vui lòng nhập tên Cơ quan / Đơn vị tiếp nhận chuyển tiếp hồ sơ.");
+            }
+        }
+
         if (toStatus == PetitionStatus.Rejected)
         {
             if (string.IsNullOrWhiteSpace(note))
@@ -159,6 +222,13 @@ public class PetitionWorkflowService : IPetitionWorkflowService
             (PetitionStatus.Assigned, PetitionStatus.Investigating) => "Bắt đầu xác minh, kiểm tra thực địa",
             (PetitionStatus.Investigating, PetitionStatus.Resolved) => "Ban hành kết luận & hoàn tất giải quyết",
             (PetitionStatus.Investigating, PetitionStatus.Assigned) => "Điều chuyển cơ quan do không thuộc thẩm quyền",
+            (_, PetitionStatus.NeedInfo) => "Yêu cầu người dân bổ sung thông tin, chứng cứ",
+            (PetitionStatus.NeedInfo, PetitionStatus.Submitted) => "Người dân đã bổ sung thông tin, tiếp tục phân loại",
+            (PetitionStatus.NeedInfo, PetitionStatus.Assigned) => "Người dân đã bổ sung thông tin, tiếp tục phân công",
+            (PetitionStatus.NeedInfo, PetitionStatus.Investigating) => "Người dân đã bổ sung thông tin, tiếp tục xác minh",
+            (_, PetitionStatus.Merged) => "Gộp hồ sơ do trùng lặp nội dung phản ánh",
+            (_, PetitionStatus.Forwarded) => "Chuyển tiếp hồ sơ sang cơ quan ngoài ngành",
+            (_, PetitionStatus.Withdrawn) => "Người dân chủ động rút phản ánh",
             (_, PetitionStatus.Rejected) => "Từ chối tiếp nhận thụ lý hồ sơ",
             (_, PetitionStatus.Closed) => "Đóng và lưu trữ hồ sơ",
             _ => $"Chuyển trạng thái sang {GetStatusName(toStatus)}"

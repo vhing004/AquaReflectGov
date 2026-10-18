@@ -21,7 +21,11 @@ import {
   UserCheck,
   Zap,
   ShieldCheck,
-  Info
+  Info,
+  AlertCircle,
+  GitMerge,
+  CornerUpRight,
+  CalendarClock,
 } from 'lucide-react';
 
 interface TransitionStatusModalProps {
@@ -43,6 +47,11 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
   const [assignedUserId, setAssignedUserId] = useState<string>('');
   const [resolutionSummary, setResolutionSummary] = useState<string>('');
   const [note, setNote] = useState<string>('');
+  const [duplicateOfTrackingCode, setDuplicateOfTrackingCode] = useState<string>('');
+  const [forwardToOrganization, setForwardToOrganization] = useState<string>('');
+  const [forwardReason, setForwardReason] = useState<string>('');
+  const [needInfoReason, setNeedInfoReason] = useState<string>('');
+  const [needInfoDays, setNeedInfoDays] = useState<number>(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -97,6 +106,12 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
         return 'Nghiệp vụ: Từ chối tiếp nhận hồ sơ do không đủ điều kiện, trùng lặp hoặc không thuộc thẩm quyền giải quyết (bắt buộc nêu lý do).';
       case 6:
         return 'Nghiệp vụ: Đóng hồ sơ và chuyển vào lưu trữ vĩnh viễn sau khi đã hoàn tất mọi thủ tục.';
+      case 7:
+        return 'Nghiệp vụ: Yêu cầu người dân bổ sung thêm thông tin, ảnh chụp hiện trường hoặc tài liệu. Hệ thống sẽ tạm dừng SLA cho đến khi người dân phản hồi (tối đa 2 lần).';
+      case 8:
+        return 'Nghiệp vụ: Gộp đơn phản ánh này vào một hồ sơ gốc đã tiếp nhận trước đó do trùng lặp nội dung, vị trí hoặc cùng một vụ việc.';
+      case 9:
+        return 'Nghiệp vụ: Chuyển tiếp hồ sơ sang cơ quan ngoài ngành hoặc địa phương khác có thẩm quyền giải quyết (BĐBP, Công an, Sở TN&MT, v.v.).';
       default:
         return null;
     }
@@ -110,6 +125,11 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
       setAssignedUserId('');
       setResolutionSummary('');
       setNote('');
+      setDuplicateOfTrackingCode('');
+      setForwardToOrganization('');
+      setForwardReason('');
+      setNeedInfoReason('');
+      setNeedInfoDays(5);
       setErrorMessage(null);
     }
   }, [isOpen, petition]);
@@ -174,6 +194,12 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
         return <XCircle className="w-4 h-4 text-rose-600" />;
       case 6:
         return <Check className="w-4 h-4 text-slate-600" />;
+      case 7:
+        return <AlertCircle className="w-4 h-4 text-amber-600" />;
+      case 8:
+        return <GitMerge className="w-4 h-4 text-purple-600" />;
+      case 9:
+        return <CornerUpRight className="w-4 h-4 text-cyan-600" />;
       default:
         return <Layers className="w-4 h-4" />;
     }
@@ -195,6 +221,12 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
         return 'border-rose-500 bg-rose-50/60 ring-2 ring-rose-200 text-rose-950';
       case 6:
         return 'border-slate-500 bg-slate-100 ring-2 ring-slate-300 text-slate-900';
+      case 7:
+        return 'border-amber-500 bg-amber-50/70 ring-2 ring-amber-200 text-amber-950';
+      case 8:
+        return 'border-purple-500 bg-purple-50/70 ring-2 ring-purple-200 text-purple-950';
+      case 9:
+        return 'border-cyan-500 bg-cyan-50/70 ring-2 ring-cyan-200 text-cyan-950';
       default:
         return 'border-sky-500 bg-sky-50 text-sky-900';
     }
@@ -223,6 +255,21 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
       return;
     }
 
+    if (selectedStatus === 7 && !needInfoReason.trim()) {
+      setErrorMessage('Vui lòng nêu rõ danh mục tài liệu hoặc thông tin cần công dân bổ sung.');
+      return;
+    }
+
+    if (selectedStatus === 8 && !duplicateOfTrackingCode.trim()) {
+      setErrorMessage('Vui lòng nhập Mã biên nhận hồ sơ gốc để thực hiện gộp đơn trùng lặp.');
+      return;
+    }
+
+    if (selectedStatus === 9 && !forwardToOrganization.trim()) {
+      setErrorMessage('Vui lòng nhập tên Cơ quan / Đơn vị tiếp nhận chuyển tiếp hồ sơ.');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
 
@@ -233,6 +280,11 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
         assignedUserId: assignedUserId || undefined,
         resolutionSummary: resolutionSummary.trim() || undefined,
         note: note.trim() || undefined,
+        duplicateOfTrackingCode: duplicateOfTrackingCode.trim() || undefined,
+        forwardToOrganization: forwardToOrganization.trim() || undefined,
+        forwardReason: forwardReason.trim() || undefined,
+        needInfoReason: needInfoReason.trim() || undefined,
+        needInfoDays: selectedStatus === 7 ? needInfoDays : undefined,
       });
 
       if (res.success) {
@@ -557,6 +609,119 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
               <p className="text-[10px] text-emerald-700">
                 Nội dung kết luận này sẽ được công khai hiển thị trên trang tra cứu để công dân/ngư dân theo dõi và thực hiện đánh giá hài lòng.
               </p>
+            </div>
+          )}
+
+          {/* Dynamic Input: Yêu cầu bổ sung thông tin (NeedInfo = 7) */}
+          {selectedStatus === 7 && (
+            <div className="space-y-3 p-4 bg-amber-50/70 rounded-2xl border border-amber-200">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-bold text-amber-950 uppercase tracking-wider flex items-center space-x-1">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Nội dung yêu cầu bổ sung <span className="text-rose-500">*</span></span>
+                </label>
+                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                  Lần yêu cầu: {(petition.needInfoCount || 0) + 1}/2
+                </span>
+              </div>
+
+              <textarea
+                value={needInfoReason}
+                onChange={(e) => setNeedInfoReason(e.target.value)}
+                placeholder="Nêu rõ hình ảnh chụp thực tế, tài liệu xác minh, tọa độ GPS hoặc mô tả cần người dân gửi thêm..."
+                rows={3}
+                required
+                className="w-full p-2.5 text-xs rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 text-slate-800 leading-relaxed"
+              ></textarea>
+
+              <div className="pt-2 border-t border-amber-200/60 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-900 flex items-center space-x-1">
+                  <CalendarClock className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Thời hạn bổ sung (ngày làm việc):</span>
+                </span>
+                <div className="flex items-center space-x-1.5">
+                  {[3, 5, 7].map((days) => (
+                    <button
+                      key={days}
+                      type="button"
+                      onClick={() => setNeedInfoDays(days)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                        needInfoDays === days
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-white text-amber-900 border border-amber-200 hover:bg-amber-100'
+                      }`}
+                    >
+                      {days} ngày
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-[10px] text-amber-800 flex items-start space-x-1.5 bg-amber-100/60 p-2 rounded-xl">
+                <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  Hệ thống sẽ <strong>tự động tạm dừng tính hạn SLA</strong> của cán bộ cho đến khi người dân gửi bổ sung phản hồi.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic Input: Gộp đơn trùng lặp (Merged = 8) */}
+          {selectedStatus === 8 && (
+            <div className="space-y-3 p-4 bg-purple-50/70 rounded-2xl border border-purple-200">
+              <label className="block text-[11px] font-bold text-purple-950 uppercase tracking-wider flex items-center space-x-1">
+                <GitMerge className="w-3.5 h-3.5 text-purple-600" />
+                <span>Mã hồ sơ gốc cần gộp <span className="text-rose-500">*</span></span>
+              </label>
+
+              <input
+                type="text"
+                value={duplicateOfTrackingCode}
+                onChange={(e) => setDuplicateOfTrackingCode(e.target.value.toUpperCase())}
+                placeholder="Ví dụ: TS-202610-A1B2C"
+                required
+                className="w-full px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 text-purple-950 uppercase"
+              />
+
+              <div className="text-[10px] text-purple-800 flex items-start space-x-1.5 bg-purple-100/60 p-2 rounded-xl">
+                <Info className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                <span>
+                  Hồ sơ này sẽ được đánh dấu là <strong>Đã gộp đơn trùng</strong> và lưu liên kết trỏ tới hồ sơ gốc.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic Input: Chuyển cơ quan khác (Forwarded = 9) */}
+          {selectedStatus === 9 && (
+            <div className="space-y-3 p-4 bg-cyan-50/70 rounded-2xl border border-cyan-200">
+              <div>
+                <label className="block text-[11px] font-bold text-cyan-950 uppercase tracking-wider flex items-center space-x-1 mb-1">
+                  <CornerUpRight className="w-3.5 h-3.5 text-cyan-600" />
+                  <span>Cơ quan / Đơn vị tiếp nhận chuyển tiếp <span className="text-rose-500">*</span></span>
+                </label>
+                <input
+                  type="text"
+                  value={forwardToOrganization}
+                  onChange={(e) => setForwardToOrganization(e.target.value)}
+                  placeholder="Ví dụ: Bộ Chỉ huy Bộ đội Biên phòng Tỉnh, Sở Tài nguyên & Môi trường..."
+                  required
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-cyan-200 bg-white focus:outline-none focus:ring-2 focus:ring-cyan-300 text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-cyan-950 uppercase tracking-wider mb-1">
+                  Lý do chuyển tiếp ngoài ngành (Tùy chọn)
+                </label>
+                <textarea
+                  value={forwardReason}
+                  onChange={(e) => setForwardReason(e.target.value)}
+                  placeholder="Nêu căn cứ thẩm quyền, văn bản chuyển tiếp hoặc lý do điều chuyển..."
+                  rows={2}
+                  className="w-full p-2.5 text-xs rounded-xl border border-cyan-200 bg-white focus:outline-none focus:ring-2 focus:ring-cyan-300 text-slate-800 leading-relaxed"
+                ></textarea>
+              </div>
             </div>
           )}
 

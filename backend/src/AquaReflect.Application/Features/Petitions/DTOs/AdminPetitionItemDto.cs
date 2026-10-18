@@ -49,6 +49,12 @@ public class AdminPetitionItemDto
     public double? RemainingHours { get; set; }
     public string? ResolutionSummary { get; set; }
 
+    // Thông tin ngoại lệ
+    public int NeedInfoCount { get; set; }
+    public DateTime? NeedInfoDeadline { get; set; }
+    public Guid? DuplicateOfId { get; set; }
+    public string? ForwardToOrganization { get; set; }
+
     // Tệp đính kèm & Đánh giá
     public int AttachmentsCount { get; set; }
     public bool HasFeedback { get; set; }

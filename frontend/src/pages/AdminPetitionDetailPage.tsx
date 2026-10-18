@@ -27,7 +27,10 @@ import {
   FileCheck2,
   Film,
   Image as ImageIcon,
-  Loader2
+  Loader2,
+  GitMerge,
+  CornerUpRight,
+  FileX
 } from 'lucide-react';
 import { adminApi } from '../api/adminApi';
 import { useAuthStore } from '../store/useAuthStore';
@@ -227,6 +230,34 @@ export const AdminPetitionDetailPage: React.FC = () => {
             <span>{name}</span>
           </span>
         );
+      case 7:
+        return (
+          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+            <span>{name}</span>
+          </span>
+        );
+      case 8:
+        return (
+          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300">
+            <GitMerge className="w-3.5 h-3.5 text-purple-600" />
+            <span>{name}</span>
+          </span>
+        );
+      case 9:
+        return (
+          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-100 text-cyan-900 border border-cyan-300">
+            <CornerUpRight className="w-3.5 h-3.5 text-cyan-600" />
+            <span>{name}</span>
+          </span>
+        );
+      case 10:
+        return (
+          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-800 border border-slate-300">
+            <FileX className="w-3.5 h-3.5 text-slate-600" />
+            <span>{name}</span>
+          </span>
+        );
       default:
         return <span>{name}</span>;
     }
@@ -376,6 +407,80 @@ export const AdminPetitionDetailPage: React.FC = () => {
 
           {/* LEFT / MAIN DOSSIER COLUMN (7/12) */}
           <div className="lg:col-span-8 space-y-6">
+
+            {/* EXCEPTION BANNERS */}
+            {petition.status === 7 && (
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-2xl shadow-xs flex items-start space-x-3 text-xs text-amber-950 animate-in fade-in">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-bold text-amber-900 text-sm">
+                    Hồ sơ đang tạm dừng để chờ người dân bổ sung thông tin (Lần {petition.needInfoCount || 1}/2)
+                  </div>
+                  <p className="text-amber-800">
+                    <strong>Nội dung yêu cầu bổ sung:</strong> {petition.needInfoReason || 'Chờ người dân cung cấp thêm thông tin hiện trường'}
+                  </p>
+                  {petition.needInfoDeadline && (
+                    <p className="text-amber-700 text-[11px]">
+                      <strong>Hạn chót bổ sung:</strong> {new Date(petition.needInfoDeadline).toLocaleString('vi-VN')} • SLA cán bộ đang tạm dừng tính giờ.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {petition.status === 8 && (
+              <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-2xl shadow-xs flex items-start space-x-3 text-xs text-purple-950 animate-in fade-in">
+                <GitMerge className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-bold text-purple-900 text-sm">
+                    Hồ sơ đã được gộp do trùng lặp nội dung phản ánh
+                  </div>
+                  <p className="text-purple-800">
+                    Đã gộp vào hồ sơ gốc: <strong className="font-mono bg-purple-100 px-2 py-0.5 rounded text-purple-950">{petition.duplicateOfTrackingCode || 'Hồ sơ gốc'}</strong>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {petition.status === 9 && (
+              <div className="bg-cyan-50 border-l-4 border-cyan-500 p-4 rounded-2xl shadow-xs flex items-start space-x-3 text-xs text-cyan-950 animate-in fade-in">
+                <CornerUpRight className="w-5 h-5 text-cyan-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-bold text-cyan-900 text-sm">
+                    Hồ sơ đã được chuyển tiếp sang cơ quan ngoài ngành
+                  </div>
+                  <p className="text-cyan-800">
+                    <strong>Cơ quan tiếp nhận:</strong> {petition.forwardToOrganization || 'Cơ quan có thẩm quyền'}
+                  </p>
+                  {petition.forwardReason && (
+                    <p className="text-cyan-700 text-[11px]">
+                      <strong>Lý do chuyển tiếp:</strong> {petition.forwardReason}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {petition.status === 10 && (
+              <div className="bg-slate-100 border-l-4 border-slate-500 p-4 rounded-2xl shadow-xs flex items-start space-x-3 text-xs text-slate-800 animate-in fade-in">
+                <FileX className="w-5 h-5 text-slate-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-bold text-slate-900 text-sm">
+                    Người dân đã chủ động rút phản ánh kiến nghị này
+                  </div>
+                  {petition.withdrawnReason && (
+                    <p className="text-slate-700">
+                      <strong>Lý do rút:</strong> {petition.withdrawnReason}
+                    </p>
+                  )}
+                  {petition.withdrawnAt && (
+                    <p className="text-slate-500 text-[11px]">
+                      Thời điểm rút: {new Date(petition.withdrawnAt).toLocaleString('vi-VN')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* A. Nội dung phản ánh chi tiết */}
             <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 space-y-4">

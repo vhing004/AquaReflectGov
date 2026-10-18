@@ -71,7 +71,13 @@ public class AdminController : BaseApiController
             DepartmentId = request.DepartmentId,
             AssignedUserId = request.AssignedUserId,
             ResolutionSummary = request.ResolutionSummary,
-            Note = request.Note
+            Note = request.Note,
+            DuplicateOfTrackingCode = request.DuplicateOfTrackingCode,
+            DuplicateOfId = request.DuplicateOfId,
+            ForwardToOrganization = request.ForwardToOrganization,
+            ForwardReason = request.ForwardReason,
+            NeedInfoReason = request.NeedInfoReason,
+            NeedInfoDays = request.NeedInfoDays
         };
 
         var result = await Mediator.Send(command, cancellationToken);
@@ -236,4 +242,34 @@ public class TransitionStatusRequest
     /// Ghi chú nghiệp vụ / Lý do điều phối (bắt buộc khi chuyển sang 5 - Từ chối)
     /// </summary>
     public string? Note { get; set; }
+
+    /// <summary>
+    /// Mã biên nhận hồ sơ gốc khi gộp đơn (ToStatus = 8)
+    /// </summary>
+    public string? DuplicateOfTrackingCode { get; set; }
+
+    /// <summary>
+    /// ID hồ sơ gốc khi gộp đơn (tùy chọn)
+    /// </summary>
+    public Guid? DuplicateOfId { get; set; }
+
+    /// <summary>
+    /// Cơ quan chuyển tiếp (ToStatus = 9)
+    /// </summary>
+    public string? ForwardToOrganization { get; set; }
+
+    /// <summary>
+    /// Lý do chuyển tiếp ngoài ngành (ToStatus = 9)
+    /// </summary>
+    public string? ForwardReason { get; set; }
+
+    /// <summary>
+    /// Nội dung yêu cầu người dân bổ sung (ToStatus = 7)
+    /// </summary>
+    public string? NeedInfoReason { get; set; }
+
+    /// <summary>
+    /// Số ngày làm việc cho hạn bổ sung (mặc định 5 ngày)
+    /// </summary>
+    public int? NeedInfoDays { get; set; }
 }
