@@ -30,7 +30,11 @@ import {
   Loader2,
   GitMerge,
   CornerUpRight,
-  FileX
+  FileX,
+  Compass,
+  Camera,
+  MapPin,
+  ClipboardCheck
 } from 'lucide-react';
 import { adminApi } from '../api/adminApi';
 import { useAuthStore } from '../store/useAuthStore';
@@ -38,6 +42,7 @@ import { TransitionStatusModal } from '../components/admin/TransitionStatusModal
 import { ResolutionModal } from '../components/admin/ResolutionModal';
 import { MediaLightbox } from '../components/admin/MediaLightbox';
 import { MiniMapViewer } from '../components/admin/MiniMapViewer';
+import { AddInspectionNoteModal } from '../components/admin/AddInspectionNoteModal';
 import type { AdminPetitionItem } from '../types';
 import { canAccessPetition } from '../utils/permissions';
 
@@ -48,7 +53,10 @@ export const AdminPetitionDetailPage: React.FC = () => {
 
   // Modals & Lightbox states
   const [isTransitionOpen, setIsTransitionOpen] = useState(false);
+  const [transitionInitialStatus, setTransitionInitialStatus] = useState<number | null>(null);
   const [isResolutionOpen, setIsResolutionOpen] = useState(false);
+  const [isInspectionOpen, setIsInspectionOpen] = useState(false);
+  const [isBeginningInvestigation, setIsBeginningInvestigation] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
@@ -97,9 +105,52 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return user.role === 'SuperAdmin' || user.role === 'Dispatcher';
   })();
 
+  // [Task 4.1] Quyền bắt đầu thẩm tra thực địa (Chuyển Assigned 2 -> Investigating 3)
+  const canBeginInvestigation = (() => {
+    if (!petition || petition.status !== 2 || !user) return false;
+    if (user.role === 'SuperAdmin' || user.role === 'Dispatcher') return true;
+    if (user.role === 'Specialist') {
+      return canAccessPetition(user.role, user.departmentId, petition.departmentId);
+    }
+    return false;
+  })();
+
+  // [Task 4.1] Quyền lập biên bản / ghi chú thực địa kèm ảnh GPS
+  const canAddInspectionNote = (() => {
+    if (!petition || !user) return false;
+    if (petition.status !== 2 && petition.status !== 3) return false;
+    if (user.role === 'SuperAdmin' || user.role === 'Dispatcher') return true;
+    if (user.role === 'Specialist') {
+      return canAccessPetition(user.role, user.departmentId, petition.departmentId);
+    }
+    return false;
+  })();
+
+  // [Task 4.1] Kích hoạt nhánh NeedInfo từ hiện trường nếu thiếu căn cứ xác minh
+  const canRequestNeedInfo = (() => {
+    if (!petition || !user) return false;
+    if (petition.status !== 2 && petition.status !== 3) return false;
+    return canTransition;
+  })();
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleBeginInvestigation = async () => {
+    if (!petition || isBeginningInvestigation) return;
+    try {
+      setIsBeginningInvestigation(true);
+      const res = await adminApi.beginInvestigation(petition.id);
+      showToast(res.message || 'Đã bắt đầu thẩm tra thực địa thành công.');
+      refetch();
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      showToast(axiosError?.response?.data?.message || 'Không thể bắt đầu thẩm tra. Vui lòng thử lại.');
+    } finally {
+      setIsBeginningInvestigation(false);
+    }
   };
 
   const copyTrackingCode = () => {
@@ -286,7 +337,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
               <span>Quay lại Danh sách Hồ sơ</span>
             </Link>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => window.print()}
                 className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all border border-white/20 cursor-pointer"
@@ -296,9 +347,56 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 <span className="hidden sm:inline">In hồ sơ</span>
               </button>
 
+              {/* [Task 4.1] Nút Bắt đầu thẩm tra thực địa: Assigned (2) -> Investigating (3) */}
+              {canBeginInvestigation && (
+                <button
+                  onClick={handleBeginInvestigation}
+                  disabled={isBeginningInvestigation}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  title="Chuyển trạng thái sang Đang thẩm tra (Investigating)"
+                >
+                  {isBeginningInvestigation ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Compass className="w-3.5 h-3.5" />
+                  )}
+                  <span>Bắt đầu thẩm tra</span>
+                </button>
+              )}
+
+              {/* [Task 4.1] Nút Lập biên bản thực địa & ảnh GPS */}
+              {canAddInspectionNote && (
+                <button
+                  onClick={() => setIsInspectionOpen(true)}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/30 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  title="Ghi chép quan sát, lập biên bản kiểm tra, đính kèm ảnh GPS"
+                >
+                  <Camera className="w-3.5 h-3.5 text-sky-200" />
+                  <span>Biên bản thực địa</span>
+                </button>
+              )}
+
+              {/* [Task 4.1] Nút Kích hoạt nhánh NeedInfo từ hiện trường nếu thiếu căn cứ */}
+              {canRequestNeedInfo && (petition.status === 2 || petition.status === 3) && (
+                <button
+                  onClick={() => {
+                    setTransitionInitialStatus(7); // NeedInfo
+                    setIsTransitionOpen(true);
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-300/40 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  title="Yêu cầu người dân bổ sung thêm thông tin khi thiếu căn cứ xác minh"
+                >
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-300" />
+                  <span className="hidden sm:inline">Yêu cầu bổ sung</span>
+                </button>
+              )}
+
               {canTransition && (
                 <button
-                  onClick={() => setIsTransitionOpen(true)}
+                  onClick={() => {
+                    setTransitionInitialStatus(null);
+                    setIsTransitionOpen(true);
+                  }}
                   className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white text-[#006194] hover:bg-sky-50 text-xs font-bold transition-all shadow-sm cursor-pointer"
                   title="Chuyển trạng thái hồ sơ theo quy trình"
                 >
@@ -724,43 +822,84 @@ export const AdminPetitionDetailPage: React.FC = () => {
 
             {/* F. Sổ tay Cán bộ & Trao đổi Nghiệp vụ Nội bộ */}
             <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 space-y-4">
-              <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
-                <div className="w-8 h-8 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-[#006194]">
-                  <MessageSquare className="w-4 h-4" />
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-[#006194]">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900">
+                      Sổ Tay Nghiệp Vụ & Biên Bản Thực Địa ({petition.comments.length})
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Biên bản khảo sát, mẫu vật chứng cứ, ảnh GPS và trao đổi nội bộ
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-sm font-bold text-slate-900">
-                    Sổ Tay Nghiệp Vụ & Trao Đổi Nội Bộ ({petition.comments.length})
-                  </h2>
-                  <p className="text-[11px] text-slate-500">
-                    Ghi chú điều phối, kết quả liên lạc với cơ sở hoặc chỉ đạo nội bộ (Chỉ cán bộ thấy)
-                  </p>
-                </div>
+
+                {canAddInspectionNote && (
+                  <button
+                    type="button"
+                    onClick={() => setIsInspectionOpen(true)}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#006194] hover:bg-[#004d77] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <ClipboardCheck className="w-3.5 h-3.5" />
+                    <span>Lập biên bản</span>
+                  </button>
+                )}
               </div>
 
               {/* Comments stream */}
-              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
                 {petition.comments.length > 0 ? (
-                  petition.comments.map((cmt) => (
-                    <div
-                      key={cmt.id}
-                      className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/70 space-y-1"
-                    >
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-slate-800 flex items-center space-x-1">
-                          <User className="w-3 h-3 text-[#006194]" />
-                          <span>{cmt.authorName}</span>
-                        </span>
-                        <span className="text-slate-400">
-                          {new Date(cmt.createdAt).toLocaleString('vi-VN')}
-                        </span>
+                  petition.comments.map((cmt) => {
+                    const isInspectionReport = cmt.content.includes('[📋 Biên bản') || cmt.content.includes('[🔍 Thu thập mẫu') || cmt.content.includes('[🏞️ Quan sát');
+                    const hasGps = cmt.content.includes('📍 GPS hiện trường:');
+                    
+                    return (
+                      <div
+                        key={cmt.id}
+                        className={`p-3.5 rounded-2xl border space-y-2 transition-all ${
+                          isInspectionReport
+                            ? 'bg-gradient-to-br from-sky-50/70 to-slate-50 border-sky-200/90 shadow-xs'
+                            : 'bg-slate-50 rounded-xl border-slate-200/70'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-slate-800 flex items-center space-x-1.5">
+                            {isInspectionReport ? (
+                              <ClipboardCheck className="w-3.5 h-3.5 text-[#006194]" />
+                            ) : (
+                              <User className="w-3 h-3 text-[#006194]" />
+                            )}
+                            <span>{cmt.authorName}</span>
+                            {isInspectionReport && (
+                              <span className="px-2 py-0.5 rounded-md bg-[#006194] text-white text-[10px] font-bold">
+                                Thực địa
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-slate-400">
+                            {new Date(cmt.createdAt).toLocaleString('vi-VN')}
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-slate-700 leading-relaxed font-medium whitespace-pre-line">
+                          {cmt.content}
+                        </div>
+
+                        {hasGps && (
+                          <div className="pt-1 flex items-center space-x-1.5 text-[11px] font-bold text-sky-800">
+                            <MapPin className="w-3.5 h-3.5 text-sky-600" />
+                            <span>Đã xác thực tọa độ GPS hiện trường</span>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs text-slate-700 leading-relaxed font-medium">{cmt.content}</p>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="text-xs text-slate-400 italic py-2">
-                    Chưa có ghi chú nội bộ nào. Thêm ghi chú đầu tiên bên dưới.
+                    Chưa có ghi chú nội bộ nào. Thêm ghi chú hoặc biên bản thực địa đầu tiên bên dưới.
                   </p>
                 )}
               </div>
@@ -990,7 +1129,11 @@ export const AdminPetitionDetailPage: React.FC = () => {
       <TransitionStatusModal
         petition={modalPetitionItem}
         isOpen={isTransitionOpen}
-        onClose={() => setIsTransitionOpen(false)}
+        initialStatus={transitionInitialStatus}
+        onClose={() => {
+          setIsTransitionOpen(false);
+          setTransitionInitialStatus(null);
+        }}
         onSuccess={() => {
           showToast('Đã cập nhật trạng thái hồ sơ thành công.');
           refetch();
@@ -1011,7 +1154,19 @@ export const AdminPetitionDetailPage: React.FC = () => {
         initialConclusionText={petition.resolution?.conclusionText}
       />
 
-      {/* 3. Media Lightbox */}
+      {/* 3. [Task 4.1] Inspection Note Modal (Biên bản thực địa & GPS) */}
+      <AddInspectionNoteModal
+        petitionId={petition.id}
+        trackingCode={petition.trackingCode}
+        isOpen={isInspectionOpen}
+        onClose={() => setIsInspectionOpen(false)}
+        onSuccess={(msg) => {
+          showToast(msg);
+          refetch();
+        }}
+      />
+
+      {/* 4. Media Lightbox */}
       <MediaLightbox
         attachments={petition.attachments}
         initialIndex={lightboxIndex}

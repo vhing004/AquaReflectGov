@@ -439,6 +439,23 @@ export interface SubmitAdditionalInfoResult {
   submittedAt: string;
 }
 
+/** [Task 4.1] Kết quả ghi chú nghiệp vụ hiện trường */
+export interface InspectionNoteResult {
+  commentId: string;
+  petitionId: string;
+  trackingCode: string;
+  authorName: string;
+  noteContent: string;
+  noteTypeName: string;
+  fieldLatitude?: number;
+  fieldLongitude?: number;
+  attachmentsAdded: number;
+  attachments: PetitionAttachment[];
+  createdAt: string;
+  message: string;
+}
+
+
 
 
 

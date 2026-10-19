@@ -10,7 +10,8 @@ import type {
   AllowedTransition,
   TransitionStatusRequest,
   TransitionStatusResult,
-  DepartmentOfficer
+  DepartmentOfficer,
+  InspectionNoteResult
 } from '../types';
 
 export const adminApi = {
@@ -108,4 +109,36 @@ export const adminApi = {
     );
     return response.data;
   },
+
+  /**
+   * [Task 4.1] Bắt đầu thẩm tra thực địa: Chuyển hồ sơ Assigned → Investigating
+   */
+  beginInvestigation: async (
+    petitionId: string,
+    note?: string
+  ): Promise<ApiResponse<TransitionStatusResult>> => {
+    const response = await axiosClient.post<ApiResponse<TransitionStatusResult>>(
+      `/admin/petitions/${petitionId}/begin-investigation`,
+      { note: note ?? null }
+    );
+    return response.data;
+  },
+
+  /**
+   * [Task 4.1] Ghi chú nghiệp vụ hiện trường kèm ảnh biên bản thực địa
+   */
+  addInspectionNote: async (
+    petitionId: string,
+    formData: FormData
+  ): Promise<ApiResponse<InspectionNoteResult>> => {
+    const response = await axiosClient.post<ApiResponse<InspectionNoteResult>>(
+      `/admin/petitions/${petitionId}/inspection-notes`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
 };
+

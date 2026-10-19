@@ -188,10 +188,19 @@ Quy trình nâng cấp đảm bảo tính chặt chẽ về mặt pháp lý hàn
 ### Phase 4: Nâng cấp Bước 3 & 4 - Thẩm tra thực địa & Ban hành kết luận
 *Mục tiêu: Chuẩn hóa nghiệp vụ cán bộ chuyên viên hiện trường và kết luận pháp lý.*
 
-- [ ] **Task 4.1: Nghiệp vụ Hiện trường & Yêu cầu bổ sung tại chỗ**
-  - Nút **"Bắt đầu thẩm tra"** chuyển `Assigned` ➔ `Investigating`.
-  - Tích hợp thêm ghi chú nội bộ (Internal comment) gắn ảnh biên bản hiện trường.
-  - Cho phép Chuyên viên kích hoạt nhánh `NeedInfo` từ hiện trường nếu thiếu căn cứ xác minh.
+- [x] **Task 4.1: Nghiệp vụ Hiện trường & Yêu cầu bổ sung tại chỗ — Hoàn thành 19/10/2026**
+  - Backend:
+    - Thêm endpoint `POST /admin/petitions/{id}/begin-investigation`: Cán bộ phụ trách chuyển nhanh `Assigned` ➔ `Investigating`.
+    - Lệnh `AddInspectionNoteCommand` + Handler (`POST /admin/petitions/{id}/inspection-notes`): Cho phép cán bộ tải lên ghi chú thực địa phân loại (Quan sát thực địa, Biên bản kiểm tra, Thu thập mẫu chứng cứ, Ghi chú nội bộ), đính kèm tọa độ GPS vệ tinh và tối đa 5 tệp ảnh/video/PDF biên bản hiện trường.
+    - Lưu vết tự động vào `PetitionComment` nội bộ, `PetitionAttachment`, ghi log `PetitionHistory` và bắn thông báo SignalR.
+  - Frontend:
+    - Tạo `AddInspectionNoteModal.tsx`: Giao diện lập biên bản thực địa chuyên nghiệp, tích hợp nút "Lấy vị trí hiện tại" tự động qua Browser Geolocation API (độ chính xác ±m), chọn loại biên bản, kéo thả tệp đính kèm.
+    - Nâng cấp `AdminPetitionDetailPage.tsx`:
+      - Nút **"Bắt đầu thẩm tra"** màu hổ phách nổi bật khi hồ sơ ở `Assigned (2)`, lập tức kích hoạt trạng thái thẩm tra.
+      - Nút **"Biên bản thực địa"** và nút trong card Sổ tay nghiệp vụ mở modal lập biên bản hiện trường.
+      - Nút **"Yêu cầu bổ sung"** mở nhanh `TransitionStatusModal` chọn sẵn trạng thái `NeedInfo (7)` giúp cán bộ yêu cầu người dân bổ sung thông tin kịp thời khi thiếu căn cứ xác minh tại hiện trường.
+      - Khối Sổ tay Nghiệp vụ định dạng nổi bật các biên bản thực địa có định vị GPS.
+  - Kiểm thử: Backend build 0 error, Frontend Vite build 0 error, 37/37 Unit & Integration tests Passed 100%.
 
 - [ ] **Task 4.2: Ban hành kết luận có cấu trúc & Chốt mốc SLA**
   - Modal **"Ban hành kết luận"**:

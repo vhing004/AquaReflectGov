@@ -188,7 +188,112 @@ public class AdminController : BaseApiController
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(ApiResponse<List<AquaReflect.Application.Features.Departments.Queries.GetDepartmentOfficers.DepartmentOfficerDto>>.Ok(result, "Lấy danh sách cán bộ phòng ban thành công."));
     }
+
+    /// <summary>
+    /// [Task 4.1] Bắt đầu thẩm tra thực địa: Chuyển hồ sơ Assigned → Investigating.
+    /// Chỉ Specialist (thuộc phòng ban phụ trách) hoặc SuperAdmin mới được thao tác.
+    /// </summary>
+    /// <param name="id">ID hồ sơ phản ánh</param>
+    /// <param name="request">Ghi chú khởi động thẩm tra (tùy chọn)</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    [HttpPost("petitions/{id:guid}/begin-investigation")]
+    [ProducesResponseType(typeof(ApiResponse<AquaReflect.Application.Features.Petitions.Commands.TransitionStatus.TransitionPetitionStatusResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AquaReflect.Application.Features.Petitions.Commands.TransitionStatus.TransitionPetitionStatusResultDto>>> BeginInvestigation(
+        Guid id,
+        [FromBody] BeginInvestigationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AquaReflect.Application.Features.Petitions.Commands.TransitionStatus.TransitionPetitionStatusCommand
+        {
+            PetitionId = id,
+            ToStatus = AquaReflect.Domain.Enums.PetitionStatus.Investigating,
+            Note = request.Note
+        };
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.Commands.TransitionStatus.TransitionPetitionStatusResultDto>.Ok(result, result.Message));
+    }
+
+    /// <summary>
+    /// [Task 4.1] Ghi chú nghiệp vụ hiện trường kèm ảnh biên bản thực địa.
+    /// Dành cho Chuyên viên đang khảo sát thực địa (Assigned hoặc Investigating).
+    /// Hỗ trợ đính kèm tối đa 5 tệp ảnh/video/PDF biên bản.
+    /// </summary>
+    /// <param name="id">ID hồ sơ phản ánh</param>
+    /// <param name="request">Nội dung ghi chú, loại ghi chú, GPS và tệp đính kèm</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    [HttpPost("petitions/{id:guid}/inspection-notes")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.InspectionNoteResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.InspectionNoteResultDto>>> AddInspectionNote(
+        Guid id,
+        [FromForm] InspectionNoteRequest request,
+        CancellationToken cancellationToken)
+    {
+        var fileUploadModels = new List<AquaReflect.Application.Common.Models.FileUploadModel>();
+        if (request.Files != null && request.Files.Count > 0)
+        {
+            foreach (var formFile in request.Files)
+            {
+                if (formFile.Length > 0)
+                {
+                    fileUploadModels.Add(new AquaReflect.Application.Common.Models.FileUploadModel
+                    {
+                        ContentStream = formFile.OpenReadStream(),
+                        FileName = formFile.FileName,
+                        ContentType = formFile.ContentType,
+                        Length = formFile.Length
+                    });
+                }
+            }
+        }
+
+        var command = new AquaReflect.Application.Features.Petitions.Commands.AddInspectionNote.AddInspectionNoteCommand
+        {
+            PetitionId = id,
+            NoteContent = request.NoteContent,
+            NoteType = (AquaReflect.Application.Features.Petitions.Commands.AddInspectionNote.InspectionNoteType)request.NoteType,
+            FieldLatitude = request.FieldLatitude,
+            FieldLongitude = request.FieldLongitude,
+            Files = fileUploadModels
+        };
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.InspectionNoteResultDto>.Ok(result, result.Message));
+    }
 }
+
+public class BeginInvestigationRequest
+{
+    /// <summary>Ghi chú ngắn khi bắt đầu thẩm tra (tùy chọn, ví dụ: "Bắt đầu kiểm tra khu vực nuôi trồng...")</summary>
+    public string? Note { get; set; }
+}
+
+public class InspectionNoteRequest
+{
+    /// <summary>Nội dung ghi chú hiện trường (bắt buộc)</summary>
+    public string NoteContent { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Loại ghi chú: 1=Quan sát thực địa, 2=Biên bản kiểm tra, 3=Thu thập chứng cứ, 4=Ghi chú nội bộ
+    /// </summary>
+    public int NoteType { get; set; } = 1;
+
+    /// <summary>Vĩ độ GPS vị trí chụp ảnh/ghi chú (WGS84, tùy chọn)</summary>
+    public double? FieldLatitude { get; set; }
+
+    /// <summary>Kinh độ GPS vị trí chụp ảnh/ghi chú (WGS84, tùy chọn)</summary>
+    public double? FieldLongitude { get; set; }
+
+    /// <summary>Tệp ảnh/video/biên bản PDF đính kèm từ thực địa (tối đa 5 tệp)</summary>
+    public List<IFormFile>? Files { get; set; }
+}
+
 
 public class IssueResolutionRequest
 {

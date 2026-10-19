@@ -33,6 +33,7 @@ interface TransitionStatusModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (message: string) => void;
+  initialStatus?: number | null;
 }
 
 export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
@@ -40,6 +41,7 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  initialStatus = null,
 }) => {
   const { user } = useAuthStore();
   const [selectedStatus, setSelectedStatus] = useState<number | null>(null);
@@ -120,7 +122,7 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      setSelectedStatus(null);
+      setSelectedStatus(initialStatus ?? null);
       setDepartmentId('');
       setAssignedUserId('');
       setResolutionSummary('');
@@ -132,7 +134,7 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
       setNeedInfoDays(5);
       setErrorMessage(null);
     }
-  }, [isOpen, petition]);
+  }, [isOpen, petition, initialStatus]);
 
   // Smart Department Auto-Mapping based on petition category
   useEffect(() => {

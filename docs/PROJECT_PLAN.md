@@ -62,6 +62,9 @@ Hệ thống chính quyền số phục vụ công tác giám sát, tiếp nhậ
 | `20261018-2.3` | Frontend Tra cứu Bảo mật & Rút đơn | 18/10/2026 | 18/10/2026 | ✅ Hoàn thành | WithdrawPetitionModal, nút Rút đơn trang /track, cập nhật realtime |
 | `20261018-3.1` | API & Giao diện Phân công & Xử lý ngoại lệ | 18/10/2026 | 18/10/2026 | ✅ Hoàn thành | TransitionStatus mở rộng: NeedInfo, Merged, Forwarded, Rejected; Tabs & Banners |
 | `20261019-3.2` | Cơ chế tiếp nhận bổ sung hồ sơ từ công dân | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | API nộp tài liệu bổ sung, unpause SLA, SubmitAdditionalInfoModal, Alert Banner /track |
+| `20261019-3.3` | Bảo mật GIS: Lọc trạng thái, Obfuscate tọa độ ~100m, Strip EXIF GPS | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | Lọc public statuses, SHA256 hash noise, strip ExifGPS endpoint công khai, privacy badge popup |
+| `20261019-4.1` | Nghiệp vụ Hiện trường & Yêu cầu bổ sung tại chỗ | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | Endpoint begin-investigation, AddInspectionNoteModal GPS thực địa, nút Yêu cầu bổ sung NeedInfo |
+
 
 
 
