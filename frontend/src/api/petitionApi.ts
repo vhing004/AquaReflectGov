@@ -7,7 +7,8 @@ import type {
   PetitionSummary,
   SubmitFeedbackResult,
   PublicResolvedPetition,
-  WithdrawPetitionResult
+  WithdrawPetitionResult,
+  SubmitAdditionalInfoResult
 } from '../types';
 
 export const petitionApi = {
@@ -61,6 +62,22 @@ export const petitionApi = {
     const res = await axiosClient.post<ApiResponse<WithdrawPetitionResult>>(
       `/petitions/${encodeURIComponent(trackingCode.trim())}/withdraw`,
       { accessPin, reason }
+    );
+    return res.data;
+  },
+
+  submitAdditionalInfo: async (
+    trackingCode: string,
+    formData: FormData
+  ): Promise<ApiResponse<SubmitAdditionalInfoResult>> => {
+    const res = await axiosClient.post<ApiResponse<SubmitAdditionalInfoResult>>(
+      `/petitions/${encodeURIComponent(trackingCode.trim())}/additional-info`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
     return res.data;
   },

@@ -41,6 +41,7 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
             .Include(p => p.Resolution)
                 .ThenInclude(r => r!.ApprovedByUser)
             .Include(p => p.Feedback)
+            .Include(p => p.DuplicateOf)
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.TrackingCode == normalizedCode && !p.IsDeleted, cancellationToken);
 
@@ -127,7 +128,15 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
                     ToStatusName = GetStatusDisplayName(h.ToStatus),
                     Note = h.Note,
                     ActorName = h.PerformedByName ?? h.PerformedByUser?.FullName ?? "Bộ phận Tiếp nhận & Phân loại"
-                }).ToList()
+                }).ToList(),
+            NeedInfoReason = petition.NeedInfoReason,
+            NeedInfoDeadline = petition.NeedInfoDeadline,
+            NeedInfoCount = petition.NeedInfoCount,
+            IsSlaPaused = petition.SlaPausedAt.HasValue,
+            DuplicateOfTrackingCode = petition.DuplicateOf?.TrackingCode,
+            ForwardToOrganization = petition.ForwardToOrganization,
+            WithdrawnReason = petition.WithdrawnReason,
+            WithdrawnAt = petition.WithdrawnAt
         };
 
         if (petition.Resolution != null)
@@ -161,6 +170,10 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
         PetitionStatus.Resolved => "Đã ban hành quyết định giải quyết",
         PetitionStatus.Rejected => "Từ chối thụ lý",
         PetitionStatus.Closed => "Đã hoàn tất đóng hồ sơ",
+        PetitionStatus.Withdrawn => "Đã rút đơn",
+        PetitionStatus.NeedInfo => "Yêu cầu bổ sung thông tin",
+        PetitionStatus.Merged => "Gộp vào hồ sơ trùng lặp",
+        PetitionStatus.Forwarded => "Đã chuyển cơ quan thẩm quyền",
         _ => status.ToString()
     };
 

@@ -57,4 +57,14 @@ public class PetitionTrackingDto
     public bool HasFeedback { get; set; }
     public int? FeedbackRating { get; set; }
     public string? FeedbackComment { get; set; }
+
+    // Thông tin các trạng thái ngoại lệ (NeedInfo, Merged, Forwarded, Withdrawn, SlaPaused)
+    public string? NeedInfoReason { get; set; }
+    public DateTime? NeedInfoDeadline { get; set; }
+    public int NeedInfoCount { get; set; }
+    public bool IsSlaPaused { get; set; }
+    public string? DuplicateOfTrackingCode { get; set; }
+    public string? ForwardToOrganization { get; set; }
+    public string? WithdrawnReason { get; set; }
+    public DateTime? WithdrawnAt { get; set; }
 }

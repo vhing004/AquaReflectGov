@@ -1,6 +1,7 @@
 using AquaReflect.Api.Extensions;
 using AquaReflect.Application.Common.Models;
 using AquaReflect.Application.Features.Petitions.Commands.CreatePetition;
+using AquaReflect.Application.Features.Petitions.Commands.SubmitAdditionalInfo;
 using AquaReflect.Application.Features.Petitions.Commands.SubmitFeedback;
 using AquaReflect.Application.Features.Petitions.Commands.WithdrawPetition;
 using AquaReflect.Application.Features.Petitions.DTOs;
@@ -237,6 +238,54 @@ public class PetitionsController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(ApiResponse<WithdrawPetitionResultDto>.Ok(result, result.Message));
     }
+
+    /// <summary>
+    /// Công dân gửi thông tin/tệp minh chứng bổ sung (NeedInfo -> unpause SLA).
+    /// </summary>
+    /// <param name="trackingCode">Mã tra cứu hồ sơ (ví dụ: TS-202610-AB3KZ)</param>
+    /// <param name="request">Nội dung giải trình, mã PIN (nếu vô danh) và các tệp đính kèm mới</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    [HttpPost("{trackingCode}/additional-info")]
+    [Consumes("multipart/form-data")]
+    [EnableRateLimiting(RateLimiterExtensions.FeedbackPolicy)]
+    [ProducesResponseType(typeof(ApiResponse<SubmitAdditionalInfoResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<SubmitAdditionalInfoResultDto>>> SubmitAdditionalInfo(
+        string trackingCode,
+        [FromForm] SubmitAdditionalInfoRequest request,
+        CancellationToken cancellationToken)
+    {
+        var fileUploadModels = new List<FileUploadModel>();
+        if (request.Files != null && request.Files.Count > 0)
+        {
+            foreach (var formFile in request.Files)
+            {
+                if (formFile.Length > 0)
+                {
+                    fileUploadModels.Add(new FileUploadModel
+                    {
+                        ContentStream = formFile.OpenReadStream(),
+                        FileName = formFile.FileName,
+                        ContentType = formFile.ContentType,
+                        Length = formFile.Length
+                    });
+                }
+            }
+        }
+
+        var command = new SubmitAdditionalInfoCommand
+        {
+            TrackingCode = trackingCode,
+            AccessPin = request.AccessPin,
+            CitizenPhone = request.CitizenPhone,
+            AdditionalContent = request.AdditionalContent,
+            Files = fileUploadModels
+        };
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<SubmitAdditionalInfoResultDto>.Ok(result, result.Message));
+    }
 }
 
 public class SubmitFeedbackRequest
@@ -362,3 +411,27 @@ public class WithdrawPetitionRequest
     /// </summary>
     public string? Reason { get; set; }
 }
+
+public class SubmitAdditionalInfoRequest
+{
+    /// <summary>
+    /// Mã PIN bảo mật plain-text (bắt buộc với đơn vô danh, bỏ trống với đơn định danh).
+    /// </summary>
+    public string? AccessPin { get; set; }
+
+    /// <summary>
+    /// Số điện thoại người gửi (dùng xác thực phụ đối với hồ sơ định danh nếu không đăng nhập JWT).
+    /// </summary>
+    public string? CitizenPhone { get; set; }
+
+    /// <summary>
+    /// Nội dung bổ sung / giải trình thông tin theo yêu cầu của cán bộ.
+    /// </summary>
+    public string AdditionalContent { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Các tệp hình ảnh, video, tài liệu minh chứng mới gửi kèm.
+    /// </summary>
+    public List<IFormFile>? Files { get; set; }
+}
+

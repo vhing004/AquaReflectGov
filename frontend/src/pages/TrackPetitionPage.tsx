@@ -3,6 +3,7 @@ import { useSearchParams, useParams, Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { petitionApi } from '../api/petitionApi';
 import { WithdrawPetitionModal } from '../components/petition/WithdrawPetitionModal';
+import { SubmitAdditionalInfoModal } from '../components/petition/SubmitAdditionalInfoModal';
 import type { PetitionTrackingDetail, PetitionSummary } from '../types';
 import { 
   Search, 
@@ -32,7 +33,8 @@ import {
   Sparkles,
   ChevronRight,
   CheckCircle,
-  FileX
+  FileX,
+  UploadCloud
 } from 'lucide-react';
 
 const LOCAL_STORAGE_RECENT_KEY = 'aquareflect_recent_searches';
@@ -88,6 +90,10 @@ export const TrackPetitionPage: React.FC = () => {
   // Withdraw petition state (Task 2.3)
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
+
+  // Submit additional info state (Task 3.2)
+  const [showNeedInfoModal, setShowNeedInfoModal] = useState(false);
+  const [needInfoSuccessMessage, setNeedInfoSuccessMessage] = useState<string | null>(null);
 
   // Load recent searches on mount
   useEffect(() => {
@@ -308,14 +314,17 @@ export const TrackPetitionPage: React.FC = () => {
     } else if (status === 2 || status === 3) {
       activePhase = 2;
       progressPercent = status === 2 ? 45 : 65;
+    } else if (status === 7) {
+      activePhase = 2; // NeedInfo (Tạm dừng chờ bổ sung)
+      progressPercent = 40;
     } else if (status === 4) {
       activePhase = 3;
       progressPercent = hasFeedback ? 100 : 85;
     } else if (status === 6) {
       activePhase = 4;
       progressPercent = 100;
-    } else if (status === 5) {
-      activePhase = 0; // Rejected
+    } else if (status === 5 || status === 8 || status === 9 || status === 10) {
+      activePhase = 0; // Rejected, Merged, Forwarded, Withdrawn
       progressPercent = 100;
     }
 
@@ -630,6 +639,22 @@ export const TrackPetitionPage: React.FC = () => {
                 <span>In phiếu</span>
               </button>
 
+              {/* NÚT BỔ SUNG THÔNG TIN — chỉ hiện khi đơn đang ở NeedInfo (7) */}
+              {trackingDetail.status === 7 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNeedInfoSuccessMessage(null);
+                    setShowNeedInfoModal(true);
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shadow-xs"
+                  title="Nộp tài liệu / thông tin bổ sung cho hồ sơ này"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Bổ sung hồ sơ</span>
+                </button>
+              )}
+
               {/* NÚT RÚT ĐƠN — chỉ hiện khi đơn đang ở Submitted (1) hoặc Assigned (2) */}
               {(trackingDetail.status === 1 || trackingDetail.status === 2) && !withdrawSuccess && (
                 <button
@@ -655,6 +680,74 @@ export const TrackPetitionPage: React.FC = () => {
               <div>
                 <p className="font-bold text-emerald-900">Đã rút đơn thành công!</p>
                 <p className="text-emerald-700 mt-0.5">{withdrawSuccess}</p>
+              </div>
+            </div>
+          )}
+
+          {/* SUCCESS BANNER sau khi bổ sung hồ sơ thành công */}
+          {needInfoSuccessMessage && (
+            <div className="flex items-start space-x-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs animate-in fade-in print:hidden">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-emerald-900">Bổ sung hồ sơ thành công!</p>
+                <p className="text-emerald-700 mt-0.5">{needInfoSuccessMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {/* ALERT BANNER KHI HỒ SƠ CẦN BỔ SUNG THÔNG TIN (Status = 7 - NeedInfo) */}
+          {trackingDetail.status === 7 && (
+            <div className="p-5 rounded-3xl bg-amber-500/10 border-2 border-amber-500/30 text-amber-950 dark:text-amber-200 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 rounded-2xl bg-amber-500 text-white shrink-0 shadow-md shadow-amber-500/20">
+                    <AlertTriangle className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-500/20 px-2.5 py-0.5 rounded-full">
+                        Yêu cầu hành động từ người dân
+                      </span>
+                      {trackingDetail.needInfoCount && trackingDetail.needInfoCount > 0 && (
+                        <span className="text-[11px] text-amber-600 dark:text-amber-400">
+                          (Lần yêu cầu thứ {trackingDetail.needInfoCount})
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      Hồ sơ đang tạm dừng để chờ bổ sung thông tin hiện trường
+                    </h4>
+                    {trackingDetail.needInfoReason && (
+                      <div className="p-3 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-amber-200 dark:border-amber-800/40 text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
+                        <strong className="text-amber-800 dark:text-amber-300">Nội dung cán bộ yêu cầu: </strong>
+                        {trackingDetail.needInfoReason}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-amber-800 dark:text-amber-300 pt-1">
+                      {trackingDetail.needInfoDeadline && (
+                        <span className="flex items-center gap-1 font-medium">
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          Hạn chót bổ sung: {new Date(trackingDetail.needInfoDeadline).toLocaleString('vi-VN')}
+                        </span>
+                      )}
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        • Đồng hồ SLA đang tạm dừng cho đến khi nhận được phản hồi từ quý công dân.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNeedInfoSuccessMessage(null);
+                    setShowNeedInfoModal(true);
+                  }}
+                  className="sm:self-center shrink-0 inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>Bổ sung thông tin ngay</span>
+                </button>
               </div>
             </div>
           )}
@@ -1480,11 +1573,30 @@ export const TrackPetitionPage: React.FC = () => {
               prev
                 ? {
                     ...prev,
-                    status: 6,
+                    status: 10,
                     statusName: 'Đã rút đơn',
                   }
                 : null
             );
+          }}
+        />
+      )}
+
+      {/* ================================================================ */}
+      {/* MODAL BỔ SUNG HỒ SƠ PHẢN ÁNH (Task 3.2)                          */}
+      {/* ================================================================ */}
+      {showNeedInfoModal && trackingDetail && (
+        <SubmitAdditionalInfoModal
+          isOpen={showNeedInfoModal}
+          onClose={() => setShowNeedInfoModal(false)}
+          trackingCode={trackingDetail.trackingCode}
+          isAnonymous={trackingDetail.isAnonymous}
+          needInfoReason={trackingDetail.needInfoReason}
+          needInfoDeadline={trackingDetail.needInfoDeadline}
+          onSuccess={(result) => {
+            setShowNeedInfoModal(false);
+            setNeedInfoSuccessMessage(result.message);
+            handleSearchCode(trackingDetail.trackingCode);
           }}
         />
       )}

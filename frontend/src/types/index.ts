@@ -168,6 +168,7 @@ export interface PetitionTrackingDetail {
   needInfoReason?: string;
   needInfoDeadline?: string;
   needInfoCount?: number;
+  isSlaPaused?: boolean;
   slaPausedAt?: string;
   totalSlaPausedMinutes?: number;
   conclusionType?: ConclusionType;
@@ -423,6 +424,21 @@ export interface DepartmentOfficer {
   workloadLevel: 'Low' | 'Medium' | 'High';
   isRecommended: boolean;
 }
+
+export interface SubmitAdditionalInfoResult {
+  petitionId: string;
+  trackingCode: string;
+  previousStatus: number;
+  previousStatusName: string;
+  newStatus: number;
+  newStatusName: string;
+  totalSlaPausedMinutes: number;
+  newAttachmentsCount: number;
+  attachments: PetitionAttachment[];
+  message: string;
+  submittedAt: string;
+}
+
 
 
 
