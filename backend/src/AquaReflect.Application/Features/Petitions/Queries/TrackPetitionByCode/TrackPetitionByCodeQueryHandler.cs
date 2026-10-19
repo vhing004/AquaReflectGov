@@ -112,8 +112,10 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
                 FileType = a.FileType.ToString(),
                 MimeType = a.MimeType,
                 FileSize = a.FileSize,
-                ExifLatitude = a.ExifLatitude,
-                ExifLongitude = a.ExifLongitude
+                // Strip EXIF GPS: không trả về tọa độ EXIF trên endpoint công khai
+                // để bảo vệ vị trí chụp ảnh của người tố giác (GDPR/Privacy-by-Design)
+                ExifLatitude = null,
+                ExifLongitude = null
             }).ToList(),
             Timeline = petition.Histories
                 .OrderBy(h => h.CreatedAt)

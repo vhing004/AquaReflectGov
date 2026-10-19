@@ -21,6 +21,10 @@ export interface PetitionSpatialProperties {
   dueDate?: string;
   isOverdue: boolean;
   attachmentsCount: number;
+  /** Cờ báo tọa độ được làm tròn ~100m để bảo vệ danh tính người phản ánh */
+  isCoordinatesObfuscated?: boolean;
+  /** Khuyến cáo pháp lý hiển thị trên bản đồ công khai */
+  legalDisclaimer?: string;
 }
 
 export interface GeoJsonFeature {

@@ -3,6 +3,7 @@ using AquaReflect.Application.Features.Gis.DTOs;
 using AquaReflect.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 
 namespace AquaReflect.Application.Features.Gis.Queries.GetPetitionsGeoJson;
 
@@ -49,6 +50,22 @@ public class GetPetitionsGeoJsonQueryHandler : IRequestHandler<GetPetitionsGeoJs
         if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist && _currentUser.DepartmentId.HasValue)
         {
             query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
+        }
+
+        // Bản đồ công khai: chỉ hiển thị các trạng thái đã được tiếp nhận và đang/đã xử lý.
+        // Lọc bỏ Submitted (chờ phân loại), NeedInfo (tạm dừng chờ bổ sung), Rejected, Merged, Withdrawn.
+        var isStaff = _currentUser.IsAuthenticated && IsStaffRole(_currentUser.Role);
+        if (!isStaff)
+        {
+            var publicStatuses = new[]
+            {
+                PetitionStatus.Assigned,
+                PetitionStatus.Investigating,
+                PetitionStatus.Resolved,
+                PetitionStatus.Closed,
+                PetitionStatus.Forwarded
+            };
+            query = query.Where(p => publicStatuses.Contains(p.Status));
         }
 
         // 2. Lọc theo Bounding Box (Viewport Bounds) nếu có
@@ -123,36 +140,54 @@ public class GetPetitionsGeoJsonQueryHandler : IRequestHandler<GetPetitionsGeoJs
         var now = DateTime.UtcNow;
 
         // 10. Chuyển đổi sang cấu trúc chuẩn GeoJSON FeatureCollection
-        var features = petitions.Select(p => new GeoJsonFeatureDto
+        var features = petitions.Select(p =>
         {
-            Id = p.Id.ToString(),
-            Geometry = new GeoJsonGeometryDto
+            // Tọa độ gốc
+            var lat = p.Latitude!.Value;
+            var lng = p.Longitude!.Value;
+
+            // Obfuscate tọa độ ~±100m cho người dùng không phải staff (bảo vệ danh tính người tố giác)
+            if (!isStaff)
             {
-                Type = "Point",
-                // Chuẩn GeoJSON: [Kinh độ, Vĩ độ] (Longitude trước, Latitude sau)
-                Coordinates = new double[] { p.Longitude!.Value, p.Latitude!.Value }
-            },
-            Properties = new PetitionSpatialPropertiesDto
-            {
-                Id = p.Id,
-                TrackingCode = p.TrackingCode,
-                Title = p.Title,
-                CategoryId = p.CategoryId,
-                CategoryName = p.CategoryName,
-                CategoryType = p.CategoryType,
-                Status = p.Status.ToString(),
-                StatusName = GetStatusName(p.Status),
-                PriorityLevel = p.PriorityLevel.ToString(),
-                PriorityName = GetPriorityName(p.PriorityLevel),
-                AddressText = p.AddressText,
-                AdministrativeUnitId = p.AdministrativeUnitId,
-                AdministrativeUnitName = p.AdministrativeUnitName,
-                DepartmentName = p.DepartmentName,
-                CreatedAt = p.CreatedAt,
-                DueDate = p.DueDate,
-                IsOverdue = p.DueDate.HasValue && p.DueDate.Value < now && p.Status != PetitionStatus.Resolved && p.Status != PetitionStatus.Closed,
-                AttachmentsCount = p.AttachmentsCount
+                lat = ObfuscateCoordinate(lat, p.Id, 0);
+                lng = ObfuscateCoordinate(lng, p.Id, 1);
             }
+
+            return new GeoJsonFeatureDto
+            {
+                Id = p.Id.ToString(),
+                Geometry = new GeoJsonGeometryDto
+                {
+                    Type = "Point",
+                    // Chuẩn GeoJSON: [Kinh độ, Vĩ độ] (Longitude trước, Latitude sau)
+                    Coordinates = new double[] { lng, lat }
+                },
+                Properties = new PetitionSpatialPropertiesDto
+                {
+                    Id = p.Id,
+                    TrackingCode = p.TrackingCode,
+                    Title = p.Title,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.CategoryName,
+                    CategoryType = p.CategoryType,
+                    Status = p.Status.ToString(),
+                    StatusName = GetStatusName(p.Status),
+                    PriorityLevel = p.PriorityLevel.ToString(),
+                    PriorityName = GetPriorityName(p.PriorityLevel),
+                    AddressText = p.AddressText,
+                    AdministrativeUnitId = p.AdministrativeUnitId,
+                    AdministrativeUnitName = p.AdministrativeUnitName,
+                    DepartmentName = p.DepartmentName,
+                    CreatedAt = p.CreatedAt,
+                    DueDate = p.DueDate,
+                    IsOverdue = p.DueDate.HasValue && p.DueDate.Value < now && p.Status != PetitionStatus.Resolved && p.Status != PetitionStatus.Closed,
+                    AttachmentsCount = p.AttachmentsCount,
+                    IsCoordinatesObfuscated = !isStaff,
+                    LegalDisclaimer = !isStaff
+                        ? "Vị trí hiển thị được làm tròn trong bán kính ~100m để bảo vệ danh tính người phản ánh và đối tượng liên quan."
+                        : null
+                }
+            };
         }).ToList();
 
         return new GeoJsonFeatureCollectionDto
@@ -162,6 +197,30 @@ public class GetPetitionsGeoJsonQueryHandler : IRequestHandler<GetPetitionsGeoJs
             TotalCount = totalCount
         };
     }
+
+    /// <summary>
+    /// Obfuscate tọa độ ~±100m bằng cách thêm nhiễu xác định từ GUID của petition.
+    /// Dùng SHA256 để đảm bảo nhiễu cố định (deterministic) cho cùng một petition,
+    /// tránh marker nhảy lung tung mỗi lần tải bản đồ.
+    /// ~0.001° ≈ 111m tại vĩ độ 10°N (Việt Nam)
+    /// </summary>
+    private static double ObfuscateCoordinate(double coordinate, Guid petitionId, int component)
+    {
+        // Tạo seed xác định từ petition ID + component index (0=lat, 1=lng)
+        var input = petitionId.ToByteArray();
+        input[0] ^= (byte)component; // Biến thể cho lat vs lng
+        var hash = SHA256.HashData(input);
+
+        // Chuyển 2 byte đầu thành số trong khoảng [-1, 1]
+        var noise = (BitConverter.ToUInt16(hash, 0) / (double)ushort.MaxValue) * 2.0 - 1.0;
+
+        // Áp dụng nhiễu tối đa ±0.001° (~111m)
+        return Math.Round(coordinate + noise * 0.001, 6);
+    }
+
+    /// <summary>Kiểm tra role có phải staff (nhân viên nội bộ) không.</summary>
+    private static bool IsStaffRole(UserRole? role) =>
+        role == UserRole.Specialist || role == UserRole.Dispatcher || role == UserRole.SuperAdmin;
 
     private static string GetStatusName(PetitionStatus status) => status switch
     {

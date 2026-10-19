@@ -73,4 +73,14 @@ public class PetitionSpatialPropertiesDto
     public DateTime? DueDate { get; set; }
     public bool IsOverdue { get; set; }
     public int AttachmentsCount { get; set; }
+
+    /// <summary>
+    /// Cờ báo tọa độ đã được làm tròn/nhiễu hóa nhẹ để bảo vệ danh tính và vị trí người tố giác.
+    /// </summary>
+    public bool IsCoordinatesObfuscated { get; set; }
+
+    /// <summary>
+    /// Khuyến cáo pháp lý bảo vệ đối tượng bị phản ánh khi chưa có kết luận chính thức.
+    /// </summary>
+    public string? LegalDisclaimer { get; set; }
 }

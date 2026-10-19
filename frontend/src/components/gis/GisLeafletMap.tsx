@@ -333,6 +333,39 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
         const isResolved = props.status === 4 || props.status === 'Resolved' || props.statusName?.toLowerCase().includes('đã giải quyết') || props.statusName?.toLowerCase().includes('đã xử lý');
 
         // Tạo HTML Popup hiển thị đầy đủ thông tin chuẩn Chính quyền số
+        const privacyBadge = props.isCoordinatesObfuscated ? `
+          <div style="
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 6px;
+            padding: 4px 8px;
+            margin-bottom: 8px;
+            font-size: 10px;
+            color: #92400e;
+            font-weight: 600;
+          ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Vị trí được ẩn danh hóa (~100m)
+          </div>
+        ` : '';
+
+        const legalFooter = props.legalDisclaimer ? `
+          <div style="
+            margin-top: 8px;
+            padding-top: 6px;
+            border-top: 1px dashed #e2e8f0;
+            font-size: 9.5px;
+            color: #94a3b8;
+            line-height: 1.4;
+            font-style: italic;
+          ">
+            ⚠️ ${props.legalDisclaimer}
+          </div>
+        ` : '';
+
         const popupContent = `
           <div style="width: 290px; font-family: inherit; font-size: 12px; color: #1e293b;">
             <!-- Popup Header -->
@@ -355,6 +388,8 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
 
             <!-- Popup Body -->
             <div style="padding: 14px; space-y: 8px;">
+              ${privacyBadge}
+
               <h4 style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0 0 6px 0; line-height: 1.35;">
                 ${props.title}
               </h4>
@@ -400,6 +435,8 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
                   Tra cứu tiến độ &rarr;
                 </a>
               </div>
+
+              ${legalFooter}
             </div>
           </div>
         `;
