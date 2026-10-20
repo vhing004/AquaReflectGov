@@ -133,6 +133,15 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
             IsOverdue = isOverdue,
             RemainingHours = remainingHours,
             ResolutionSummary = petition.ResolutionSummary,
+            ConclusionType = petition.ConclusionType.HasValue ? (int)petition.ConclusionType.Value : null,
+            ConclusionTypeName = petition.ConclusionType switch
+            {
+                AquaReflect.Domain.Enums.ConclusionType.Valid => "Đúng sự thật",
+                AquaReflect.Domain.Enums.ConclusionType.PartiallyValid => "Đúng một phần",
+                AquaReflect.Domain.Enums.ConclusionType.InsufficientEvidence => "Không đủ căn cứ / Sai sự thật",
+                _ => null
+            },
+            PublicSummary = petition.PublicSummary,
 
             // Thông tin ngoại lệ
             DuplicateOfId = petition.DuplicateOfId,
@@ -146,6 +155,9 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
             NeedInfoCount = petition.NeedInfoCount,
             SlaPausedAt = petition.SlaPausedAt,
             TotalSlaPausedMinutes = petition.TotalSlaPausedMinutes,
+            ClosedAt = petition.ClosedAt,
+            ReworkCount = petition.ReworkCount,
+            ReworkReason = petition.ReworkReason,
 
             // Tệp đính kèm
             Attachments = petition.Attachments.Select(a => new PetitionAttachmentDto
@@ -191,7 +203,17 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
                 ApprovedByName = !string.IsNullOrWhiteSpace(petition.Resolution.ApprovedByUser?.FullName)
                     ? petition.Resolution.ApprovedByUser.FullName
                     : petition.Resolution.ApprovedByUser?.Username ?? "Lãnh đạo Chi cục",
-                IssuedAt = petition.Resolution.IssuedAt
+                IssuedAt = petition.Resolution.IssuedAt,
+                ConclusionType = petition.ConclusionType.HasValue ? (int)petition.ConclusionType.Value : null,
+                ConclusionTypeName = petition.ConclusionType switch
+                {
+                    AquaReflect.Domain.Enums.ConclusionType.Valid => "Đúng sự thật",
+                    AquaReflect.Domain.Enums.ConclusionType.PartiallyValid => "Đúng một phần",
+                    AquaReflect.Domain.Enums.ConclusionType.InsufficientEvidence => "Không đủ căn cứ / Sai sự thật",
+                    _ => null
+                },
+                PublicSummary = petition.PublicSummary,
+                IsResolvedOnTime = !isOverdue
             } : null,
 
             // Đánh giá công dân

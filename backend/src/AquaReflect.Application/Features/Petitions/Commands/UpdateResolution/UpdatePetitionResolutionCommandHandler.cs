@@ -14,22 +14,25 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
     private readonly IFileStorageService _fileStorage;
+    private readonly IWorkingDaysService _workingDaysService;
     private readonly INotificationService _notificationService;
     private readonly IEmailService _emailService;
 
-    private static readonly string[] AllowedExtensions = { ".pdf", ".docx", ".doc", ".jpg", ".jpeg", ".png" };
+    private static readonly string[] AllowedExtensions = { ".pdf", ".docx", ".doc", ".jpg", ".jpeg", ".png", ".webp", ".mp4" };
     private const long MaxFileSize = 25 * 1024 * 1024; // 25MB
 
     public UpdatePetitionResolutionCommandHandler(
         IApplicationDbContext context,
         ICurrentUserService currentUser,
         IFileStorageService fileStorage,
+        IWorkingDaysService workingDaysService,
         INotificationService notificationService,
         IEmailService emailService)
     {
         _context = context;
         _currentUser = currentUser;
         _fileStorage = fileStorage;
+        _workingDaysService = workingDaysService;
         _notificationService = notificationService;
         _emailService = emailService;
     }
@@ -53,6 +56,7 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
         // 2. Tìm hồ sơ phản ánh
         var petition = await _context.Petitions
             .Include(p => p.Resolution)
+            .Include(p => p.Attachments)
             .FirstOrDefaultAsync(p => p.Id == request.PetitionId && !p.IsDeleted, cancellationToken);
 
         if (petition == null)
@@ -85,7 +89,7 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
             }
         }
 
-        // 4. Lưu tệp văn bản quyết định nếu có
+        // 5. Lưu tệp văn bản quyết định chính thức nếu có
         string? documentUrl = petition.Resolution?.OfficialDocumentUrl;
 
         if (request.DocumentFile != null && request.DocumentFile.Length > 0)
@@ -101,12 +105,55 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
             documentUrl = saveResult.FileUrl;
         }
 
+        // 6. Lưu tệp minh chứng khắc phục / hiện trường hoàn trả mặt bằng / biên bản xử phạt nếu có
+        if (request.EvidenceFiles != null && request.EvidenceFiles.Count > 0)
+        {
+            if (request.EvidenceFiles.Count > 5)
+                throw new ValidationException("Chỉ được đính kèm tối đa 5 tệp minh chứng kết quả xử lý.");
+
+            foreach (var evFile in request.EvidenceFiles)
+            {
+                if (evFile.Length > MaxFileSize)
+                    throw new ValidationException($"Kích thước tệp '{evFile.FileName}' vượt quá 25MB.");
+
+                var ext = Path.GetExtension(evFile.FileName).ToLowerInvariant();
+                if (!AllowedExtensions.Contains(ext))
+                    throw new ValidationException($"Định dạng tệp '{evFile.FileName}' không được hỗ trợ.");
+
+                var saveEvResult = await _fileStorage.SaveFileAsync(evFile, "resolutions/evidences", cancellationToken);
+
+                var fileType = AttachmentType.Document;
+                if (ext is ".jpg" or ".jpeg" or ".png" or ".webp")
+                    fileType = AttachmentType.Image;
+                else if (ext is ".mp4" or ".mov" or ".webm")
+                    fileType = AttachmentType.Video;
+
+                var attachment = new PetitionAttachment
+                {
+                    Id = Guid.NewGuid(),
+                    PetitionId = petition.Id,
+                    FileName = Path.GetFileName(saveEvResult.FileUrl),
+                    OriginalFileName = evFile.FileName,
+                    FileUrl = saveEvResult.FileUrl,
+                    FileType = fileType,
+                    MimeType = evFile.ContentType,
+                    FileSize = evFile.Length,
+                    IsDeleted = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.PetitionAttachments.Add(attachment);
+            }
+        }
+
         var oldStatus = petition.Status;
 
         var sanitizedConclusion = InputSanitizer.SanitizeRichText(request.ConclusionText);
         var sanitizedDocumentNumber = InputSanitizer.SanitizePlainText(request.DocumentNumber);
+        var sanitizedPublicSummary = !string.IsNullOrWhiteSpace(request.PublicSummary)
+            ? InputSanitizer.SanitizePlainText(request.PublicSummary)
+            : sanitizedConclusion;
 
-        // 5. Cập nhật hoặc tạo mới PetitionResolution
+        // 7. Cập nhật hoặc tạo mới PetitionResolution
         var resolution = petition.Resolution;
         if (resolution == null)
         {
@@ -133,21 +180,43 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
             resolution.IssuedAt = DateTime.UtcNow;
         }
 
-        // 6. Cập nhật trạng thái hồ sơ sang Resolved
+        // 8. Cập nhật trạng thái hồ sơ sang Resolved & chốt mốc thời gian SLA
+        var now = DateTime.UtcNow;
         petition.Status = PetitionStatus.Resolved;
-        petition.ResolvedAt = DateTime.UtcNow;
-        petition.ResolutionSummary = request.ConclusionText.Trim();
+        petition.ResolvedAt = now;
+        petition.ConclusionType = request.ConclusionType;
+        petition.ResolutionSummary = sanitizedConclusion;
+        petition.PublicSummary = sanitizedPublicSummary;
 
-        // 7. Ghi vết nhật ký Audit Trail
+        // Đánh giá trạng thái SLA có tính đến thời gian tạm dừng (NeedInfo)
+        var (isOverdue, _) = _workingDaysService.EvaluateSlaStatus(
+            petition.DueDate, 
+            petition.ResolvedAt, 
+            petition.TotalSlaPausedMinutes, 
+            null);
+
+        string conclusionTypeName = request.ConclusionType switch
+        {
+            ConclusionType.Valid => "Đúng sự thật",
+            ConclusionType.PartiallyValid => "Đúng một phần",
+            ConclusionType.InsufficientEvidence => "Không đủ căn cứ / Sai sự thật",
+            _ => "Đã xác minh"
+        };
+
+        string slaResultText = isOverdue ? "Quá hạn SLA" : "Đúng hạn SLA";
+
+        // 9. Ghi vết nhật ký Audit Trail
+        var historyNote = string.IsNullOrWhiteSpace(request.DocumentNumber)
+            ? $"[{conclusionTypeName} - {slaResultText}] Kết luận: {sanitizedConclusion}"
+            : $"[{conclusionTypeName} - {slaResultText}] Số hiệu: {request.DocumentNumber.Trim()}. Kết luận: {sanitizedConclusion}";
+
         var history = new PetitionHistory
         {
             PetitionId = petition.Id,
             FromStatus = oldStatus,
             ToStatus = PetitionStatus.Resolved,
             Action = "Ban hành kết luận xử lý & quyết định chính thức",
-            Note = string.IsNullOrWhiteSpace(request.DocumentNumber)
-                ? $"Kết luận: {request.ConclusionText.Trim()}"
-                : $"Số hiệu văn bản: {request.DocumentNumber.Trim()}. Kết luận: {request.ConclusionText.Trim()}",
+            Note = historyNote,
             PerformedByUserId = _currentUser.UserId,
             PerformedByName = officerName
         };
@@ -155,14 +224,14 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        // 8. Bắn thông báo real-time tới cán bộ và live sync trạng thái hoàn tất
+        // 10. Bắn thông báo real-time tới cán bộ và live sync trạng thái hoàn tất
         await _notificationService.NotifyPetitionResolvedAsync(
             petition,
-            request.ConclusionText.Trim(),
+            sanitizedConclusion,
             request.DocumentNumber?.Trim(),
             cancellationToken);
 
-        // 9. Gửi Email thông báo kết quả giải quyết chính thức cho công dân
+        // 11. Gửi Email thông báo kết quả giải quyết chính thức cho công dân
         if (!string.IsNullOrWhiteSpace(petition.CitizenEmail))
         {
             await _emailService.SendPetitionResolutionEmailAsync(
@@ -170,13 +239,13 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
                 petition.CitizenName ?? "Quý công dân",
                 petition.TrackingCode,
                 petition.Title,
-                request.ConclusionText.Trim(),
+                sanitizedConclusion,
                 request.DocumentNumber?.Trim(),
                 petition.ResolvedAt ?? DateTime.UtcNow,
                 cancellationToken);
         }
 
-        // 10. Trả về DTO kết quả
+        // 12. Trả về DTO kết quả
         return new PetitionResolutionDto
         {
             Id = resolution.Id,
@@ -184,7 +253,12 @@ public class UpdatePetitionResolutionCommandHandler : IRequestHandler<UpdatePeti
             DocumentNumber = resolution.DocumentNumber,
             OfficialDocumentUrl = resolution.OfficialDocumentUrl,
             ApprovedByName = officerName,
-            IssuedAt = resolution.IssuedAt
+            IssuedAt = resolution.IssuedAt,
+            ConclusionType = (int)request.ConclusionType,
+            ConclusionTypeName = conclusionTypeName,
+            PublicSummary = sanitizedPublicSummary,
+            IsResolvedOnTime = !isOverdue
         };
     }
 }
+

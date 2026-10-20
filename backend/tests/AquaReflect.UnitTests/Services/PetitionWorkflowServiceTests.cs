@@ -121,4 +121,71 @@ public class PetitionWorkflowServiceTests
         act.Should().Throw<BadRequestException>()
             .WithMessage("*đã được đóng lưu trữ*");
     }
+
+    [Fact]
+    public void CanTransition_ResolvedToInvestigating_ByDispatcher_ShouldReturnTrue()
+    {
+        var result = _workflowService.CanTransition(PetitionStatus.Resolved, PetitionStatus.Investigating, UserRole.Dispatcher);
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanTransition_ResolvedToClosed_ByDispatcher_ShouldReturnTrue()
+    {
+        var result = _workflowService.CanTransition(PetitionStatus.Resolved, PetitionStatus.Closed, UserRole.Dispatcher);
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanTransition_ResolvedToInvestigating_BySpecialist_ShouldReturnFalse()
+    {
+        // Chuyên viên không được tự ý trả về hồ sơ từ Resolved
+        var result = _workflowService.CanTransition(PetitionStatus.Resolved, PetitionStatus.Investigating, UserRole.Specialist);
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ValidateTransition_ResolvedToInvestigating_WithoutNote_ShouldThrowValidationException()
+    {
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            Status = PetitionStatus.Resolved
+        };
+
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.Investigating,
+            UserRole.Dispatcher,
+            userDepartmentId: null,
+            targetDepartmentId: null,
+            resolutionSummary: null,
+            note: "Quá ngắn" // < 10 ký tự
+        );
+
+        act.Should().Throw<ValidationException>()
+            .WithMessage("*lý do trả về*");
+    }
+
+    [Fact]
+    public void ValidateTransition_ResolvedToInvestigating_WithValidNote_ShouldSucceed()
+    {
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            Status = PetitionStatus.Resolved
+        };
+
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.Investigating,
+            UserRole.Dispatcher,
+            userDepartmentId: null,
+            targetDepartmentId: null,
+            resolutionSummary: null,
+            note: "Biên bản kiểm tra chưa đầy đủ ảnh chụp hiện trường khắc phục."
+        );
+
+        act.Should().NotThrow();
+    }
 }

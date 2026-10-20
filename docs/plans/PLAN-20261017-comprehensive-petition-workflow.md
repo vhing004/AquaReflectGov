@@ -202,23 +202,35 @@ Quy trình nâng cấp đảm bảo tính chặt chẽ về mặt pháp lý hàn
       - Khối Sổ tay Nghiệp vụ định dạng nổi bật các biên bản thực địa có định vị GPS.
   - Kiểm thử: Backend build 0 error, Frontend Vite build 0 error, 37/37 Unit & Integration tests Passed 100%.
 
-- [ ] **Task 4.2: Ban hành kết luận có cấu trúc & Chốt mốc SLA**
-  - Modal **"Ban hành kết luận"**:
-    - Chọn loại kết luận: `Đúng`, `Đúng một phần`, hoặc `Không đủ căn cứ / Sai sự thật`.
-    - Nhập tóm tắt giải quyết (`ResolutionSummary`) và nội dung công khai (`PublicSummary`).
-    - Đính kèm file văn bản xử lý, biên bản xử phạt, ảnh hiện trường hoàn trả mặt bằng/nguồn nước.
-    - Lưu thời điểm `ResolvedAt`, tính toán trạng thái giải quyết: *Đúng hạn* hay *Quá hạn*.
-    - Bắn SignalR thông báo tới Dispatcher có hồ sơ sẵn sàng kiểm duyệt đóng.
+- [x] **Task 4.2: Ban hành kết luận có cấu trúc & Chốt mốc SLA — Hoàn thành 20/10/2026**
+  - Backend:
+    - Mở rộng `UpdatePetitionResolutionCommand` và `IssueResolutionRequest`: Nhận `ConclusionType` (Đúng sự thật, Đúng một phần, Không đủ căn cứ), `PublicSummary`, `OfficialDocument` và `EvidenceFiles` (tối đa 5 file ảnh/video/tài liệu).
+    - Lưu thời điểm `ResolvedAt = DateTime.UtcNow`, đánh giá SLA chính xác qua `WorkingDaysService.EvaluateSlaStatus` (tính bù thời gian pause ở NeedInfo) và chốt cờ `IsOverdue`.
+    - Lưu danh sách tệp minh chứng khắc phục vào `PetitionAttachments`, ghi nhật ký `PetitionHistory` chi tiết, bắn SignalR tới Dispatcher và gửi Email tới công dân.
+  - Frontend:
+    - Nâng cấp `ResolutionModal.tsx`: Chọn loại kết luận dạng 3 thẻ màu trực quan, trích xuất nhanh tóm tắt công khai, tải lên văn bản chính thức và kéo thả tối đa 5 file ảnh hiện trường khắc phục/biên bản xử phạt.
+    - Nâng cấp `AdminPetitionDetailPage.tsx`: Hiển thị huy hiệu phân loại kết luận pháp lý, huy hiệu SLA giải quyết (*Đúng hạn SLA* / *Quá hạn SLA*), khung xem trước tóm tắt công khai và danh sách file đính kèm.
+  - Kiểm thử: Backend UnitTests 31/31 Passed 100%, Frontend Vite build 0 error.
 
 ---
 
 ### Phase 5: Nâng cấp Bước 5 - Đóng đơn, CSAT, Đề nghị mở lại & Background Jobs
 *Mục tiêu: Đóng kín vòng lặp kiểm soát chất lượng và tự động hóa vận hành.*
 
-- [ ] **Task 5.1: Dispatcher Kiểm duyệt Đóng đơn & Trả về xử lý lại**
-  - Tại trạng thái `Resolved`:
-    - Nút **"Phê duyệt & Đóng hồ sơ"** ➔ Chuyển `Closed`.
-    - Nút **"Yêu cầu xử lý lại"** ➔ Nhập lý do trả về, chuyển ngược về `Investigating` để chuyên viên khắc phục.
+- [x] **Task 5.1: Dispatcher Kiểm duyệt Đóng đơn & Trả về xử lý lại (Rework) — Hoàn thành 20/10/2026**
+  - Backend:
+    - Bổ sung `ClosedAt`, `ReworkCount`, `ReworkReason` vào Entity `Petition` và DTOs.
+    - Cập nhật State Machine `PetitionWorkflowService`: Cho phép Dispatcher/SuperAdmin tại trạng thái `Resolved` được chuyển sang `Closed` (Phê duyệt) hoặc trả về `Investigating` (Yêu cầu xử lý lại, bắt buộc lý do tối thiểu 10 ký tự).
+    - `TransitionPetitionStatusCommandHandler`: Cập nhật `ClosedAt` hoặc tăng `ReworkCount`, lưu lý do trả về, ghi vết `PetitionHistory`, bắn SignalR và gửi Email thông báo tới Chuyên viên thụ lý hoặc Người dân.
+    - Thêm unit test kiểm thử các trường hợp biên, 36/36 tests Passed 100%.
+  - Frontend:
+    - Tạo component `ReviewResolutionModal.tsx`: Hỗ trợ 2 chế độ Phê duyệt đóng đơn và Yêu cầu xử lý lại, kiểm tra độ dài lý do trả về, đếm ký tự và xử lý phản hồi API trực quan.
+    - Nâng cấp `AdminPetitionDetailPage.tsx`:
+      - Thêm 2 nút thao tác nhanh "Duyệt & Đóng đơn" và "Yêu cầu xử lý lại" trên Top Bar.
+      - Thêm Quality Gate Review Bar tích hợp ngay dưới văn bản kết luận giải quyết giúp Điều phối viên rà soát và thao tác thuận tiện.
+      - Hiển thị Banner cảnh báo Rework nếu hồ sơ đã từng bị trả về N lần kèm lý do.
+      - Hiển thị Banner hồ sơ đã đóng lưu trữ kèm mốc thời gian `ClosedAt`.
+  - Kiểm thử: Backend UnitTests 36/36 Passed, Frontend Vite build 0 error.
 
 - [ ] **Task 5.2: Đánh giá CSAT & Đề nghị xem xét lại (Reopen)**
   - Cổng tra cứu: Mở form đánh giá CSAT (1-5 sao) trong vòng 14 ngày sau khi `Closed`.

@@ -133,12 +133,33 @@ public class AdminController : BaseApiController
             };
         }
 
+        var evidenceFiles = new List<AquaReflect.Application.Common.Models.FileUploadModel>();
+        if (request.EvidenceFiles != null && request.EvidenceFiles.Count > 0)
+        {
+            foreach (var ef in request.EvidenceFiles)
+            {
+                if (ef.Length > 0)
+                {
+                    evidenceFiles.Add(new AquaReflect.Application.Common.Models.FileUploadModel
+                    {
+                        ContentStream = ef.OpenReadStream(),
+                        FileName = ef.FileName,
+                        ContentType = ef.ContentType,
+                        Length = ef.Length
+                    });
+                }
+            }
+        }
+
         var command = new AquaReflect.Application.Features.Petitions.Commands.UpdateResolution.UpdatePetitionResolutionCommand
         {
             PetitionId = id,
             ConclusionText = request.ConclusionText,
             DocumentNumber = request.DocumentNumber,
-            DocumentFile = fileModel
+            ConclusionType = (AquaReflect.Domain.Enums.ConclusionType)request.ConclusionType,
+            PublicSummary = request.PublicSummary,
+            DocumentFile = fileModel,
+            EvidenceFiles = evidenceFiles
         };
 
         var result = await Mediator.Send(command, cancellationToken);
@@ -308,9 +329,24 @@ public class IssueResolutionRequest
     public string? DocumentNumber { get; set; }
 
     /// <summary>
+    /// Phân loại kết luận: 1=Đúng sự thật, 2=Đúng một phần, 3=Không đủ căn cứ / Sai sự thật
+    /// </summary>
+    public int ConclusionType { get; set; } = 1;
+
+    /// <summary>
+    /// Tóm tắt công khai hiển thị cho người dân trên cổng tra cứu và bản đồ GIS
+    /// </summary>
+    public string? PublicSummary { get; set; }
+
+    /// <summary>
     /// Tệp văn bản scan hoặc văn bản ký số đính kèm (PDF, DOCX, JPG, PNG)
     /// </summary>
     public IFormFile? OfficialDocument { get; set; }
+
+    /// <summary>
+    /// Tệp minh chứng hiện trường khắc phục, hoàn trả mặt bằng hoặc biên bản xử phạt (tối đa 5 tệp)
+    /// </summary>
+    public List<IFormFile>? EvidenceFiles { get; set; }
 }
 
 public class AddCommentRequest

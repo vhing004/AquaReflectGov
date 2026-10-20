@@ -21,7 +21,7 @@ export type PetitionStatus =
   | 'Forwarded'
   | 'Withdrawn';
 
-export type ConclusionType = 'Valid' | 'PartiallyValid' | 'InsufficientEvidence';
+export type ConclusionType = 'Valid' | 'PartiallyValid' | 'InsufficientEvidence' | 1 | 2 | 3;
 
 export interface UserInfo {
   id: string;
@@ -127,6 +127,10 @@ export interface PetitionResolution {
   officialDocumentUrl?: string;
   issuedAt: string;
   approvedByName?: string;
+  conclusionType?: number;
+  conclusionTypeName?: string;
+  publicSummary?: string;
+  isResolvedOnTime?: boolean;
 }
 
 export interface PetitionTrackingDetail {
@@ -399,6 +403,9 @@ export interface AdminPetitionDetail {
   conclusionType?: ConclusionType;
   conclusionTypeName?: string;
   publicSummary?: string;
+  closedAt?: string;
+  reworkCount?: number;
+  reworkReason?: string;
   reopenCount?: number;
   reopenReason?: string;
   reopenedAt?: string;

@@ -168,6 +168,15 @@ public class TransitionPetitionStatusCommandHandler
             petition.ResolvedAt = DateTime.UtcNow;
             petition.ResolutionSummary = request.ResolutionSummary;
         }
+        else if (request.ToStatus == PetitionStatus.Closed)
+        {
+            petition.ClosedAt = DateTime.UtcNow;
+        }
+        else if (previousStatus == PetitionStatus.Resolved && request.ToStatus == PetitionStatus.Investigating)
+        {
+            petition.ReworkCount++;
+            petition.ReworkReason = request.Note?.Trim();
+        }
 
         petition.Status = request.ToStatus;
         petition.UpdatedAt = DateTime.UtcNow;

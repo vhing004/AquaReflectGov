@@ -8,4 +8,10 @@ public class PetitionResolutionDto
     public string? OfficialDocumentUrl { get; set; }
     public DateTime IssuedAt { get; set; }
     public string? ApprovedByName { get; set; }
+
+    // [Task 4.2] Cấu trúc kết luận & chốt mốc SLA
+    public int? ConclusionType { get; set; }
+    public string? ConclusionTypeName { get; set; }
+    public string? PublicSummary { get; set; }
+    public bool IsResolvedOnTime { get; set; }
 }
