@@ -99,7 +99,11 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 break;
 
             case PetitionStatus.Closed:
-                // Terminal state - không cho phép chuyển
+                // Dispatcher / SuperAdmin có thể mở lại hồ sơ về Assigned (nếu chưa từng mở lại)
+                if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
+                {
+                    result.Add(PetitionStatus.Assigned);
+                }
                 break;
         }
 
@@ -123,9 +127,14 @@ public class PetitionWorkflowService : IPetitionWorkflowService
             throw new ForbiddenException("Tài khoản người dân không có quyền thay đổi trạng thái xử lý hồ sơ.");
         }
 
-        if (petition.Status == PetitionStatus.Closed)
+        if (petition.Status == PetitionStatus.Closed && toStatus != PetitionStatus.Assigned)
         {
-            throw new BadRequestException("Hồ sơ đã được đóng lưu trữ (Closed), không thể thay đổi trạng thái.");
+            throw new BadRequestException("Hồ sơ đã được đóng lưu trữ (Closed), chỉ có thể mở lại về trạng thái Phân công (Assigned).");
+        }
+
+        if (petition.Status == PetitionStatus.Closed && toStatus == PetitionStatus.Assigned && petition.ReopenCount > 0)
+        {
+            throw new BadRequestException("Hồ sơ đã từng được mở lại xem xét 1 lần, không thể mở lại lần thứ 2.");
         }
 
         // Kiểm tra vai trò Specialist
@@ -233,6 +242,7 @@ public class PetitionWorkflowService : IPetitionWorkflowService
             (PetitionStatus.Investigating, PetitionStatus.Assigned) => "Điều chuyển cơ quan do không thuộc thẩm quyền",
             (PetitionStatus.Resolved, PetitionStatus.Investigating) => "Yêu cầu xử lý lại kết quả giải quyết",
             (PetitionStatus.Resolved, PetitionStatus.Closed) => "Kiểm duyệt phê duyệt & Đóng hồ sơ",
+            (PetitionStatus.Closed, PetitionStatus.Assigned) => "Mở lại hồ sơ xem xét lại theo đánh giá CSAT",
             (_, PetitionStatus.NeedInfo) => "Yêu cầu người dân bổ sung thông tin, chứng cứ",
             (PetitionStatus.NeedInfo, PetitionStatus.Submitted) => "Người dân đã bổ sung thông tin, tiếp tục phân loại",
             (PetitionStatus.NeedInfo, PetitionStatus.Assigned) => "Người dân đã bổ sung thông tin, tiếp tục phân công",

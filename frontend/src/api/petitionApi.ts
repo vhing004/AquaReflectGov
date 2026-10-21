@@ -99,4 +99,23 @@ export const petitionApi = {
     );
     return res.data;
   },
+
+  getCsat: async (trackingCode: string): Promise<ApiResponse<import('../types').CsatInfo>> => {
+    const res = await axiosClient.get<ApiResponse<import('../types').CsatInfo>>(
+      `/petitions/${encodeURIComponent(trackingCode.trim())}/csat`
+    );
+    return res.data;
+  },
+
+  requestReopen: async (
+    trackingCode: string,
+    reason: string,
+    accessPin?: string
+  ): Promise<ApiResponse<{ petitionId: string; trackingCode: string; message: string; requestedAt: string }>> => {
+    const res = await axiosClient.post<ApiResponse<{ petitionId: string; trackingCode: string; message: string; requestedAt: string }>>(
+      `/petitions/${encodeURIComponent(trackingCode.trim())}/reopen`,
+      { reason, accessPin }
+    );
+    return res.data;
+  },
 };

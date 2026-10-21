@@ -178,15 +178,39 @@ export interface PetitionTrackingDetail {
   conclusionType?: ConclusionType;
   conclusionTypeName?: string;
   publicSummary?: string;
+  csatScore?: number;
+  canReopen?: boolean;
   reopenCount?: number;
   reopenReason?: string;
   reopenedAt?: string;
+  reopenStatus?: number;
+  reopenStatusName?: string;
   attachments: PetitionAttachment[];
   timeline: PetitionTimelineItem[];
   resolution?: PetitionResolution;
   hasFeedback: boolean;
   feedbackRating?: number;
   feedbackComment?: string;
+  feedbackAt?: string;
+}
+
+export type ReopenStatusType = 'None' | 'Requested' | 'Approved' | 'Rejected';
+
+export interface CsatInfo {
+  petitionId: string;
+  trackingCode: string;
+  score?: number;
+  comment?: string;
+  feedbackAt?: string;
+  hasFeedback: boolean;
+  canFeedback: boolean;
+  canReopen: boolean;
+  reopenStatus: number;
+  reopenStatusName: string;
+  reopenCount: number;
+  reopenReason?: string;
+  reopenedAt?: string;
+  daysRemainingForFeedback?: number;
 }
 
 export interface PetitionSummary {
@@ -406,9 +430,12 @@ export interface AdminPetitionDetail {
   closedAt?: string;
   reworkCount?: number;
   reworkReason?: string;
+  csatScore?: number;
   reopenCount?: number;
   reopenReason?: string;
   reopenedAt?: string;
+  reopenStatus?: number;
+  reopenStatusName?: string;
   attachments: PetitionAttachment[];
   timeline: PetitionTimelineItem[];
   resolution?: PetitionResolution;

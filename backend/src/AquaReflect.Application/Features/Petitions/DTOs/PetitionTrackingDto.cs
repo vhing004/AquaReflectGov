@@ -57,6 +57,16 @@ public class PetitionTrackingDto
     public bool HasFeedback { get; set; }
     public int? FeedbackRating { get; set; }
     public string? FeedbackComment { get; set; }
+    public DateTime? FeedbackAt { get; set; }
+
+    // Luồng CSAT & Xem xét lại hồ sơ (Task 5.2)
+    public int? CsatScore { get; set; }
+    public bool CanReopen { get; set; }
+    public int ReopenCount { get; set; }
+    public string? ReopenReason { get; set; }
+    public DateTime? ReopenedAt { get; set; }
+    public int ReopenStatus { get; set; }
+    public string ReopenStatusName { get; set; } = string.Empty;
 
     // Thông tin các trạng thái ngoại lệ (NeedInfo, Merged, Forwarded, Withdrawn, SlaPaused)
     public string? NeedInfoReason { get; set; }

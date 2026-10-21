@@ -83,10 +83,14 @@ public class Petition : BaseEntity, IAuditableEntity
     public int ReworkCount { get; set; } = 0;
     public string? ReworkReason { get; set; }
 
+    // Đánh giá hài lòng CSAT (1-5 sao, lưu trực tiếp để tính toán nhanh)
+    public int? CsatScore { get; set; }
+
     // Xử lý Xem xét lại / Mở lại hồ sơ (Reopen - Tối đa 1 lần nếu CSAT <= 2)
     public int ReopenCount { get; set; } = 0;
     public string? ReopenReason { get; set; }
     public DateTime? ReopenedAt { get; set; }
+    public ReopenStatus ReopenStatus { get; set; } = ReopenStatus.None;
 
     public string? CreatedBy { get; set; }
     public string? LastModifiedBy { get; set; }

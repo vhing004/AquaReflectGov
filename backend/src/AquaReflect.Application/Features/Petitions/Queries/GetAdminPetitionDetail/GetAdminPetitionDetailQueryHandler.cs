@@ -158,6 +158,18 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
             ClosedAt = petition.ClosedAt,
             ReworkCount = petition.ReworkCount,
             ReworkReason = petition.ReworkReason,
+            CsatScore = petition.CsatScore ?? petition.Feedback?.Rating,
+            ReopenCount = petition.ReopenCount,
+            ReopenReason = petition.ReopenReason,
+            ReopenedAt = petition.ReopenedAt,
+            ReopenStatus = (int)petition.ReopenStatus,
+            ReopenStatusName = petition.ReopenStatus switch
+            {
+                ReopenStatus.Requested => "Đang chờ xem xét lại",
+                ReopenStatus.Approved => "Đã duyệt mở lại",
+                ReopenStatus.Rejected => "Từ chối mở lại",
+                _ => "Không có"
+            },
 
             // Tệp đính kèm
             Attachments = petition.Attachments.Select(a => new PetitionAttachmentDto

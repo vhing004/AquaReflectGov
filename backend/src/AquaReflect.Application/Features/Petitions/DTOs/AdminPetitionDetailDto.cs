@@ -70,6 +70,14 @@ public class AdminPetitionDetailDto
     public int ReworkCount { get; set; }
     public string? ReworkReason { get; set; }
 
+    // Luồng CSAT & Xem xét lại hồ sơ (Task 5.2)
+    public int? CsatScore { get; set; }
+    public int ReopenCount { get; set; }
+    public string? ReopenReason { get; set; }
+    public DateTime? ReopenedAt { get; set; }
+    public int ReopenStatus { get; set; }
+    public string ReopenStatusName { get; set; } = string.Empty;
+
     // Tệp minh chứng thực địa (ảnh/video/tài liệu)
     public List<PetitionAttachmentDto> Attachments { get; set; } = new();
 

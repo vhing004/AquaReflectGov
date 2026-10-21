@@ -50,6 +50,13 @@ public class SubmitFeedbackCommandHandler : IRequestHandler<SubmitFeedbackComman
                 "Hồ sơ hiện đang trong quá trình xử lý.");
         }
 
+        // --- Kiểm tra thời hạn 14 ngày đánh giá ---
+        var referenceCloseDate = petition.ClosedAt ?? petition.ResolvedAt;
+        if (referenceCloseDate.HasValue && (DateTime.UtcNow - referenceCloseDate.Value).TotalDays > 14)
+        {
+            throw new BadRequestException("Thời hạn gửi đánh giá cho hồ sơ này đã kết thúc (tối đa 14 ngày sau khi xử lý xong/đóng hồ sơ).");
+        }
+
         // --- Kiểm tra đã đánh giá chưa ---
         if (petition.Feedback != null)
         {
@@ -67,6 +74,9 @@ public class SubmitFeedbackCommandHandler : IRequestHandler<SubmitFeedbackComman
                 : null,
             FeedbackAt = DateTime.UtcNow
         };
+
+        // --- Cập nhật CsatScore lên Petition để truy vấn nhanh ---
+        petition.CsatScore = request.Rating;
 
         _context.CitizenFeedbacks.Add(feedback);
         await _context.SaveChangesAsync(cancellationToken);

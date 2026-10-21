@@ -211,6 +211,55 @@ public class PetitionsController : BaseApiController
     }
 
     /// <summary>
+    /// Lấy thông tin đánh giá CSAT và kiểm tra điều kiện đề nghị xem xét lại (Reopen).
+    /// </summary>
+    /// <param name="trackingCode">Mã tra cứu hồ sơ (ví dụ: TS-202610-AB3KZ)</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Thông tin điểm CSAT và cờ CanReopen</returns>
+    [HttpGet("{trackingCode}/csat")]
+    [ProducesResponseType(typeof(ApiResponse<CsatDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CsatDto>>> GetCsat(
+        string trackingCode,
+        CancellationToken cancellationToken)
+    {
+        var query = new AquaReflect.Application.Features.Petitions.Queries.GetPetitionCsat.GetPetitionCsatQuery
+        {
+            TrackingCode = trackingCode
+        };
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(ApiResponse<CsatDto>.Ok(result));
+    }
+
+    /// <summary>
+    /// Công dân gửi đề nghị xem xét lại hồ sơ phản ánh (Reopen khi CSAT ≤ 2 sao trong vòng 14 ngày).
+    /// </summary>
+    /// <param name="trackingCode">Mã tra cứu hồ sơ</param>
+    /// <param name="request">Lý do đề nghị xem xét lại và mã PIN nếu là đơn vô danh</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Xác nhận yêu cầu đã được tiếp nhận</returns>
+    [HttpPost("{trackingCode}/reopen")]
+    [EnableRateLimiting(RateLimiterExtensions.FeedbackPolicy)]
+    [ProducesResponseType(typeof(ApiResponse<AquaReflect.Application.Features.Petitions.Commands.RequestReopen.RequestPetitionReopenResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AquaReflect.Application.Features.Petitions.Commands.RequestReopen.RequestPetitionReopenResultDto>>> RequestReopen(
+        string trackingCode,
+        [FromBody] RequestReopenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AquaReflect.Application.Features.Petitions.Commands.RequestReopen.RequestPetitionReopenCommand
+        {
+            TrackingCode = trackingCode,
+            Reason = request.Reason,
+            AccessPin = request.AccessPin
+        };
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.Commands.RequestReopen.RequestPetitionReopenResultDto>.Ok(result, result.Message));
+    }
+
+    /// <summary>
     /// Rút phản ánh kiến nghị (Submitted hoặc Assigned → Withdrawn).
     /// - Đơn định danh: Cần đăng nhập với tư cách chủ sở hữu đơn hoặc cán bộ Dispatcher/SuperAdmin.
     /// - Đơn vô danh: Cần cung cấp mã PIN bảo mật đã nhận lúc nộp đơn.
@@ -433,5 +482,18 @@ public class SubmitAdditionalInfoRequest
     /// Các tệp hình ảnh, video, tài liệu minh chứng mới gửi kèm.
     /// </summary>
     public List<IFormFile>? Files { get; set; }
+}
+
+public class RequestReopenRequest
+{
+    /// <summary>
+    /// Lý do đề nghị xem xét lại hồ sơ (tối thiểu 10 ký tự).
+    /// </summary>
+    public string Reason { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Mã PIN bảo mật (nếu là đơn vô danh).
+    /// </summary>
+    public string? AccessPin { get; set; }
 }
 

@@ -157,8 +157,23 @@ public class TransitionPetitionStatusCommandHandler
         }
         else if (request.ToStatus == PetitionStatus.Assigned)
         {
+            if (previousStatus == PetitionStatus.Closed)
+            {
+                petition.ReopenCount++;
+                petition.ReopenStatus = ReopenStatus.Approved;
+                petition.ReopenedAt = DateTime.UtcNow;
+
+                // Tăng độ ưu tiên khi mở lại (ví dụ từ Normal -> High hoặc High -> Urgent)
+                if (petition.PriorityLevel < PriorityLevel.Urgent)
+                {
+                    petition.PriorityLevel = (PriorityLevel)((int)petition.PriorityLevel + 1);
+                }
+
+                // Tính lại hạn SLA cho lần xử lý lại
+                petition.DueDate = await _workingDaysService.CalculateDueDateAsync(DateTime.UtcNow, petition.PriorityLevel, cancellationToken);
+            }
             // Tự động tính hạn SLA chuẩn theo ngày làm việc nếu chưa có
-            if (!petition.DueDate.HasValue)
+            else if (!petition.DueDate.HasValue)
             {
                 petition.DueDate = await _workingDaysService.CalculateDueDateAsync(petition.CreatedAt, petition.PriorityLevel, cancellationToken);
             }

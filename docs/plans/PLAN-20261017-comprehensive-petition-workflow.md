@@ -232,13 +232,24 @@ Quy trình nâng cấp đảm bảo tính chặt chẽ về mặt pháp lý hàn
       - Hiển thị Banner hồ sơ đã đóng lưu trữ kèm mốc thời gian `ClosedAt`.
   - Kiểm thử: Backend UnitTests 36/36 Passed, Frontend Vite build 0 error.
 
-- [ ] **Task 5.2: Đánh giá CSAT & Đề nghị xem xét lại (Reopen)**
-  - Cổng tra cứu: Mở form đánh giá CSAT (1-5 sao) trong vòng 14 ngày sau khi `Closed`.
-  - Nếu đánh giá CSAT ≤ 2 sao:
-    - Hiển thị tùy chọn: *"Đề nghị xem xét lại kết quả giải quyết"* kèm ô nhập lý do.
-    - API kiểm tra `ReopenCount == 0`: Nếu thỏa mãn, chuyển đơn về trạng thái chờ Dispatcher xem xét mở lại.
-    - Dispatcher chấp thuận: Chuyển về `Assigned`, tăng mức ưu tiên lên một bậc, gán `ReopenCount = 1`.
-    - Nếu đã qua lần mở lại thứ 2 mà dân vẫn không đồng ý: Hệ thống hiển thị tài liệu hướng dẫn khiếu nại, tố cáo chính thức theo Luật Khiếu nại.
+- [x] **Task 5.2: Đánh giá CSAT & Đề nghị xem xét lại (Reopen) — Hoàn thành 21/10/2026**
+  - Backend:
+    - Bổ sung `CsatScore`, `ReopenCount`, `ReopenReason`, `ReopenedAt`, `ReopenStatus` vào `Petition` entity, migration EF Core và mapping trong DbContext.
+    - Cập nhật State Machine `PetitionWorkflowService`: Cho phép mở lại hồ sơ từ `Closed` về `Assigned` khi Dispatcher/SuperAdmin duyệt và `ReopenCount == 0`.
+    - Tạo Query `GetPetitionCsatQuery` + Handler: Trả về thông tin CSAT, cờ `CanReopen` (trong vòng 14 ngày, điểm CSAT ≤ 2 sao, `ReopenCount == 0`), và số ngày còn lại để đánh giá.
+    - Tạo Command `RequestPetitionReopenCommand` + Handler: Kiểm tra điều kiện CSAT ≤ 2, xác thực mã PIN cho đơn vô danh, lưu `ReopenReason`, cập nhật `ReopenStatus = Requested`, ghi vết `PetitionHistory` và bắn thông báo SignalR.
+    - Cập nhật `TransitionPetitionStatusCommandHandler`: Khi Dispatcher duyệt chuyển từ `Closed` sang `Assigned`, tự động tăng `ReopenCount = 1`, đặt `ReopenStatus = Approved`, tăng độ ưu tiên lên 1 bậc (`PriorityLevel`) và tính toán lại hạn SLA.
+    - Bổ sung 2 endpoint `GET /petitions/{trackingCode}/csat` và `POST /petitions/{trackingCode}/reopen` vào `PetitionsController`.
+    - Viết unit test cho các handlers mới và workflow transition, toàn bộ 39/39 tests Passed 100%.
+  - Frontend:
+    - Bổ sung type definitions `CsatInfo`, `ReopenStatusType` vào `types/index.ts`.
+    - Thêm API calls `getCsat` và `requestReopen` vào `petitionApi.ts`.
+    - Tạo modal component `ReopenRequestModal.tsx`: Form nhập lý do đề nghị xem xét lại (tối thiểu 10 ký tự), nhập mã PIN nếu đơn ẩn danh, hiển thị hướng dẫn pháp lý và xử lý API an toàn.
+    - Cập nhật `TrackPetitionPage.tsx`: Hiển thị nút "Đề nghị xem xét lại" khi công dân đánh giá CSAT ≤ 2 sao, hiển thị banner tiến trình xử lý yêu cầu mở lại và tài liệu hướng dẫn khiếu nại nếu đã qua lần mở lại.
+    - Cập nhật `AdminPetitionDetailPage.tsx`: Hiển thị chi tiết yêu cầu xem xét lại từ công dân trong khối Đánh giá hài lòng để cán bộ thụ lý/điều phối nắm bắt.
+  - Kiểm thử & Build:
+    - Backend: `dotnet build` 0 error, `dotnet test` 39/39 unit tests Passed.
+    - Frontend: `npm run build` Vite production bundle 0 error.
 
 - [ ] **Task 5.3: Xây dựng các Background Jobs tự động hóa**
   - Sử dụng `IHostedService` (Background Worker) chạy định kỳ:

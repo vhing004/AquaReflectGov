@@ -159,7 +159,36 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
             result.HasFeedback = true;
             result.FeedbackRating = petition.Feedback.Rating;
             result.FeedbackComment = petition.Feedback.Comment;
+            result.FeedbackAt = petition.Feedback.FeedbackAt;
         }
+
+        // Luồng CSAT & Xem xét lại hồ sơ (Task 5.2):
+        // CSAT <= 2 sao, hồ sơ đã Closed (hoặc Resolved), ReopenCount == 0, ReopenStatus == None
+        result.CsatScore = petition.CsatScore ?? petition.Feedback?.Rating;
+        result.ReopenCount = petition.ReopenCount;
+        result.ReopenReason = petition.ReopenReason;
+        result.ReopenedAt = petition.ReopenedAt;
+        result.ReopenStatus = (int)petition.ReopenStatus;
+        result.ReopenStatusName = petition.ReopenStatus switch
+        {
+            ReopenStatus.Requested => "Đang chờ xem xét lại",
+            ReopenStatus.Approved => "Đã duyệt mở lại",
+            ReopenStatus.Rejected => "Từ chối mở lại",
+            _ => "Không có"
+        };
+
+        // Cho phép mở lại khi:
+        // 1. Điểm CSAT <= 2
+        // 2. Chưa từng mở lại thành công (ReopenCount == 0)
+        // 3. Chưa gửi yêu cầu hoặc đang ở trạng thái None
+        // 4. Trong vòng 14 ngày sau khi Closed (hoặc Resolved nếu chưa Closed)
+        var referenceCloseDate = petition.ClosedAt ?? petition.ResolvedAt;
+        var isWithin14Days = referenceCloseDate.HasValue && (now - referenceCloseDate.Value).TotalDays <= 14;
+
+        result.CanReopen = (result.CsatScore.HasValue && result.CsatScore.Value <= 2)
+            && petition.ReopenCount == 0
+            && petition.ReopenStatus == ReopenStatus.None
+            && isWithin14Days;
 
         return result;
     }

@@ -69,4 +69,5 @@ Hệ thống chính quyền số phục vụ công tác giám sát, tiếp nhậ
 | `20261019-04` | Tách UC10 thành UC10 & UC11, chuẩn hóa đặc tả 11 UC (7 mục chuẩn) | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261019-split-uc10-into-two-usecases.md) |
 | `20261020-4.2` | Ban hành kết luận có cấu trúc & Chốt mốc SLA | 20/10/2026 | 20/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261020-task4.2-structured-resolution-sla.md) |
 | `20261020-5.1` | Dispatcher Kiểm duyệt Đóng đơn & Yêu cầu xử lý lại | 20/10/2026 | 20/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261020-task5.1-dispatcher-review-close-or-rework.md) |
+| `20261021-5.2` | Đánh giá CSAT & Đề nghị xem xét lại (Reopen) | 21/10/2026 | 21/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261021-task5.2-csat-reopen.md) |
 

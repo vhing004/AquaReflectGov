@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import { petitionApi } from '../api/petitionApi';
 import { WithdrawPetitionModal } from '../components/petition/WithdrawPetitionModal';
 import { SubmitAdditionalInfoModal } from '../components/petition/SubmitAdditionalInfoModal';
+import { ReopenRequestModal } from '../components/ReopenRequestModal';
 import type { PetitionTrackingDetail, PetitionSummary } from '../types';
 import { 
   Search, 
@@ -91,9 +92,13 @@ export const TrackPetitionPage: React.FC = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
 
-  // Submit additional info state (Task 3.2)
+// Submit additional info state (Task 3.2)
   const [showNeedInfoModal, setShowNeedInfoModal] = useState(false);
   const [needInfoSuccessMessage, setNeedInfoSuccessMessage] = useState<string | null>(null);
+
+  // Reopen petition state (Task 5.2 CSAT <= 2)
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [reopenSuccessMessage, setReopenSuccessMessage] = useState<string | null>(null);
 
   // Load recent searches on mount
   useEffect(() => {
@@ -1113,6 +1118,66 @@ export const TrackPetitionPage: React.FC = () => {
                             )}
                           </div>
                         </div>
+
+                        {/* --- REOPEN WORKFLOW (TASK 5.2): CSAT <= 2 sao --- */}
+                        {((feedbackSubmitted?.rating ?? trackingDetail.feedbackRating) || 0) <= 2 && (
+                          <div className="mt-3 p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-bold text-amber-900 flex items-center gap-1.5">
+                                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                                  Bạn chưa hài lòng với kết quả giải quyết?
+                                </p>
+                                <p className="text-[11px] text-amber-800/90 mt-0.5">
+                                  {trackingDetail.reopenStatus === 1 ? (
+                                    <span className="font-semibold text-amber-700">
+                                      ⏳ Yêu cầu xem xét lại của bạn đang được Bộ phận Điều phối xử lý thẩm định.
+                                    </span>
+                                  ) : trackingDetail.reopenStatus === 2 ? (
+                                    <span className="font-semibold text-emerald-700">
+                                      ✓ Hồ sơ đã được chấp thuận mở lại và đang phân công xử lý đợt mới.
+                                    </span>
+                                  ) : trackingDetail.reopenCount && trackingDetail.reopenCount > 0 ? (
+                                    <span className="text-slate-600">
+                                      Hồ sơ đã được mở lại xem xét 01 lần. Nếu vẫn chưa đồng thuận, bạn vui lòng gửi đơn khiếu nại chính thức theo quy định pháp luật hành chính.
+                                    </span>
+                                  ) : trackingDetail.canReopen ? (
+                                    <span>
+                                      Trong vòng 14 ngày kể từ khi kết thúc hồ sơ, bạn có quyền gửi yêu cầu xem xét lại (tối đa 1 lần).
+                                    </span>
+                                  ) : (
+                                    <span>
+                                      Đã hết thời hạn 14 ngày yêu cầu xem xét lại hoặc hồ sơ không đủ điều kiện mở lại.
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+
+                              {trackingDetail.canReopen && trackingDetail.reopenStatus !== 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowReopenModal(true)}
+                                  className="shrink-0 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                                >
+                                  Đề nghị xem xét lại
+                                </button>
+                              )}
+                            </div>
+
+                            {trackingDetail.reopenReason && (
+                              <div className="p-2 bg-white/80 rounded-lg text-[11px] border border-amber-100">
+                                <span className="font-semibold text-amber-900">Lý do đã gửi: </span>
+                                <span className="text-slate-700 italic">"{trackingDetail.reopenReason}"</span>
+                              </div>
+                            )}
+
+                            {reopenSuccessMessage && (
+                              <div className="p-2 bg-emerald-100/80 border border-emerald-300 rounded-lg text-[11px] text-emerald-800 font-medium">
+                                ✓ {reopenSuccessMessage}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       /* --- FORM ĐÁNH GIÁ --- */
@@ -1596,6 +1661,23 @@ export const TrackPetitionPage: React.FC = () => {
           onSuccess={(result) => {
             setShowNeedInfoModal(false);
             setNeedInfoSuccessMessage(result.message);
+            handleSearchCode(trackingDetail.trackingCode);
+          }}
+        />
+      )}
+
+      {/* ================================================================ */}
+      {/* MODAL ĐỀ NGHỊ XEM XÉT LẠI HỒ SƠ CSAT <= 2 (Task 5.2)             */}
+      {/* ================================================================ */}
+      {showReopenModal && trackingDetail && (
+        <ReopenRequestModal
+          isOpen={showReopenModal}
+          onClose={() => setShowReopenModal(false)}
+          trackingCode={trackingDetail.trackingCode}
+          isAnonymous={trackingDetail.isAnonymous}
+          onSuccess={(msg) => {
+            setShowReopenModal(false);
+            setReopenSuccessMessage(msg);
             handleSearchCode(trackingDetail.trackingCode);
           }}
         />

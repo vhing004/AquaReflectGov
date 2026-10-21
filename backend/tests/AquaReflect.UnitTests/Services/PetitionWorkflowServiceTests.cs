@@ -58,11 +58,17 @@ public class PetitionWorkflowServiceTests
     }
 
     [Fact]
-    public void CanTransition_FromClosed_ShouldAlwaysBeFalse()
+    public void CanTransition_FromClosed_ShouldOnlyAllowReopenToAssigned()
     {
-        // Trạng thái Đóng là điểm kết thúc, không được chuyển tiếp
+        // Trạng thái Đóng không thể chuyển về Submitted, Investigating hay Resolved
         _workflowService.CanTransition(PetitionStatus.Closed, PetitionStatus.Submitted, UserRole.SuperAdmin).Should().BeFalse();
-        _workflowService.CanTransition(PetitionStatus.Closed, PetitionStatus.Assigned, UserRole.SuperAdmin).Should().BeFalse();
+        _workflowService.CanTransition(PetitionStatus.Closed, PetitionStatus.Investigating, UserRole.SuperAdmin).Should().BeFalse();
+        _workflowService.CanTransition(PetitionStatus.Closed, PetitionStatus.Resolved, UserRole.SuperAdmin).Should().BeFalse();
+        // Cho phép SuperAdmin/Dispatcher mở lại về Assigned
+        _workflowService.CanTransition(PetitionStatus.Closed, PetitionStatus.Assigned, UserRole.SuperAdmin).Should().BeTrue();
+        _workflowService.CanTransition(PetitionStatus.Closed, PetitionStatus.Assigned, UserRole.Dispatcher).Should().BeTrue();
+        // Chuyên viên không có quyền mở lại từ Closed
+        _workflowService.CanTransition(PetitionStatus.Closed, PetitionStatus.Assigned, UserRole.Specialist).Should().BeFalse();
     }
 
     [Fact]

@@ -976,6 +976,31 @@ export const AdminPetitionDetailPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Luồng Đề nghị xem xét lại (Task 5.2 CSAT <= 2 sao) */}
+                {petition.reopenStatus && petition.reopenStatus > 0 ? (
+                  <div className="mt-3 p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-rose-800 flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-rose-600" />
+                        Công dân yêu cầu mở lại / xem xét lại hồ sơ ({petition.reopenStatusName})
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                        {petition.reopenStatus === 1 ? 'Chờ Dispatcher duyệt' : petition.reopenStatus === 2 ? 'Đã duyệt mở lại' : 'Từ chối'}
+                      </span>
+                    </div>
+                    {petition.reopenReason && (
+                      <p className="text-slate-700 bg-white/80 p-2 rounded-lg border border-rose-100 italic">
+                        "{petition.reopenReason}"
+                      </p>
+                    )}
+                    {petition.reopenedAt && (
+                      <p className="text-[10px] text-slate-500">
+                        Thời điểm gửi yêu cầu: {new Date(petition.reopenedAt).toLocaleString('vi-VN')} • Số lần đã mở lại: {petition.reopenCount || 0}/1
+                      </p>
+                    )}
+                  </div>
+                ) : null}
               </div>
             )}
 
