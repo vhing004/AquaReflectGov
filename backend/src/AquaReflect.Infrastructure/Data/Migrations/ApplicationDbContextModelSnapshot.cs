@@ -301,6 +301,9 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int?>("ConclusionType")
                         .HasColumnType("integer");
 
@@ -313,6 +316,9 @@ namespace AquaReflect.Infrastructure.Data.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
+
+                    b.Property<int?>("CsatScore")
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("DepartmentId")
                         .HasColumnType("uuid");
@@ -370,6 +376,9 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<int>("ReopenStatus")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("ReopenedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -378,6 +387,12 @@ namespace AquaReflect.Infrastructure.Data.Migrations
 
                     b.Property<DateTime?>("ResolvedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ReworkCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReworkReason")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("SlaPausedAt")
                         .HasColumnType("timestamp with time zone");
