@@ -64,7 +64,9 @@ Hệ thống chính quyền số phục vụ công tác giám sát, tiếp nhậ
 | `20261019-3.2` | Cơ chế tiếp nhận bổ sung hồ sơ từ công dân | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | API nộp tài liệu bổ sung, unpause SLA, SubmitAdditionalInfoModal, Alert Banner /track |
 | `20261019-3.3` | Bảo mật GIS: Lọc trạng thái, Obfuscate tọa độ ~100m, Strip EXIF GPS | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | Lọc public statuses, SHA256 hash noise, strip ExifGPS endpoint công khai, privacy badge popup |
 | `20261019-4.1` | Nghiệp vụ Hiện trường & Yêu cầu bổ sung tại chỗ | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | Endpoint begin-investigation, AddInspectionNoteModal GPS thực địa, nút Yêu cầu bổ sung NeedInfo |
-
-
-
+| `20261019-02` | Bổ sung Mục 2.4 (Thiết kế CSDL) & 2.5 (Thiết kế API) Báo cáo Ch2 | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261019-report-ch2-sections-24-db-25-api.md) |
+| `20261019-03` | Chuẩn hóa 10 Use Case, cập nhật Sơ đồ & Đặc tả vào Báo cáo Ch2 | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261019-update-usecase-specifications.md) |
+| `20261019-04` | Tách UC10 thành UC10 & UC11, chuẩn hóa đặc tả 11 UC (7 mục chuẩn) | 19/10/2026 | 19/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261019-split-uc10-into-two-usecases.md) |
+| `20261020-4.2` | Ban hành kết luận có cấu trúc & Chốt mốc SLA | 20/10/2026 | 20/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261020-task4.2-structured-resolution-sla.md) |
+| `20261020-5.1` | Dispatcher Kiểm duyệt Đóng đơn & Yêu cầu xử lý lại | 20/10/2026 | 20/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261020-task5.1-dispatcher-review-close-or-rework.md) |
 

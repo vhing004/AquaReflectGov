@@ -76,6 +76,13 @@ public class Petition : BaseEntity, IAuditableEntity
     // Tóm tắt công khai (sau khi Dispatcher duyệt hiển thị ra bản đồ cộng đồng)
     public string? PublicSummary { get; set; }
 
+    // Phê duyệt & Đóng hồ sơ (Closed)
+    public DateTime? ClosedAt { get; set; }
+
+    // Xử lý lại hồ sơ (Rework từ Resolved về Investigating do Dispatcher yêu cầu)
+    public int ReworkCount { get; set; } = 0;
+    public string? ReworkReason { get; set; }
+
     // Xử lý Xem xét lại / Mở lại hồ sơ (Reopen - Tối đa 1 lần nếu CSAT <= 2)
     public int ReopenCount { get; set; } = 0;
     public string? ReopenReason { get; set; }

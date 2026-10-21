@@ -48,6 +48,9 @@ public class AdminPetitionDetailDto
     public bool IsOverdue { get; set; }
     public double? RemainingHours { get; set; }
     public string? ResolutionSummary { get; set; }
+    public int? ConclusionType { get; set; }
+    public string? ConclusionTypeName { get; set; }
+    public string? PublicSummary { get; set; }
 
     // Thông tin các luồng xử lý ngoại lệ
     public Guid? DuplicateOfId { get; set; }
@@ -61,6 +64,11 @@ public class AdminPetitionDetailDto
     public int NeedInfoCount { get; set; }
     public DateTime? SlaPausedAt { get; set; }
     public double TotalSlaPausedMinutes { get; set; }
+
+    // Quản lý Đóng hồ sơ & Xử lý lại (Rework)
+    public DateTime? ClosedAt { get; set; }
+    public int ReworkCount { get; set; }
+    public string? ReworkReason { get; set; }
 
     // Tệp minh chứng thực địa (ảnh/video/tài liệu)
     public List<PetitionAttachmentDto> Attachments { get; set; } = new();
