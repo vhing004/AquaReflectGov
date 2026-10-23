@@ -81,7 +81,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, ApiResponse<Aut
                 PhoneNumber = user.PhoneNumber,
                 Role = user.Role,
                 DepartmentId = user.DepartmentId,
-                DepartmentName = user.Department?.Name
+                DepartmentName = user.Department?.Name,
+                IsUnitLead = user.IsUnitLead
             }
         };
 

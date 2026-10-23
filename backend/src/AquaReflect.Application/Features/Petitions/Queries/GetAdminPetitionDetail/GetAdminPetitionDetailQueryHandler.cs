@@ -52,12 +52,12 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
         if (petition == null)
             throw new NotFoundException($"Không tìm thấy hồ sơ phản ánh với mã định danh: {request.Id}");
 
-        // 3. Specialist chỉ được xem hồ sơ thuộc phòng ban phụ trách
+        // 3. Specialist chỉ được xem hồ sơ thuộc phòng ban phụ trách (trả 404 thay vì 403 để chống dò mã theo Nguyên tắc 1.4)
         if (role == UserRole.Specialist)
         {
             if (!_currentUser.DepartmentId.HasValue || petition.DepartmentId != _currentUser.DepartmentId)
             {
-                throw new ForbiddenException("Bạn không có quyền truy cập hồ sơ này. Hồ sơ chưa được chuyển hoặc không thuộc phạm vi quản lý của phòng ban bạn.");
+                throw new NotFoundException($"Không tìm thấy hồ sơ phản ánh trong phạm vi quản lý của phòng ban.");
             }
         }
 
@@ -125,6 +125,19 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
                 ? petition.AssignedUser.FullName
                 : petition.AssignedUser?.Username,
             AssignedUserEmail = petition.AssignedUser?.Email,
+
+            ReceptionSource = (int)petition.ReceptionSource,
+            ReceptionSourceName = petition.ReceptionSource switch
+            {
+                AquaReflect.Domain.Enums.ReceptionSource.Phone => "Điện thoại / Đường dây nóng",
+                AquaReflect.Domain.Enums.ReceptionSource.InPerson => "Trực tiếp tại bộ phận Một cửa",
+                AquaReflect.Domain.Enums.ReceptionSource.Document => "Văn bản / Đơn thư giấy",
+                _ => "Trực tuyến"
+            },
+            CreatedOnBehalfByUserId = petition.CreatedOnBehalfByUserId,
+            IsConflictOfInterest = !string.IsNullOrWhiteSpace(_currentUser.Email) &&
+                                   !string.IsNullOrWhiteSpace(petition.CitizenEmail) &&
+                                   _currentUser.Email.Trim().Equals(petition.CitizenEmail.Trim(), StringComparison.OrdinalIgnoreCase),
 
             CreatedAt = petition.CreatedAt,
             UpdatedAt = petition.UpdatedAt,

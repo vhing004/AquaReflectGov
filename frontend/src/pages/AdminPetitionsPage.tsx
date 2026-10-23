@@ -39,9 +39,11 @@ import {
   GitMerge,
   CornerUpRight,
   FileX,
+  PhoneCall,
 } from 'lucide-react';
 import { TransitionStatusModal } from '../components/admin/TransitionStatusModal';
 import { KanbanBoard } from '../components/admin/KanbanBoard';
+import { CreateOnBehalfModal } from '../components/CreateOnBehalfModal';
 import { canAccessPetition } from '../utils/permissions';
 
 export const AdminPetitionsPage: React.FC = () => {
@@ -86,6 +88,7 @@ export const AdminPetitionsPage: React.FC = () => {
 
   // Workflow transition state & toast
   const [transitionPetition, setTransitionPetition] = useState<AdminPetitionItem | null>(null);
+  const [isCreateOnBehalfOpen, setIsCreateOnBehalfOpen] = useState(false);
   const [actionToast, setActionToast] = useState<string | null>(null);
 
   // Fetch Master Data
@@ -391,6 +394,18 @@ export const AdminPetitionsPage: React.FC = () => {
                 <span className="hidden sm:inline">Kanban</span>
               </button>
             </div>
+
+            {/* Nút Tiếp nhận hộ cho Dispatcher và SuperAdmin (Mục 3.6 & Kịch bản 23-24) */}
+            {(user?.role === 'Dispatcher' || user?.role === 'SuperAdmin') && (
+              <button
+                onClick={() => setIsCreateOnBehalfOpen(true)}
+                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold shadow-md hover:shadow transition-all cursor-pointer"
+                title="Nhập hộ phản ánh tiếp nhận qua điện thoại, trực tiếp hoặc văn bản"
+              >
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>Tiếp nhận hộ</span>
+              </button>
+            )}
 
             <button
               onClick={() => refetch()}
@@ -1270,6 +1285,18 @@ export const AdminPetitionsPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* 8. CREATE ON BEHALF MODAL */}
+      <CreateOnBehalfModal
+        isOpen={isCreateOnBehalfOpen}
+        onClose={() => setIsCreateOnBehalfOpen(false)}
+        categories={categories}
+        onSuccess={(trackingCode) => {
+          setActionToast(`Tiếp nhận hộ phản ánh thành công! Mã hồ sơ: ${trackingCode}`);
+          setTimeout(() => setActionToast(null), 5000);
+          refetch();
+        }}
+      />
     </div>
   );
 };

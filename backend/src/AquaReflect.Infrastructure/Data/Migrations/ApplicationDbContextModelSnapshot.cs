@@ -317,6 +317,9 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("CreatedOnBehalfByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<int?>("CsatScore")
                         .HasColumnType("integer");
 
@@ -368,6 +371,9 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.Property<string>("PublicSummary")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("ReceptionSource")
+                        .HasColumnType("integer");
 
                     b.Property<int>("ReopenCount")
                         .HasColumnType("integer");
@@ -432,6 +438,8 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CreatedOnBehalfByUserId");
 
                     b.HasIndex("DepartmentId");
 
@@ -772,6 +780,9 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsUnitLead")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -893,6 +904,10 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("AquaReflect.Domain.Entities.User", "CreatedOnBehalfByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedOnBehalfByUserId");
+
                     b.HasOne("AquaReflect.Domain.Entities.Department", "Department")
                         .WithMany("Petitions")
                         .HasForeignKey("DepartmentId")
@@ -908,6 +923,8 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                     b.Navigation("AssignedUser");
 
                     b.Navigation("Category");
+
+                    b.Navigation("CreatedOnBehalfByUser");
 
                     b.Navigation("Department");
 

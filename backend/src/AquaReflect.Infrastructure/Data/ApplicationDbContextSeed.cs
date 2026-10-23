@@ -317,13 +317,28 @@ public static class ApplicationDbContextSeed
                     IsActive = true
                 };
 
-                var specialist = new User
+                var specialistLead = new User
                 {
                     Username = "kiemngu",
                     FullName = "Lê Hoàng Long (Đội trưởng Thanh tra Kiểm ngư)",
                     Email = "kiemngu@aquareflect.gov.vn",
                     PhoneNumber = "0903456789",
                     Role = UserRole.Specialist,
+                    IsUnitLead = true,
+                    DepartmentId = ttkn?.Id,
+                    PasswordHash = canboPass.Hash,
+                    PasswordSalt = canboPass.Salt,
+                    IsActive = true
+                };
+
+                var specialistStaff = new User
+                {
+                    Username = "kiemngu_cb",
+                    FullName = "Nguyễn Văn Thụ (Cán bộ Kiểm ngư địa bàn)",
+                    Email = "kiemngu_cb@aquareflect.gov.vn",
+                    PhoneNumber = "0903456780",
+                    Role = UserRole.Specialist,
+                    IsUnitLead = false,
                     DepartmentId = ttkn?.Id,
                     PasswordHash = canboPass.Hash,
                     PasswordSalt = canboPass.Salt,
@@ -342,7 +357,7 @@ public static class ApplicationDbContextSeed
                     IsActive = true
                 };
 
-                context.Users.AddRange(admin, dispatcher, specialist, citizen);
+                context.Users.AddRange(admin, dispatcher, specialistLead, specialistStaff, citizen);
                 await context.SaveChangesAsync();
             }
 

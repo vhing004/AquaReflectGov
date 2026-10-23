@@ -140,5 +140,19 @@ export const adminApi = {
     );
     return response.data;
   },
+
+  /**
+   * Nhập hộ phản ánh kiến nghị trực tiếp / qua điện thoại / văn bản (createOnBehalf)
+   */
+  createOnBehalf: async (formData: FormData): Promise<ApiResponse<{ id: string; trackingCode: string; title: string; message: string }>> => {
+    const response = await axiosClient.post<ApiResponse<{ id: string; trackingCode: string; title: string; message: string }>>(
+      '/admin/petitions/on-behalf',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
 };
 

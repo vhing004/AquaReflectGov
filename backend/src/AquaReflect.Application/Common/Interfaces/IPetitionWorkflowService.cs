@@ -9,14 +9,19 @@ namespace AquaReflect.Application.Common.Interfaces;
 public interface IPetitionWorkflowService
 {
     /// <summary>
-    /// Kiểm tra xem việc chuyển từ trạng thái hiện tại sang trạng thái đích có hợp lệ theo vai trò cán bộ không
+    /// Kiểm tra xem việc chuyển từ trạng thái hiện tại sang trạng thái đích có hợp lệ theo vai trò cán bộ và vai trò Trưởng đơn vị không
     /// </summary>
-    bool CanTransition(PetitionStatus currentStatus, PetitionStatus toStatus, UserRole role);
+    bool CanTransition(PetitionStatus currentStatus, PetitionStatus toStatus, UserRole role, bool isUnitLead = false);
 
     /// <summary>
     /// Lấy danh sách các trạng thái tiếp theo được phép chuyển đổi
     /// </summary>
-    IReadOnlyList<PetitionStatus> GetAllowedTransitions(PetitionStatus currentStatus, UserRole role);
+    IReadOnlyList<PetitionStatus> GetAllowedTransitions(
+        PetitionStatus currentStatus,
+        UserRole role,
+        bool isUnitLead = false,
+        bool isAssignedToUser = false,
+        bool hasAssignedSpecialist = false);
 
     /// <summary>
     /// Kiểm tra tính hợp lệ toàn diện về dữ liệu và quyền hạn nghiệp vụ trước khi chuyển trạng thái (ném Exception nếu vi phạm)
@@ -31,7 +36,9 @@ public interface IPetitionWorkflowService
         string? note,
         string? needInfoReason = null,
         string? duplicateOfTrackingCode = null,
-        string? forwardToOrganization = null);
+        string? forwardToOrganization = null,
+        bool isUnitLead = false,
+        Guid? currentUserId = null);
 
     /// <summary>
     /// Sinh tên hành động chuẩn hóa tiếng Việt cho nhật ký PetitionHistory

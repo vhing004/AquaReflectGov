@@ -46,5 +46,14 @@ public class CurrentUserService : ICurrentUserService
         }
     }
 
+    public bool IsUnitLead
+    {
+        get
+        {
+            var isLead = User?.FindFirstValue("is_unit_lead");
+            return bool.TryParse(isLead, out var b) && b;
+        }
+    }
+
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
 }

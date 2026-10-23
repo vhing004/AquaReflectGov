@@ -57,6 +57,13 @@ public class TransitionPetitionStatusCommandHandler
 
         var previousStatus = petition.Status;
 
+        // Kiểm tra chống xung đột lợi ích: Cán bộ không xử lý đơn do chính mình gửi với tư cách công dân (Kịch bản 25)
+        if (!string.IsNullOrWhiteSpace(_currentUser.Email) && !string.IsNullOrWhiteSpace(petition.CitizenEmail) &&
+            _currentUser.Email.Trim().Equals(petition.CitizenEmail.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ForbiddenException("Phát hiện xung đột lợi ích: Bạn không được phép phân công, thẩm tra, kết luận hoặc đóng hồ sơ do chính mình gửi.");
+        }
+
         // 3. Xác thực quy tắc chuyển trạng thái theo State Machine
         _workflowService.ValidateTransition(
             petition,
@@ -68,7 +75,9 @@ public class TransitionPetitionStatusCommandHandler
             request.Note,
             request.NeedInfoReason,
             request.DuplicateOfTrackingCode,
-            request.ForwardToOrganization);
+            request.ForwardToOrganization,
+            _currentUser.IsUnitLead,
+            _currentUser.UserId);
 
         // 4. Nếu chỉ định hoặc thay đổi phòng ban thụ lý
         if (request.DepartmentId.HasValue && request.DepartmentId.Value != petition.DepartmentId)

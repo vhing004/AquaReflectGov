@@ -13,6 +13,7 @@ public class UserInfoDto
     public string RoleName => Role.ToString();
     public Guid? DepartmentId { get; set; }
     public string? DepartmentName { get; set; }
+    public bool IsUnitLead { get; set; }
 }
 
 public class AuthResponseDto

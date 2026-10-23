@@ -40,6 +40,12 @@ public class AdminPetitionDetailDto
     public string? AssignedUserName { get; set; }
     public string? AssignedUserEmail { get; set; }
 
+    // Tiếp nhận hộ & Cảnh báo xung đột lợi ích
+    public int ReceptionSource { get; set; }
+    public string ReceptionSourceName { get; set; } = string.Empty;
+    public Guid? CreatedOnBehalfByUserId { get; set; }
+    public bool IsConflictOfInterest { get; set; }
+
     // Thời hạn SLA & Tiến độ
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

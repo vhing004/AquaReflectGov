@@ -70,8 +70,17 @@ public class GetAllowedTransitionsQueryHandler : IRequestHandler<GetAllowedTrans
                 return new List<AllowedTransitionDto>();
             }
         }
+        // Chống xung đột lợi ích: Nếu cán bộ có SĐT/Email trùng với người gửi thì không có quyền xử lý
+        if (!string.IsNullOrWhiteSpace(_currentUser.Email) && !string.IsNullOrWhiteSpace(petition.CitizenEmail) &&
+            _currentUser.Email.Trim().Equals(petition.CitizenEmail.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return new List<AllowedTransitionDto>();
+        }
 
-        var allowedStatuses = _workflowService.GetAllowedTransitions(petition.Status, role);
+        bool isAssignedToUser = _currentUser.UserId.HasValue && petition.AssignedUserId == _currentUser.UserId.Value;
+        bool hasAssignedSpecialist = petition.AssignedUserId.HasValue;
+        var allowedStatuses = _workflowService.GetAllowedTransitions(
+            petition.Status, role, _currentUser.IsUnitLead, isAssignedToUser, hasAssignedSpecialist);
 
         return allowedStatuses.Select(s => new AllowedTransitionDto
         {

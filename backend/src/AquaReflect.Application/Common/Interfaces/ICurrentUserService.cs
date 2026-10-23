@@ -9,5 +9,6 @@ public interface ICurrentUserService
     string? Email { get; }
     UserRole? Role { get; }
     Guid? DepartmentId { get; }
+    bool IsUnitLead { get; }
     bool IsAuthenticated { get; }
 }

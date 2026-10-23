@@ -33,6 +33,7 @@ export interface UserInfo {
   roleName: string;
   departmentId?: string;
   departmentName?: string;
+  isUnitLead?: boolean;
 }
 
 export interface AuthResponse {
@@ -154,6 +155,9 @@ export interface PetitionTrackingDetail {
   departmentId?: string;
   departmentName?: string;
   assignedUserName?: string;
+  receptionSource?: number;
+  receptionSourceName?: string;
+  isConflictOfInterest?: boolean;
   isAnonymous: boolean;
   citizenNameMasked?: string;
   citizenPhoneMasked?: string;
@@ -444,6 +448,12 @@ export interface AdminPetitionDetail {
   feedbackComment?: string;
   feedbackCreatedAt?: string;
   comments: PetitionComment[];
+  // Phân quyền nâng cao (RBAC)
+  isConflictOfInterest?: boolean;   // Đơn do cán bộ hiện tại gửi (chống xung đột lợi ích)
+  receptionSource?: number;         // Nguồn tiếp nhận (0=Online, 1=Phone, 2=InPerson, 3=Document)
+  receptionSourceName?: string;
+  createdOnBehalfByUserId?: string; // ID cán bộ nhập hộ
+  createdOnBehalfByName?: string;   // Tên cán bộ nhập hộ
 }
 
 export interface DepartmentOfficer {
@@ -457,6 +467,7 @@ export interface DepartmentOfficer {
   activeCaseCount: number;
   workloadLevel: 'Low' | 'Medium' | 'High';
   isRecommended: boolean;
+  isUnitLead?: boolean; // Cờ trưởng đơn vị
 }
 
 export interface SubmitAdditionalInfoResult {

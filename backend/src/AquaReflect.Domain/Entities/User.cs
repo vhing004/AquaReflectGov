@@ -12,6 +12,7 @@ public class User : BaseEntity, IAuditableEntity
     public string PasswordHash { get; set; } = string.Empty;
     public string PasswordSalt { get; set; } = string.Empty;
     public UserRole Role { get; set; } = UserRole.Citizen;
+    public bool IsUnitLead { get; set; } = false;
     public bool IsActive { get; set; } = true;
     public DateTime? LastLoginAt { get; set; }
 

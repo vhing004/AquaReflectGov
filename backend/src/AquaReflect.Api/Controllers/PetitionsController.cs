@@ -58,6 +58,13 @@ public class PetitionsController : BaseApiController
         [FromForm] CreatePetitionRequest request,
         CancellationToken cancellationToken)
     {
+        // Kịch bản 21-22 & Mục 3.6: Token nội bộ không gọi được các endpoint thao tác của công dân trên cổng công khai
+        if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Dispatcher") || User.IsInRole("Specialist") || User.IsInRole("SuperAdmin")))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(
+                "Cán bộ nội bộ không được gửi phản ánh trực tuyến bằng tài khoản nội bộ. Vui lòng sử dụng chức năng Tiếp nhận hộ hoặc đăng xuất.", StatusCodes.Status403Forbidden));
+        }
+
         var fileUploadModels = new List<FileUploadModel>();
         if (request.Files != null && request.Files.Count > 0)
         {
@@ -200,6 +207,13 @@ public class PetitionsController : BaseApiController
         [FromBody] SubmitFeedbackRequest request,
         CancellationToken cancellationToken)
     {
+        // Kịch bản 21: Token nội bộ gọi API công dân chấm CSAT trả về 403
+        if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Dispatcher") || User.IsInRole("Specialist") || User.IsInRole("SuperAdmin")))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(
+                "Cán bộ nội bộ không được quyền tự đánh giá hài lòng hoặc can thiệp CSAT của người dân.", StatusCodes.Status403Forbidden));
+        }
+
         var command = new SubmitFeedbackCommand
         {
             TrackingCode = trackingCode,
@@ -249,6 +263,12 @@ public class PetitionsController : BaseApiController
         [FromBody] RequestReopenRequest request,
         CancellationToken cancellationToken)
     {
+        // Kịch bản 22: Token nội bộ gọi API công dân đề nghị mở lại trả về 403
+        if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Dispatcher") || User.IsInRole("Specialist") || User.IsInRole("SuperAdmin")))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(
+                "Cán bộ nội bộ không được quyền đề nghị mở lại hồ sơ thay cho người dân.", StatusCodes.Status403Forbidden));
+        }
         var command = new AquaReflect.Application.Features.Petitions.Commands.RequestReopen.RequestPetitionReopenCommand
         {
             TrackingCode = trackingCode,
@@ -278,6 +298,13 @@ public class PetitionsController : BaseApiController
         [FromBody] WithdrawPetitionRequest request,
         CancellationToken cancellationToken)
     {
+        // Kịch bản 22: Token nội bộ gọi API công dân rút đơn trả về 403
+        if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Dispatcher") || User.IsInRole("Specialist") || User.IsInRole("SuperAdmin")))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(
+                "Cán bộ nội bộ không được quyền thao tác rút đơn thay cho công dân.", StatusCodes.Status403Forbidden));
+        }
+
         var command = new WithdrawPetitionCommand
         {
             TrackingCode = trackingCode,
@@ -306,6 +333,13 @@ public class PetitionsController : BaseApiController
         [FromForm] SubmitAdditionalInfoRequest request,
         CancellationToken cancellationToken)
     {
+        // Kịch bản 22: Token nội bộ gọi API công dân bổ sung thông tin trả về 403
+        if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Dispatcher") || User.IsInRole("Specialist") || User.IsInRole("SuperAdmin")))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(
+                "Cán bộ nội bộ không được quyền nộp thông tin bổ sung thay cho công dân.", StatusCodes.Status403Forbidden));
+        }
+
         var fileUploadModels = new List<FileUploadModel>();
         if (request.Files != null && request.Files.Count > 0)
         {

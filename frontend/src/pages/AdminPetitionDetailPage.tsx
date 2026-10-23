@@ -83,19 +83,27 @@ export const AdminPetitionDetailPage: React.FC = () => {
   // Tính toán quyền hạn theo State Machine và Vai trò
   const canTransition = (() => {
     if (!petition || petition.status === 6 || !user) return false;
+    // Chống xung đột lợi ích: Cán bộ không được thao tác trên đơn của chính mình
+    if (petition.isConflictOfInterest) return false;
+
     if (user.role === 'SuperAdmin') return true;
     if (user.role === 'Dispatcher') {
       return petition.status >= 1 && petition.status <= 5;
     }
     if (user.role === 'Specialist') {
       const isSameDept = canAccessPetition(user.role, user.departmentId, petition.departmentId);
-      return (petition.status === 2 || petition.status === 3) && isSameDept;
+      if (!isSameDept) return false;
+      // Trưởng đơn vị được phân công (status=2) hoặc trả đơn (status=2)
+      if (user.isUnitLead && petition.status === 2) return true;
+      // Chuyên viên phụ trách được chuyển trạng thái khi đang thụ lý
+      return petition.status === 3;
     }
     return false;
   })();
 
   const canResolve = (() => {
     if (!petition || !user) return false;
+    if (petition.isConflictOfInterest) return false;
     // Tuần tự: Phải đang ở giai đoạn Thẩm tra (Investigating = 3)
     if (petition.status !== 3) return false;
     if (user.role === 'SuperAdmin') return true;
@@ -107,13 +115,19 @@ export const AdminPetitionDetailPage: React.FC = () => {
 
   const canReassign = (() => {
     if (!petition || petition.status === 6 || !user) return false;
-    return user.role === 'SuperAdmin' || user.role === 'Dispatcher';
+    if (petition.isConflictOfInterest) return false;
+    if (user.role === 'SuperAdmin' || user.role === 'Dispatcher') return true;
+    if (user.role === 'Specialist' && user.isUnitLead) {
+      return canAccessPetition(user.role, user.departmentId, petition.departmentId);
+    }
+    return false;
   })();
 
   // [Task 4.1] Quyền bắt đầu thẩm tra thực địa (Chuyển Assigned 2 -> Investigating 3)
   const canBeginInvestigation = (() => {
     if (!petition || petition.status !== 2 || !user) return false;
-    if (user.role === 'SuperAdmin' || user.role === 'Dispatcher') return true;
+    if (petition.isConflictOfInterest) return false;
+    if (user.role === 'SuperAdmin') return true;
     if (user.role === 'Specialist') {
       return canAccessPetition(user.role, user.departmentId, petition.departmentId);
     }
@@ -123,6 +137,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
   // [Task 4.1] Quyền lập biên bản / ghi chú thực địa kèm ảnh GPS
   const canAddInspectionNote = (() => {
     if (!petition || !user) return false;
+    if (petition.isConflictOfInterest) return false;
     if (petition.status !== 2 && petition.status !== 3) return false;
     if (user.role === 'SuperAdmin' || user.role === 'Dispatcher') return true;
     if (user.role === 'Specialist') {
@@ -134,6 +149,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
   // [Task 4.1] Kích hoạt nhánh NeedInfo từ hiện trường nếu thiếu căn cứ xác minh
   const canRequestNeedInfo = (() => {
     if (!petition || !user) return false;
+    if (petition.isConflictOfInterest) return false;
     if (petition.status !== 2 && petition.status !== 3) return false;
     return canTransition;
   })();
@@ -141,6 +157,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
   // [Task 5.1] Quyền kiểm duyệt kết quả giải quyết (Phê duyệt đóng đơn hoặc Yêu cầu xử lý lại)
   const canReviewResolution = (() => {
     if (!petition || petition.status !== 4 || !user) return false;
+    if (petition.isConflictOfInterest) return false;
     return user.role === 'SuperAdmin' || user.role === 'Dispatcher';
   })();
 
@@ -358,6 +375,18 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 <span className="hidden sm:inline">In hồ sơ</span>
               </button>
 
+              {/* Nút Xem như người dân (petition.previewPublic) */}
+              <Link
+                to={`/tracking?code=${petition.trackingCode}&preview=true`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-100 text-xs font-semibold transition-all border border-sky-300/40 cursor-pointer"
+                title="Xem trước giao diện công khai như người dân thấy (Chỉ đọc)"
+              >
+                <Eye className="w-3.5 h-3.5 text-sky-200" />
+                <span className="hidden sm:inline">Xem như người dân</span>
+              </Link>
+
               {/* [Task 4.1] Nút Bắt đầu thẩm tra thực địa: Assigned (2) -> Investigating (3) */}
               {canBeginInvestigation && (
                 <button
@@ -541,6 +570,21 @@ export const AdminPetitionDetailPage: React.FC = () => {
 
       {/* 2. MAIN BODY: 2-COLUMN DOSSIER LAYOUT */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        {/* Banner cảnh báo xung đột lợi ích (Mục 6.15 & Kịch bản 25) */}
+        {petition.isConflictOfInterest && (
+          <div className="mb-6 bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 flex items-start space-x-3 text-rose-900 shadow-sm animate-pulse">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-extrabold text-sm text-rose-950">
+                Cảnh báo Xung đột lợi ích — Hồ sơ do chính bạn gửi với tư cách công dân!
+              </p>
+              <p>
+                Theo quy chế phân quyền ReflectGov, bạn <strong>không được phép</strong> phân công, điều chuyển, thẩm tra hiện trường, ban hành kết luận hoặc đóng hồ sơ đối với đơn này nhằm đảm bảo tính khách quan và minh bạch.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
           {/* LEFT / MAIN DOSSIER COLUMN (7/12) */}

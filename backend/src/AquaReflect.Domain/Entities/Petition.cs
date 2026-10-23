@@ -31,6 +31,11 @@ public class Petition : BaseEntity, IAuditableEntity
     // Mã PIN truy cập bảo mật một lần cho đơn vô danh (Lưu bản băm SHA-256)
     public string? AccessPinHash { get; set; }
 
+    // Thông tin tiếp nhận hộ phản ánh (createOnBehalf)
+    public ReceptionSource ReceptionSource { get; set; } = ReceptionSource.Online;
+    public Guid? CreatedOnBehalfByUserId { get; set; }
+    public virtual User? CreatedOnBehalfByUser { get; set; }
+
     // Trạng thái và mức độ ưu tiên
     public PetitionStatus Status { get; set; } = PetitionStatus.Submitted;
     public PriorityLevel PriorityLevel { get; set; } = PriorityLevel.Normal;

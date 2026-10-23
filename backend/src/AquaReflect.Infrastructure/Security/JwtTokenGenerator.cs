@@ -44,6 +44,11 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             claims.Add(new Claim("department_id", user.DepartmentId.Value.ToString()));
         }
 
+        if (user.IsUnitLead)
+        {
+            claims.Add(new Claim("is_unit_lead", "true"));
+        }
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),

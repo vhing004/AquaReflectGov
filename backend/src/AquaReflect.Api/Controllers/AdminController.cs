@@ -287,6 +287,59 @@ public class AdminController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.InspectionNoteResultDto>.Ok(result, result.Message));
     }
+
+    /// <summary>
+    /// Nhập hộ phản ánh kiến nghị khi tiếp nhận qua điện thoại, trực tiếp hoặc văn bản (createOnBehalf)
+    /// </summary>
+    [HttpPost("petitions/on-behalf")]
+    [Authorize(Roles = "SuperAdmin,Dispatcher")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.CreatePetitionResultDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.CreatePetitionResultDto>>> CreateOnBehalf(
+        [FromForm] CreateOnBehalfRequest request,
+        CancellationToken cancellationToken)
+    {
+        var fileUploadModels = new List<AquaReflect.Application.Common.Models.FileUploadModel>();
+        if (request.Files != null && request.Files.Count > 0)
+        {
+            foreach (var formFile in request.Files)
+            {
+                if (formFile.Length > 0)
+                {
+                    fileUploadModels.Add(new AquaReflect.Application.Common.Models.FileUploadModel
+                    {
+                        ContentStream = formFile.OpenReadStream(),
+                        FileName = formFile.FileName,
+                        ContentType = formFile.ContentType,
+                        Length = formFile.Length
+                    });
+                }
+            }
+        }
+
+        var command = new AquaReflect.Application.Features.Petitions.Commands.CreateOnBehalf.CreatePetitionOnBehalfCommand
+        {
+            Title = request.Title,
+            Content = request.Content,
+            CategoryId = request.CategoryId,
+            AddressText = request.AddressText,
+            Latitude = request.Latitude,
+            Longitude = request.Longitude,
+            AdministrativeUnitId = request.AdministrativeUnitId,
+            CitizenName = request.CitizenName,
+            CitizenPhone = request.CitizenPhone,
+            CitizenEmail = request.CitizenEmail,
+            CitizenIdCard = request.CitizenIdCard,
+            PriorityLevel = request.PriorityLevel,
+            ReceptionSource = (AquaReflect.Domain.Enums.ReceptionSource)request.ReceptionSource,
+            Files = fileUploadModels
+        };
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.DTOs.CreatePetitionResultDto>.Created(result, result.Message));
+    }
 }
 
 public class BeginInvestigationRequest
@@ -413,4 +466,22 @@ public class TransitionStatusRequest
     /// Số ngày làm việc cho hạn bổ sung (mặc định 5 ngày)
     /// </summary>
     public int? NeedInfoDays { get; set; }
+}
+
+public class CreateOnBehalfRequest
+{
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public Guid CategoryId { get; set; }
+    public string? AddressText { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public int? AdministrativeUnitId { get; set; }
+    public string CitizenName { get; set; } = string.Empty;
+    public string CitizenPhone { get; set; } = string.Empty;
+    public string? CitizenEmail { get; set; }
+    public string? CitizenIdCard { get; set; }
+    public AquaReflect.Domain.Enums.PriorityLevel? PriorityLevel { get; set; }
+    public int ReceptionSource { get; set; }
+    public List<IFormFile>? Files { get; set; }
 }

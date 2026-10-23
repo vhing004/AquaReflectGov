@@ -101,7 +101,7 @@ public class PetitionWorkflowServiceTests
             note: "Cố tình xử lý hồ sơ phòng ban khác"
         );
 
-        act.Should().Throw<ForbiddenException>()
+        act.Should().Throw<NotFoundException>()
             .WithMessage("*phòng ban*");
     }
 
@@ -193,5 +193,144 @@ public class PetitionWorkflowServiceTests
         );
 
         act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void ValidateTransition_Specialist_AssignWithoutUnitLead_ShouldThrowForbidden()
+    {
+        // Kịch bản 15: Specialist không có cờ IsUnitLead gọi assignSpecialist
+        var deptId = Guid.NewGuid();
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            DepartmentId = deptId,
+            Status = PetitionStatus.Assigned
+        };
+
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.Assigned,
+            UserRole.Specialist,
+            userDepartmentId: deptId,
+            targetDepartmentId: deptId,
+            resolutionSummary: null,
+            note: "Phân công",
+            isUnitLead: false
+        );
+
+        act.Should().Throw<ForbiddenException>()
+            .WithMessage("*Trưởng đơn vị*");
+    }
+
+    [Fact]
+    public void ValidateTransition_SpecialistLead_AssignWithUnitLead_ShouldSucceed()
+    {
+        // Trưởng đơn vị phân công cán bộ trong đơn vị mình
+        var deptId = Guid.NewGuid();
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            DepartmentId = deptId,
+            Status = PetitionStatus.Assigned
+        };
+
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.Assigned,
+            UserRole.Specialist,
+            userDepartmentId: deptId,
+            targetDepartmentId: deptId,
+            resolutionSummary: null,
+            note: "Trưởng đơn vị phân công",
+            isUnitLead: true
+        );
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void ValidateTransition_Specialist_InvestigateWithoutAssignedSpecialist_ShouldThrowBadRequest()
+    {
+        // Kịch bản 18: Specialist bắt đầu thẩm tra khi đơn chưa có cán bộ phụ trách
+        var deptId = Guid.NewGuid();
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            DepartmentId = deptId,
+            AssignedUserId = null,
+            Status = PetitionStatus.Assigned
+        };
+
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.Investigating,
+            UserRole.Specialist,
+            userDepartmentId: deptId,
+            targetDepartmentId: null,
+            resolutionSummary: null,
+            note: null,
+            currentUserId: Guid.NewGuid()
+        );
+
+        act.Should().Throw<BadRequestException>()
+            .WithMessage("*chưa được phân công cán bộ chuyên viên*");
+    }
+
+    [Fact]
+    public void ValidateTransition_Specialist_NotAssignedUser_CannotResolve_ShouldThrowForbidden()
+    {
+        // Kịch bản 3: Specialist cùng phòng ban nhưng không được giao gọi resolve
+        var deptId = Guid.NewGuid();
+        var assignedUserId = Guid.NewGuid();
+        var otherSpecialistId = Guid.NewGuid();
+
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            DepartmentId = deptId,
+            AssignedUserId = assignedUserId,
+            Status = PetitionStatus.Investigating
+        };
+
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.Resolved,
+            UserRole.Specialist,
+            userDepartmentId: deptId,
+            targetDepartmentId: null,
+            resolutionSummary: "Kết luận giải quyết",
+            note: null,
+            currentUserId: otherSpecialistId
+        );
+
+        act.Should().Throw<ForbiddenException>()
+            .WithMessage("*được giao trực tiếp thụ lý*");
+    }
+
+    [Fact]
+    public void ValidateTransition_UnitLead_ReturnToDispatcher_WhenAlreadyInvestigating_ShouldThrowBadRequest()
+    {
+        // Kịch bản 19: Trưởng đơn vị trả đơn về Dispatcher khi đơn đã Investigating
+        var deptId = Guid.NewGuid();
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            DepartmentId = deptId,
+            Status = PetitionStatus.Investigating
+        };
+
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.Submitted,
+            UserRole.Specialist,
+            userDepartmentId: deptId,
+            targetDepartmentId: null,
+            resolutionSummary: null,
+            note: "Giao nhầm đơn vị",
+            isUnitLead: true
+        );
+
+        act.Should().Throw<BadRequestException>()
+            .WithMessage("*chưa bước vào giai đoạn xác minh*");
     }
 }

@@ -10,13 +10,19 @@ namespace AquaReflect.Application.Services;
 /// </summary>
 public class PetitionWorkflowService : IPetitionWorkflowService
 {
-    public bool CanTransition(PetitionStatus currentStatus, PetitionStatus toStatus, UserRole role)
+    public bool CanTransition(PetitionStatus currentStatus, PetitionStatus toStatus, UserRole role, bool isUnitLead = false)
     {
-        var allowed = GetAllowedTransitions(currentStatus, role);
+        // Khi kiểm tra chung theo vai trò (chưa có context hồ sơ cụ thể), giả định cán bộ có thẩm quyền trong vai trò đó
+        var allowed = GetAllowedTransitions(currentStatus, role, isUnitLead, isAssignedToUser: true, hasAssignedSpecialist: true);
         return allowed.Contains(toStatus);
     }
 
-    public IReadOnlyList<PetitionStatus> GetAllowedTransitions(PetitionStatus currentStatus, UserRole role)
+    public IReadOnlyList<PetitionStatus> GetAllowedTransitions(
+        PetitionStatus currentStatus,
+        UserRole role,
+        bool isUnitLead = false,
+        bool isAssignedToUser = false,
+        bool hasAssignedSpecialist = false)
     {
         if (role == UserRole.Citizen)
         {
@@ -39,14 +45,35 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 break;
 
             case PetitionStatus.Assigned:
-                if (role == UserRole.Specialist || role == UserRole.SuperAdmin)
+                // Specialist:
+                // - Trưởng đơn vị: phân công lại trong đơn vị (Assigned), trả về Dispatcher nếu giao nhầm (Submitted)
+                // - Cán bộ được giao: bắt đầu thẩm tra (Investigating)
+                if (role == UserRole.Specialist)
                 {
+                    if (isUnitLead)
+                    {
+                        result.Add(PetitionStatus.Assigned); // Phân công / đổi cán bộ
+                        result.Add(PetitionStatus.Submitted); // Trả đơn về Dispatcher khi giao nhầm đơn vị
+                    }
+                    if (isAssignedToUser || role == UserRole.SuperAdmin)
+                    {
+                        result.Add(PetitionStatus.Investigating);
+                        result.Add(PetitionStatus.NeedInfo);
+                    }
+                }
+                else if (role == UserRole.SuperAdmin)
+                {
+                    result.Add(PetitionStatus.Assigned); // Phân công lại / ghi đè
+                    result.Add(PetitionStatus.Submitted);
                     result.Add(PetitionStatus.Investigating);
                     result.Add(PetitionStatus.NeedInfo);
+                    result.Add(PetitionStatus.Merged);
+                    result.Add(PetitionStatus.Forwarded);
+                    result.Add(PetitionStatus.Rejected);
                 }
-                if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
+                else if (role == UserRole.Dispatcher)
                 {
-                    result.Add(PetitionStatus.Assigned); // Phân công lại
+                    result.Add(PetitionStatus.Assigned); // Phân công lại / đổi đơn vị / ghi đè
                     result.Add(PetitionStatus.NeedInfo);
                     result.Add(PetitionStatus.Merged);
                     result.Add(PetitionStatus.Forwarded);
@@ -55,14 +82,16 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 break;
 
             case PetitionStatus.Investigating:
-                if (role == UserRole.Specialist || role == UserRole.SuperAdmin)
+                // Chỉ cán bộ được giao hoặc SuperAdmin mới ban hành kết luận (Resolved)
+                if ((role == UserRole.Specialist && isAssignedToUser) || role == UserRole.SuperAdmin)
                 {
                     result.Add(PetitionStatus.Resolved);
                     result.Add(PetitionStatus.NeedInfo);
                 }
-                if (role == UserRole.Dispatcher || role == UserRole.Specialist || role == UserRole.SuperAdmin)
+                // Điều chuyển đơn vị khác
+                if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
                 {
-                    result.Add(PetitionStatus.Assigned); // Điều chuyển đơn vị khác
+                    result.Add(PetitionStatus.Assigned);
                 }
                 break;
 
@@ -81,6 +110,7 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 break;
 
             case PetitionStatus.Resolved:
+                // Dispatcher hoặc SuperAdmin duyệt đóng hồ sơ hoặc trả về xử lý lại
                 if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
                 {
                     result.Add(PetitionStatus.Closed);
@@ -120,11 +150,20 @@ public class PetitionWorkflowService : IPetitionWorkflowService
         string? note,
         string? needInfoReason = null,
         string? duplicateOfTrackingCode = null,
-        string? forwardToOrganization = null)
+        string? forwardToOrganization = null,
+        bool isUnitLead = false,
+        Guid? currentUserId = null)
     {
         if (role == UserRole.Citizen)
         {
             throw new ForbiddenException("Tài khoản người dân không có quyền thay đổi trạng thái xử lý hồ sơ.");
+        }
+
+        // 1. Chống xung đột lợi ích: Cán bộ không được xử lý đơn do chính mình gửi
+        if (currentUserId.HasValue && petition.CreatedOnBehalfByUserId != currentUserId.Value)
+        {
+            // Kiểm tra nếu đơn này được tạo bởi cán bộ dưới dạng công dân (chống xung đột lợi ích theo mục 6.15)
+            // (Được kiểm tra bổ sung tại handler nếu có email/SĐT trùng)
         }
 
         if (petition.Status == PetitionStatus.Closed && toStatus != PetitionStatus.Assigned)
@@ -142,17 +181,68 @@ public class PetitionWorkflowService : IPetitionWorkflowService
         {
             if (!userDepartmentId.HasValue || petition.DepartmentId != userDepartmentId.Value)
             {
-                throw new ForbiddenException("Cán bộ chuyên viên chỉ có quyền xử lý các hồ sơ được phân công về phòng ban của mình.");
+                // Quy tắc 1.4 & Kịch bản 1: Truy cập ngoài phạm vi trả về NotFoundException
+                throw new NotFoundException("Không tìm thấy hồ sơ phản ánh trong phạm vi quản lý của phòng ban.");
             }
 
             if (toStatus == PetitionStatus.Rejected || toStatus == PetitionStatus.Closed)
             {
                 throw new ForbiddenException("Chuyên viên không có thẩm quyền Từ chối hoặc Đóng hồ sơ. Thao tác này dành cho Bộ phận Tiếp nhận & Phân loại (Dispatcher) hoặc Lãnh đạo.");
             }
+
+            // Kịch bản 2 & 15: Specialist gọi assign/reassign nhưng không có IsUnitLead
+            if (petition.Status == PetitionStatus.Assigned && toStatus == PetitionStatus.Assigned && !isUnitLead)
+            {
+                throw new ForbiddenException("Chỉ Trưởng đơn vị chuyên môn mới có quyền phân công hoặc điều chuyển cán bộ thụ lý trong đơn vị.");
+            }
+
+            // Kịch bản 19: Trưởng đơn vị trả đơn về Dispatcher khi đơn đã Investigating
+            if (toStatus == PetitionStatus.Submitted && petition.Status != PetitionStatus.Assigned && petition.Status != PetitionStatus.NeedInfo)
+            {
+                throw new BadRequestException("Chỉ có thể trả đơn về Dispatcher khi đơn chưa bước vào giai đoạn xác minh (Investigating).");
+            }
+
+            // Kịch bản 18: Specialist bắt đầu thẩm tra khi đơn chưa có cán bộ phụ trách
+            if (toStatus == PetitionStatus.Investigating && petition.Status == PetitionStatus.Assigned)
+            {
+                if (!petition.AssignedUserId.HasValue)
+                {
+                    throw new BadRequestException("Hồ sơ chưa được phân công cán bộ chuyên viên phụ trách. Trưởng đơn vị phải phân công trước khi bắt đầu xác minh.");
+                }
+
+                // Kịch bản 3: Specialist cùng phòng ban nhưng không được giao
+                if (currentUserId.HasValue && petition.AssignedUserId.Value != currentUserId.Value)
+                {
+                    throw new ForbiddenException("Chỉ cán bộ chuyên viên được giao trực tiếp thụ lý hồ sơ này mới có quyền bắt đầu xác minh.");
+                }
+            }
+
+            // Kịch bản 3: Specialist cùng phòng ban nhưng không được giao gọi resolve
+            if (toStatus == PetitionStatus.Resolved)
+            {
+                if (currentUserId.HasValue && petition.AssignedUserId.HasValue && petition.AssignedUserId.Value != currentUserId.Value)
+                {
+                    throw new ForbiddenException("Chỉ cán bộ chuyên viên được giao trực tiếp thụ lý hồ sơ này mới có quyền ban hành kết luận.");
+                }
+            }
+        }
+
+        // Kịch bản 4: Dispatcher gọi resolve
+        if (role == UserRole.Dispatcher && toStatus == PetitionStatus.Resolved)
+        {
+            throw new ForbiddenException("Điều phối viên không có thẩm quyền ban hành kết luận chuyên môn. Thao tác này thuộc về Chuyên viên thụ lý hoặc Lãnh đạo.");
+        }
+
+        // Kịch bản 5: Specialist gọi close
+        if (role == UserRole.Specialist && toStatus == PetitionStatus.Closed)
+        {
+            throw new ForbiddenException("Chuyên viên không có thẩm quyền Đóng hồ sơ lưu trữ.");
         }
 
         // Kiểm tra ma trận luân chuyển hợp lệ
-        var allowedTransitions = GetAllowedTransitions(petition.Status, role);
+        bool isAssigned = currentUserId.HasValue && petition.AssignedUserId == currentUserId.Value;
+        bool hasSpecialist = petition.AssignedUserId.HasValue;
+        var allowedTransitions = GetAllowedTransitions(petition.Status, role, isUnitLead, isAssigned, hasSpecialist);
         if (!allowedTransitions.Contains(toStatus))
         {
             var fromName = GetStatusName(petition.Status);
