@@ -987,11 +987,15 @@ export const AdminPetitionsPage: React.FC = () => {
                         <div className="font-medium text-slate-800">
                           {item.departmentName || <span className="text-slate-400 italic">Chưa phân công</span>}
                         </div>
-                        {item.assignedUserName && (
+                        {item.assignedUserName ? (
                           <div className="text-[11px] text-sky-700 font-semibold mt-0.5">
                             CV: {item.assignedUserName}
                           </div>
-                        )}
+                        ) : item.status === 2 ? (
+                          <div className="text-[11px] text-amber-600 font-medium mt-0.5">
+                            Chờ đơn vị cử cán bộ
+                          </div>
+                        ) : null}
                       </td>
 
                       {/* Priority */}
@@ -1192,7 +1196,7 @@ export const AdminPetitionsPage: React.FC = () => {
                   <div>
                     <span className="text-slate-400 font-bold text-[11px] uppercase block">Chuyên viên phụ trách</span>
                     <p className="font-semibold text-slate-900 mt-0.5">
-                      {selectedPetition.assignedUserName || 'Chưa chỉ định chuyên viên'}
+                      {selectedPetition.assignedUserName || (selectedPetition.status === 2 ? 'Chờ Trưởng đơn vị cử cán bộ' : 'Chưa chỉ định chuyên viên')}
                     </p>
                   </div>
                 </div>

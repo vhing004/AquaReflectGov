@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../../api/adminApi';
 import { masterDataApi } from '../../api/masterDataApi';
 import { useAuthStore } from '../../store/useAuthStore';
-import type { AdminPetitionItem, AllowedTransition, Department, DepartmentOfficer } from '../../types';
+import type { AdminPetitionItem, AllowedTransition, Department } from '../../types';
 import {
   X,
   Layers,
@@ -17,10 +17,8 @@ import {
   FileText,
   MessageSquare,
   ShieldAlert,
-  Sparkles,
-  UserCheck,
-  Zap,
   ShieldCheck,
+  Sparkles,
   Info,
   AlertCircle,
   GitMerge,
@@ -75,16 +73,8 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
     enabled: isOpen,
   });
 
-  // Fetch department officers with workload
-  const { data: officersRes, isLoading: isLoadingOfficers } = useQuery({
-    queryKey: ['departmentOfficers', departmentId],
-    queryFn: () => adminApi.getDepartmentOfficers(departmentId),
-    enabled: !!departmentId && isOpen && selectedStatus === 2,
-  });
-
   const allowedTransitions = allowedRes?.data || [];
   const departments: Department[] = deptsRes?.data || [];
-  const officers: DepartmentOfficer[] = officersRes?.data || [];
 
   // Stepper definition
   const WORKFLOW_STEPS = [
@@ -164,16 +154,6 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
       }
     }
   }, [isOpen, departments, petition, departmentId, selectedStatus]);
-
-  // Auto select least loaded officer when officers list is loaded
-  const handleAutoAssignLeastLoadedOfficer = () => {
-    if (officers.length > 0) {
-      const recommended = officers.find(o => o.isRecommended) || officers[0];
-      if (recommended) {
-        setAssignedUserId(recommended.id);
-      }
-    }
-  };
 
   // Auto-select first allowed transition if available
   useEffect(() => {
@@ -279,7 +259,7 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
       const res = await adminApi.transitionStatus(petition.id, {
         toStatus: selectedStatus,
         departmentId: departmentId || undefined,
-        assignedUserId: assignedUserId || undefined,
+        assignedUserId: selectedStatus === 2 ? undefined : (assignedUserId || undefined),
         resolutionSummary: resolutionSummary.trim() || undefined,
         note: note.trim() || undefined,
         duplicateOfTrackingCode: duplicateOfTrackingCode.trim() || undefined,
@@ -459,7 +439,7 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
             </div>
           )}
 
-          {/* Dynamic Input 1: Department & Officer Selection (if Assigned = 2) */}
+          {/* Dynamic Input 1: Department Selection (if Assigned = 2) */}
           {selectedStatus === 2 && (
             <div className="space-y-3 p-4 bg-indigo-50/60 rounded-2xl border border-indigo-150">
               <div>
@@ -493,102 +473,16 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
                 </div>
               </div>
 
-              {/* Smart Officer Workload List & Auto-Assign */}
-              {departmentId && (
-                <div className="pt-2 border-t border-indigo-100 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider flex items-center space-x-1">
-                      <UserCheck className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>Phân công Chuyên viên phụ trách trực tiếp (Tùy chọn)</span>
-                    </label>
-
-                    {officers.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleAutoAssignLeastLoadedOfficer}
-                        className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition-all shadow-xs flex items-center space-x-1"
-                      >
-                        <Zap className="w-3 h-3 text-amber-300 fill-amber-300" />
-                        <span>Tự động chọn cán bộ nhàn rỗi nhất</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {isLoadingOfficers ? (
-                    <div className="py-2 text-center text-indigo-500 text-[11px] animate-pulse">
-                      Đang phân tích tải công việc các chuyên viên...
-                    </div>
-                  ) : officers.length === 0 ? (
-                    <div className="p-2.5 bg-white/80 rounded-xl border border-indigo-100 text-[11px] text-slate-500 text-center">
-                      Phòng ban hiện chưa có cán bộ hoặc chưa kích hoạt tài khoản.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto pr-1">
-                      {officers.map((officer) => {
-                        const isSelected = assignedUserId === officer.id;
-                        return (
-                          <div
-                            key={officer.id}
-                            onClick={() => setAssignedUserId(officer.id)}
-                            className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
-                              isSelected
-                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs'
-                                : 'bg-white text-slate-800 border-indigo-100 hover:border-indigo-300'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <div
-                                className={`w-2 h-2 rounded-full ${
-                                  isSelected
-                                    ? 'bg-amber-300'
-                                    : officer.workloadLevel === 'Low'
-                                    ? 'bg-emerald-500'
-                                    : officer.workloadLevel === 'Medium'
-                                    ? 'bg-sky-500'
-                                    : 'bg-amber-500'
-                                }`}
-                              />
-                              <div>
-                                <span className="font-bold">{officer.fullName}</span>
-                                <span className={`ml-1.5 text-[10px] ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>
-                                  ({officer.username})
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center space-x-1.5">
-                              {officer.isRecommended && (
-                                <span
-                                  className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase ${
-                                    isSelected
-                                      ? 'bg-amber-400 text-amber-950'
-                                      : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                  }`}
-                                >
-                                  Khuyên chọn
-                                </span>
-                              )}
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                  isSelected
-                                    ? 'bg-indigo-500 text-white'
-                                    : officer.workloadLevel === 'Low'
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                    : officer.workloadLevel === 'Medium'
-                                    ? 'bg-sky-50 text-sky-700 border border-sky-200'
-                                    : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                }`}
-                              >
-                                {officer.activeCaseCount} đơn đang giữ
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+              {/* Hướng dẫn quy trình phân công 2 tầng */}
+              <div className="p-3 bg-indigo-100/70 rounded-xl border border-indigo-200/80 text-[11px] text-indigo-950 flex items-start space-x-2.5">
+                <Info className="w-4 h-4 text-indigo-700 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-bold">Quy trình phân công 2 tầng:</p>
+                  <p className="text-indigo-900 leading-relaxed">
+                    Cán bộ tiếp nhận giao việc về <strong>Đơn vị chuyên môn</strong>. Sau khi nhận bàn giao, <strong>Trưởng đơn vị</strong> sẽ nhận được thông báo để xem xét và cử cán bộ phù hợp trực tiếp thụ lý hiện trường.
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
           )}
 

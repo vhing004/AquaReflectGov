@@ -94,6 +94,13 @@ public class TransitionPetitionStatusCommandHandler
             petition.AssignedUser = null;
         }
 
+        // Nếu chuyển sang trạng thái Assigned mà không chỉ định cán bộ (quy trình phân công 2 tầng: Tầng 1 chỉ giao việc về đơn vị)
+        if (request.ToStatus == PetitionStatus.Assigned && !request.AssignedUserId.HasValue)
+        {
+            petition.AssignedUserId = null;
+            petition.AssignedUser = null;
+        }
+
         // 5. Nếu chỉ định chuyên viên phụ trách
         if (request.AssignedUserId.HasValue)
         {

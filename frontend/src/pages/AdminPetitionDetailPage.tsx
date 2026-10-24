@@ -624,7 +624,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between text-xs">
           {[
             { status: 1, title: '1. Tiếp nhận', desc: 'Mới gửi' },
-            { status: 2, title: '2. Phân công', desc: petition.assignedUserName || petition.departmentName || 'Chờ phân công' },
+            { status: 2, title: '2. Phân công', desc: petition.assignedUserName || (petition.departmentName ? `${petition.departmentName} (Chờ cử cán bộ)` : 'Chờ phân công') },
             { status: 3, title: '3. Thụ lý', desc: 'Đang xác minh' },
             { status: 11, title: '4. Nghiệm thu', desc: 'Thẩm định kết quả' },
             { status: 4, title: '5. Kết luận', desc: 'Đã giải quyết' },
@@ -1520,9 +1520,17 @@ export const AdminPetitionDetailPage: React.FC = () => {
                       {petition.assignedUserName ? petition.assignedUserName.charAt(0) : '?'}
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900">
-                        {petition.assignedUserName || <span className="text-slate-400 font-normal">Chưa phân công</span>}
-                      </p>
+                      <div className="font-bold text-slate-900">
+                        {petition.assignedUserName ? (
+                          petition.assignedUserName
+                        ) : petition.status === 2 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            Chờ Trưởng đơn vị cử cán bộ
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-normal">Chưa phân công</span>
+                        )}
+                      </div>
                       {petition.assignedUserEmail && (
                         <p className="text-[11px] text-slate-400">{petition.assignedUserEmail}</p>
                       )}
@@ -1535,7 +1543,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                     onClick={() => setIsTransitionOpen(true)}
                     className="w-full mt-2 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
                   >
-                    Điều chuyển phòng ban / Chuyên viên
+                    Điều chuyển phòng ban thụ lý
                   </button>
                 )}
               </div>

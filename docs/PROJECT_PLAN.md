@@ -71,4 +71,5 @@ Hệ thống chính quyền số phục vụ công tác giám sát, tiếp nhậ
 | `20261020-5.1` | Dispatcher Kiểm duyệt Đóng đơn & Yêu cầu xử lý lại | 20/10/2026 | 20/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261020-task5.1-dispatcher-review-close-or-rework.md) |
 | `20261021-5.2` | Đánh giá CSAT & Đề nghị xem xét lại (Reopen) | 21/10/2026 | 21/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261021-task5.2-csat-reopen.md) |
 | `20261024-01` | Mô hình Đơn vị - Thành viên, Nghiệm thu nội bộ & Ban hành kết luận | 24/10/2026 | 24/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261024-unit-team-workflow.md) |
+| `20261024-02` | Chuẩn hóa Phân công Tầng 1 chỉ chọn Đơn vị xử lý | 24/10/2026 | 24/10/2026 | ✅ Hoàn thành | [Chi tiết plan](file:///d:/AquaReflect/docs/plans/PLAN-20261024-department-only-dispatch.md) |
 
