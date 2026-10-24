@@ -340,6 +340,25 @@ namespace AquaReflect.Infrastructure.Data.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)");
 
+                    b.Property<string>("InspectionRejectionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("InspectionReport")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("InspectionReportApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("InspectionReportApprovedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("InspectionReportSubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("InspectionReportSubmittedByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsAnonymous")
                         .HasColumnType("boolean");
 

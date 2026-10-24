@@ -155,57 +155,53 @@ public static class ApplicationDbContextSeed
             }
 
             // 2. Seed Phòng ban / Cơ quan thụ lý
-            Department? ccts = null;
-            Department? ttkn = null;
+            logger.LogInformation("Kiểm tra và khởi tạo dữ liệu mẫu Phòng ban / Cơ quan chuyên môn...");
 
-            if (!await context.Departments.AnyAsync())
+            var existingDepts = await context.Departments.ToListAsync();
+            var deptsToAdd = new List<Department>();
+
+            var defaultDepts = new (string Code, string Name, string Phone, string Email, string Address)[]
             {
-                logger.LogInformation("Đang khởi tạo dữ liệu mẫu Phòng ban / Cơ quan chuyên môn...");
+                ("SNNPTNT", "Sở Nông nghiệp & Phát triển Nông thôn", "0290.3831234", "snnptnt@camau.gov.vn", "Số 02, Đường Hùng Vương, TP Cà Mau"),
+                ("CCTS", "Chi cục Thủy sản", "0290.3835678", "chicutthuysan@camau.gov.vn", "Số 15, Đường Lý Thường Kiệt, TP Cà Mau"),
+                ("TTKN", "Đội Thanh tra Chuyên ngành Thủy sản - Kiểm ngư", "0290.3839999", "kiemngu@camau.gov.vn", "Cảng cá Sông Đốc, Huyện Trần Văn Thời"),
+                ("PNTTS", "Phòng Nuôi trồng Thủy sản", "0290.3837777", "nuoitrong@camau.gov.vn", "Chi cục Thủy sản Cà Mau"),
+                ("QLMT", "Đội Quản lý Môi trường Nước", "0290.3836666", "moitruong@camau.gov.vn", "Số 15, Đường Lý Thường Kiệt, TP Cà Mau"),
+                ("QLCL", "Đội Quản lý Chất lượng Giống & Thức ăn", "0290.3835555", "chatluong@camau.gov.vn", "Số 15, Đường Lý Thường Kiệt, TP Cà Mau"),
+                ("HTCC", "Đội Hạ tầng Cảng cá & Luồng lạch", "0290.3834444", "hatang@camau.gov.vn", "Cảng cá Sông Đốc, Huyện Trần Văn Thời")
+            };
 
-                var snn = new Department
+            foreach (var (code, name, phone, email, addr) in defaultDepts)
+            {
+                var existing = existingDepts.FirstOrDefault(d => d.Code == code);
+                if (existing == null)
                 {
-                    Name = "Sở Nông nghiệp & Phát triển Nông thôn",
-                    Code = "SNNPTNT",
-                    Phone = "0290.3831234",
-                    Email = "snnptnt@camau.gov.vn",
-                    Address = "Số 02, Đường Hùng Vương, TP Cà Mau"
-                };
+                    var newDept = new Department
+                    {
+                        Code = code,
+                        Name = name,
+                        Phone = phone,
+                        Email = email,
+                        Address = addr,
+                        IsActive = true
+                    };
+                    deptsToAdd.Add(newDept);
+                }
+            }
 
-                ccts = new Department
-                {
-                    Name = "Chi cục Thủy sản",
-                    Code = "CCTS",
-                    Phone = "0290.3835678",
-                    Email = "chicutthuysan@camau.gov.vn",
-                    Address = "Số 15, Đường Lý Thường Kiệt, TP Cà Mau"
-                };
-
-                ttkn = new Department
-                {
-                    Name = "Đội Thanh tra Chuyên ngành Thủy sản - Kiểm ngư",
-                    Code = "TTKN",
-                    Phone = "0290.3839999",
-                    Email = "kiemngu@camau.gov.vn",
-                    Address = "Cảng cá Sông Đốc, Huyện Trần Văn Thời"
-                };
-
-                var pntts = new Department
-                {
-                    Name = "Phòng Nuôi trồng Thủy sản & Môi trường nước",
-                    Code = "PNTTS",
-                    Phone = "0290.3837777",
-                    Email = "nuoitrong@camau.gov.vn",
-                    Address = "Chi cục Thủy sản Cà Mau"
-                };
-
-                context.Departments.AddRange(snn, ccts, ttkn, pntts);
+            if (deptsToAdd.Count > 0)
+            {
+                context.Departments.AddRange(deptsToAdd);
                 await context.SaveChangesAsync();
+                existingDepts = await context.Departments.ToListAsync();
             }
-            else
-            {
-                ccts = await context.Departments.FirstOrDefaultAsync(d => d.Code == "CCTS");
-                ttkn = await context.Departments.FirstOrDefaultAsync(d => d.Code == "TTKN");
-            }
+
+            var ccts = existingDepts.FirstOrDefault(d => d.Code == "CCTS");
+            var ttkn = existingDepts.FirstOrDefault(d => d.Code == "TTKN");
+            var pntts = existingDepts.FirstOrDefault(d => d.Code == "PNTTS");
+            var qlmt = existingDepts.FirstOrDefault(d => d.Code == "QLMT");
+            var qlcl = existingDepts.FirstOrDefault(d => d.Code == "QLCL");
+            var htcc = existingDepts.FirstOrDefault(d => d.Code == "HTCC");
 
             // 3. Seed Danh mục loại phản ánh thủy sản
             if (!await context.PetitionCategories.AnyAsync())
@@ -284,81 +280,72 @@ public static class ApplicationDbContextSeed
             }
 
             // 4. Seed Tài khoản người dùng mẫu
-            if (!await context.Users.AnyAsync())
+            logger.LogInformation("Kiểm tra và khởi tạo các tài khoản người dùng mẫu (15 cán bộ 5 đơn vị + điều phối + công dân)...");
+
+            var adminPass = passwordHasher.HashPassword("Admin@123");
+            var canboPass = passwordHasher.HashPassword("Canbo@123");
+            var danPass = passwordHasher.HashPassword("Dan@123");
+
+            var existingUsers = await context.Users.ToListAsync();
+            var usersToAdd = new List<User>();
+
+            void EnsureUser(string username, string fullName, string email, string phone, UserRole role, bool isUnitLead, Guid? deptId, (string Hash, string Salt) pass)
             {
-                logger.LogInformation("Đang khởi tạo các tài khoản người dùng mẫu...");
-
-                var adminPass = passwordHasher.HashPassword("Admin@123");
-                var canboPass = passwordHasher.HashPassword("Canbo@123");
-                var danPass = passwordHasher.HashPassword("Dan@123");
-
-                var admin = new User
+                if (!existingUsers.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
                 {
-                    Username = "admin",
-                    FullName = "Quản trị viên Hệ thống",
-                    Email = "admin@aquareflect.gov.vn",
-                    PhoneNumber = "0901234567",
-                    Role = UserRole.SuperAdmin,
-                    PasswordHash = adminPass.Hash,
-                    PasswordSalt = adminPass.Salt,
-                    IsActive = true
-                };
+                    usersToAdd.Add(new User
+                    {
+                        Username = username,
+                        FullName = fullName,
+                        Email = email,
+                        PhoneNumber = phone,
+                        Role = role,
+                        IsUnitLead = isUnitLead,
+                        DepartmentId = deptId,
+                        PasswordHash = pass.Hash,
+                        PasswordSalt = pass.Salt,
+                        IsActive = true
+                    });
+                }
+            }
 
-                var dispatcher = new User
-                {
-                    Username = "diepphoi",
-                    FullName = "Trần Thị Mai (Cán bộ Tiếp nhận CCTS)",
-                    Email = "tiepnhan@aquareflect.gov.vn",
-                    PhoneNumber = "0902345678",
-                    Role = UserRole.Dispatcher,
-                    DepartmentId = ccts?.Id,
-                    PasswordHash = canboPass.Hash,
-                    PasswordSalt = canboPass.Salt,
-                    IsActive = true
-                };
+            // Quản trị viên & Điều phối viên CCTS
+            EnsureUser("admin", "Quản trị viên Hệ thống", "admin@aquareflect.gov.vn", "0901234567", UserRole.SuperAdmin, false, null, adminPass);
+            EnsureUser("diepphoi", "Trần Thị Mai (Cán bộ Tiếp nhận CCTS)", "tiepnhan@aquareflect.gov.vn", "0902345678", UserRole.Dispatcher, false, ccts?.Id, canboPass);
 
-                var specialistLead = new User
-                {
-                    Username = "kiemngu",
-                    FullName = "Lê Hoàng Long (Đội trưởng Thanh tra Kiểm ngư)",
-                    Email = "kiemngu@aquareflect.gov.vn",
-                    PhoneNumber = "0903456789",
-                    Role = UserRole.Specialist,
-                    IsUnitLead = true,
-                    DepartmentId = ttkn?.Id,
-                    PasswordHash = canboPass.Hash,
-                    PasswordSalt = canboPass.Salt,
-                    IsActive = true
-                };
+            // Đơn vị 1: TTKN - Đội Thanh tra Chuyên ngành Thủy sản - Kiểm ngư
+            EnsureUser("kiemngu", "Lê Hoàng Long (Đội trưởng Thanh tra Kiểm ngư)", "kiemngu@aquareflect.gov.vn", "0903456789", UserRole.Specialist, true, ttkn?.Id, canboPass);
+            EnsureUser("kiemngu_cb", "Nguyễn Văn Thụ (Cán bộ Kiểm ngư địa bàn)", "kiemngu_cb@aquareflect.gov.vn", "0903456780", UserRole.Specialist, false, ttkn?.Id, canboPass);
+            EnsureUser("kiemngu_cb2", "Trần Minh Tuấn (Cán bộ Kiểm ngư tuần tra)", "kiemngu_cb2@aquareflect.gov.vn", "0903456781", UserRole.Specialist, false, ttkn?.Id, canboPass);
 
-                var specialistStaff = new User
-                {
-                    Username = "kiemngu_cb",
-                    FullName = "Nguyễn Văn Thụ (Cán bộ Kiểm ngư địa bàn)",
-                    Email = "kiemngu_cb@aquareflect.gov.vn",
-                    PhoneNumber = "0903456780",
-                    Role = UserRole.Specialist,
-                    IsUnitLead = false,
-                    DepartmentId = ttkn?.Id,
-                    PasswordHash = canboPass.Hash,
-                    PasswordSalt = canboPass.Salt,
-                    IsActive = true
-                };
+            // Đơn vị 2: PNTTS - Phòng Nuôi trồng Thủy sản
+            EnsureUser("nuoitrong_lead", "Phạm Thị Hoa (Trưởng phòng Nuôi trồng Thủy sản)", "nuoitrong_lead@aquareflect.gov.vn", "0904123001", UserRole.Specialist, true, pntts?.Id, canboPass);
+            EnsureUser("nuoitrong_cb1", "Bùi Văn An (Cán bộ Thụ lý Nuôi trồng 1)", "nuoitrong_cb1@aquareflect.gov.vn", "0904123002", UserRole.Specialist, false, pntts?.Id, canboPass);
+            EnsureUser("nuoitrong_cb2", "Lê Thị Lan (Cán bộ Thụ lý Nuôi trồng 2)", "nuoitrong_cb2@aquareflect.gov.vn", "0904123003", UserRole.Specialist, false, pntts?.Id, canboPass);
 
-                var citizen = new User
-                {
-                    Username = "ngudan",
-                    FullName = "Nguyễn Văn Ngư (Hộ nuôi tôm Đất Mũi)",
-                    Email = "ngudan@gmail.com",
-                    PhoneNumber = "0909888999",
-                    Role = UserRole.Citizen,
-                    PasswordHash = danPass.Hash,
-                    PasswordSalt = danPass.Salt,
-                    IsActive = true
-                };
+            // Đơn vị 3: QLMT - Đội Quản lý Môi trường Nước
+            EnsureUser("moitruong_lead", "Ngô Quang Minh (Đội trưởng Quản lý Môi trường Nước)", "moitruong_lead@aquareflect.gov.vn", "0905123001", UserRole.Specialist, true, qlmt?.Id, canboPass);
+            EnsureUser("moitruong_cb1", "Trần Thị Ngọc (Cán bộ Quan trắc Môi trường 1)", "moitruong_cb1@aquareflect.gov.vn", "0905123002", UserRole.Specialist, false, qlmt?.Id, canboPass);
+            EnsureUser("moitruong_cb2", "Phạm Văn Dũng (Cán bộ Giám sát Xả thải 2)", "moitruong_cb2@aquareflect.gov.vn", "0905123003", UserRole.Specialist, false, qlmt?.Id, canboPass);
 
-                context.Users.AddRange(admin, dispatcher, specialistLead, specialistStaff, citizen);
+            // Đơn vị 4: QLCL - Đội Quản lý Chất lượng Giống & Thức ăn
+            EnsureUser("chatluong_lead", "Huỳnh Thị Thu (Đội trưởng Quản lý Chất lượng Giống & Thức ăn)", "chatluong_lead@aquareflect.gov.vn", "0906123001", UserRole.Specialist, true, qlcl?.Id, canboPass);
+            EnsureUser("chatluong_cb1", "Nguyễn Minh Khải (Cán bộ Kiểm định Chất lượng 1)", "chatluong_cb1@aquareflect.gov.vn", "0906123002", UserRole.Specialist, false, qlcl?.Id, canboPass);
+            EnsureUser("chatluong_cb2", "Lê Văn Bình (Cán bộ Kiểm tra Thú y Thủy sản 2)", "chatluong_cb2@aquareflect.gov.vn", "0906123003", UserRole.Specialist, false, qlcl?.Id, canboPass);
+
+            // Đơn vị 5: HTCC - Đội Hạ tầng Cảng cá & Luồng lạch
+            EnsureUser("hatang_lead", "Đặng Văn Hùng (Đội trưởng Hạ tầng Cảng cá & Luồng lạch)", "hatang_lead@aquareflect.gov.vn", "0907123001", UserRole.Specialist, true, htcc?.Id, canboPass);
+            EnsureUser("hatang_cb1", "Võ Thị Phương (Cán bộ Quản lý Bến bãi Neo đậu 1)", "hatang_cb1@aquareflect.gov.vn", "0907123002", UserRole.Specialist, false, htcc?.Id, canboPass);
+            EnsureUser("hatang_cb2", "Trần Văn Khánh (Cán bộ Giám sát Cửa biển & Luồng tàu 2)", "hatang_cb2@aquareflect.gov.vn", "0907123003", UserRole.Specialist, false, htcc?.Id, canboPass);
+
+            // Người dân mẫu
+            EnsureUser("ngudan", "Nguyễn Văn Ngư (Hộ nuôi tôm Đất Mũi)", "ngudan@gmail.com", "0909888999", UserRole.Citizen, false, null, danPass);
+
+            if (usersToAdd.Count > 0)
+            {
+                context.Users.AddRange(usersToAdd);
                 await context.SaveChangesAsync();
+                logger.LogInformation("Đã khởi tạo bổ sung {Count} tài khoản người dùng mẫu.", usersToAdd.Count);
             }
 
             // 5. Seed Các phản ánh kiến nghị mẫu có tọa độ GPS thực địa tại Cà Mau

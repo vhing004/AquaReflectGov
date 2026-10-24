@@ -78,6 +78,14 @@ public class Petition : BaseEntity, IAuditableEntity
     public string? ResolutionSummary { get; set; }
     public ConclusionType? ConclusionType { get; set; }
 
+    // Nghiệm thu nội bộ đơn vị (Inspection Report)
+    public string? InspectionReport { get; set; }
+    public DateTime? InspectionReportSubmittedAt { get; set; }
+    public Guid? InspectionReportSubmittedByUserId { get; set; }
+    public DateTime? InspectionReportApprovedAt { get; set; }
+    public Guid? InspectionReportApprovedByUserId { get; set; }
+    public string? InspectionRejectionReason { get; set; }
+
     // Tóm tắt công khai (sau khi Dispatcher duyệt hiển thị ra bản đồ cộng đồng)
     public string? PublicSummary { get; set; }
 

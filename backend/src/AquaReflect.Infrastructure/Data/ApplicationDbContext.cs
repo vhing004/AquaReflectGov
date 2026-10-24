@@ -114,6 +114,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.NeedInfoReason).HasMaxLength(1000);
             entity.Property(e => e.PublicSummary).HasMaxLength(2000);
             entity.Property(e => e.ReopenReason).HasMaxLength(1000);
+            entity.Property(e => e.InspectionRejectionReason).HasMaxLength(2000);
 
             // Bỏ qua LocationGeometry nếu không có PostGIS C-extension trên host
             entity.Ignore(e => e.LocationGeometry);
