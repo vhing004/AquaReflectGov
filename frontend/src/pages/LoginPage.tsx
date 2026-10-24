@@ -2,7 +2,68 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { authApi } from '../api/authApi';
-import { Waves, LogIn, Lock, User, AlertCircle, Shield, Check } from 'lucide-react';
+import { Waves, Lock, User, AlertCircle, Shield, Star, Users, Building2, Loader2 } from 'lucide-react';
+
+// ─── Danh sách 18 tài khoản mẫu ─────────────────────────────────────────────
+type AccountGroup = 'admin' | 'lead' | 'specialist' | 'citizen';
+
+interface DemoAccount {
+  username: string;
+  password: string;
+  displayName: string;
+  subTitle: string;
+  group: AccountGroup;
+  color: string;
+}
+
+const DEMO_ACCOUNTS: DemoAccount[] = [
+  // Quản trị & Điều phối
+  { username: 'admin',           password: 'Admin@123', displayName: 'Quản trị viên HT',         subTitle: 'SuperAdmin',                    group: 'admin',      color: 'rose' },
+  { username: 'diepphoi',        password: 'Canbo@123', displayName: 'Trần Thị Mai',              subTitle: 'Tiếp nhận CCTS',               group: 'admin',      color: 'sky' },
+  // Trưởng các đơn vị
+  { username: 'kiemngu',         password: 'Canbo@123', displayName: 'Lê Hoàng Long',             subTitle: '⭐ Trưởng – Đội TT Kiểm ngư',  group: 'lead',       color: 'amber' },
+  { username: 'nuoitrong_lead',  password: 'Canbo@123', displayName: 'Phạm Thị Hoa',             subTitle: '⭐ Trưởng – P. Nuôi trồng TS', group: 'lead',       color: 'amber' },
+  { username: 'moitruong_lead',  password: 'Canbo@123', displayName: 'Ngô Quang Minh',           subTitle: '⭐ Trưởng – Đội QL MT Nước',   group: 'lead',       color: 'amber' },
+  { username: 'chatluong_lead',  password: 'Canbo@123', displayName: 'Huỳnh Thị Thu',            subTitle: '⭐ Trưởng – Đội QL Chất lượng',group: 'lead',       color: 'amber' },
+  { username: 'hatang_lead',     password: 'Canbo@123', displayName: 'Đặng Văn Hùng',            subTitle: '⭐ Trưởng – Đội HT Cảng cá',   group: 'lead',       color: 'amber' },
+  // Cán bộ chuyên viên
+  { username: 'kiemngu_cb',      password: 'Canbo@123', displayName: 'Nguyễn Văn Thụ',           subTitle: 'CB Kiểm ngư địa bàn',          group: 'specialist', color: 'indigo' },
+  { username: 'kiemngu_cb2',     password: 'Canbo@123', displayName: 'Trần Minh Tuấn',           subTitle: 'CB Kiểm ngư tuần tra',         group: 'specialist', color: 'indigo' },
+  { username: 'nuoitrong_cb1',   password: 'Canbo@123', displayName: 'Bùi Văn An',               subTitle: 'CB Thụ lý Nuôi trồng 1',       group: 'specialist', color: 'indigo' },
+  { username: 'nuoitrong_cb2',   password: 'Canbo@123', displayName: 'Lê Thị Lan',               subTitle: 'CB Thụ lý Nuôi trồng 2',       group: 'specialist', color: 'indigo' },
+  { username: 'moitruong_cb1',   password: 'Canbo@123', displayName: 'Trần Thị Ngọc',            subTitle: 'CB Quan trắc Môi trường 1',    group: 'specialist', color: 'indigo' },
+  { username: 'moitruong_cb2',   password: 'Canbo@123', displayName: 'Phạm Văn Dũng',            subTitle: 'CB Giám sát Xả thải 2',        group: 'specialist', color: 'indigo' },
+  { username: 'chatluong_cb1',   password: 'Canbo@123', displayName: 'Nguyễn Minh Khải',         subTitle: 'CB Kiểm định Chất lượng 1',    group: 'specialist', color: 'indigo' },
+  { username: 'chatluong_cb2',   password: 'Canbo@123', displayName: 'Lê Văn Bình',              subTitle: 'CB Kiểm tra Thú y TS 2',       group: 'specialist', color: 'indigo' },
+  { username: 'hatang_cb1',      password: 'Canbo@123', displayName: 'Võ Thị Phương',            subTitle: 'CB QL Bến bãi Neo đậu 1',      group: 'specialist', color: 'indigo' },
+  { username: 'hatang_cb2',      password: 'Canbo@123', displayName: 'Trần Văn Khánh',           subTitle: 'CB Giám sát Cửa biển 2',       group: 'specialist', color: 'indigo' },
+  // Công dân
+  { username: 'ngudan',          password: 'Dan@123',   displayName: 'Nguyễn Văn Ngư',           subTitle: 'Hộ nuôi tôm Đất Mũi',         group: 'citizen',    color: 'emerald' },
+];
+
+type FilterTab = 'all' | AccountGroup;
+
+const TABS: { key: FilterTab; label: string; icon: React.ReactNode }[] = [
+  { key: 'all',        label: 'Tất cả',       icon: <Users className="w-3 h-3" /> },
+  { key: 'admin',      label: 'Điều phối',    icon: <Shield className="w-3 h-3" /> },
+  { key: 'lead',       label: 'Trưởng ĐV',   icon: <Star className="w-3 h-3" /> },
+  { key: 'specialist', label: 'Chuyên viên',  icon: <Building2 className="w-3 h-3" /> },
+  { key: 'citizen',    label: 'Công dân',     icon: <User className="w-3 h-3" /> },
+];
+
+const GROUP_COLORS: Record<AccountGroup, string> = {
+  admin:      'bg-rose-100 text-rose-700 border-rose-200',
+  lead:       'bg-amber-100 text-amber-700 border-amber-200',
+  specialist: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+  citizen:    'bg-emerald-100 text-emerald-700 border-emerald-200',
+};
+
+const AVATAR_COLORS: Record<AccountGroup, string> = {
+  admin:      'from-rose-500 to-rose-400',
+  lead:       'from-amber-500 to-amber-400',
+  specialist: 'from-indigo-500 to-indigo-400',
+  citizen:    'from-emerald-500 to-emerald-400',
+};
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,14 +73,14 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [quickLoadingUser, setQuickLoadingUser] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Hàm login chung
+  const doLogin = async (u: string, p: string) => {
     setError(null);
-    setLoading(true);
-
     try {
-      const res = await authApi.login({ usernameOrEmail, password });
+      const res = await authApi.login({ usernameOrEmail: u, password: p });
       if (res.success && res.data) {
         setAuth(res.data);
         if (res.data.user.role === 'Citizen') {
@@ -37,157 +98,187 @@ export const LoginPage: React.FC = () => {
       } else {
         setError('Đã xảy ra lỗi kết nối máy chủ.');
       }
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleQuickLogin = (u: string, p: string) => {
-    setUsernameOrEmail(u);
-    setPassword(p);
+  // Submit từ form thủ công
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    await doLogin(usernameOrEmail, password);
+    setLoading(false);
   };
 
+  // 1-Click Login từ tài khoản mẫu
+  const handleDirectLogin = async (account: DemoAccount) => {
+    setQuickLoadingUser(account.username);
+    setUsernameOrEmail(account.username);
+    setPassword(account.password);
+    await doLogin(account.username, account.password);
+    setQuickLoadingUser(null);
+  };
+
+  const filteredAccounts = activeTab === 'all'
+    ? DEMO_ACCOUNTS
+    : DEMO_ACCOUNTS.filter((a) => a.group === activeTab);
+
   return (
-    <div className="max-w-md mx-auto my-12 px-4">
-      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200/80 p-8 space-y-6">
+    <div className="max-w-2xl mx-auto my-8 px-4">
+      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200/80 overflow-hidden">
+
         {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-cyan-500 flex items-center justify-center mx-auto shadow-md shadow-sky-500/20">
-            <Waves className="w-7 h-7 text-white" />
+        <div className="bg-gradient-to-br from-[#006194] to-[#0284c7] p-8 text-center text-white">
+          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Waves className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Đăng Nhập Hệ Thống</h2>
-          <p className="text-xs text-slate-500 font-medium">
-            Dành cho cán bộ Chi cục Thủy sản và người dân / tổ chức nuôi trồng
+          <h1 className="text-2xl font-bold tracking-tight">Đăng Nhập Hệ Thống</h1>
+          <p className="text-xs text-sky-200 mt-1.5 font-medium">
+            AquaReflect Gov — Hệ thống Quản lý Phản ánh Ngành Thủy sản Cà Mau
           </p>
         </div>
 
-        {error && (
-          <div className="flex items-start space-x-2.5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
+        <div className="p-6 space-y-5">
+          {/* Error banner */}
+          {error && (
+            <div className="flex items-start space-x-2.5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Tên đăng nhập hoặc Email
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <User className="w-4 h-4" />
+          {/* Form đăng nhập thủ công */}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Tên đăng nhập</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <User className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={usernameOrEmail}
+                    onChange={(e) => setUsernameOrEmail(e.target.value)}
+                    placeholder="username hoặc email"
+                    required
+                    className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                  />
+                </div>
               </div>
-              <input
-                type="text"
-                value={usernameOrEmail}
-                onChange={(e) => setUsernameOrEmail(e.target.value)}
-                placeholder="admin, diepphoi hoặc ngudan"
-                required
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-hidden focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <label className="block text-xs font-bold text-slate-700">Mật khẩu</label>
-              <a href="#forgot" className="text-xs font-semibold text-sky-600 hover:underline">
-                Quên mật khẩu?
-              </a>
-            </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Lock className="w-4 h-4" />
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Mật khẩu</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                  />
+                </div>
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-hidden focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
-              />
             </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-md shadow-sky-600/20 hover:scale-[1.01] transition-all flex items-center justify-center space-x-2 disabled:opacity-60"
-          >
-            {loading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            ) : (
-              <>
-                <LogIn className="w-4 h-4" />
+            <button
+              type="submit"
+              disabled={loading || !!quickLoadingUser}
+              className="w-full py-2.5 rounded-xl bg-[#006194] hover:bg-[#005580] text-white font-bold text-sm shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-60 cursor-pointer"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
                 <span>Đăng Nhập</span>
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Quick Demo Credentials */}
-        <div className="pt-4 border-t border-slate-100 space-y-2.5">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">
-            Tài Khoản Mẫu Trải Nghiệm Nhanh
-          </p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('admin', 'Admin@123')}
-              className="p-2 text-left rounded-xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 transition-colors"
-            >
-              <p className="font-bold text-slate-800 flex items-center space-x-1">
-                <Shield className="w-3 h-3 text-rose-500" />
-                <span>SuperAdmin</span>
-              </p>
-              <p className="text-[10px] text-slate-500">admin / Admin@123</p>
+              )}
             </button>
+          </form>
 
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('diepphoi', 'Canbo@123')}
-              className="p-2 text-left rounded-xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 transition-colors"
-            >
-              <p className="font-bold text-slate-800 flex items-center space-x-1">
-                <Check className="w-3 h-3 text-sky-500" />
-                <span>Tiếp Nhận CCTS</span>
-              </p>
-              <p className="text-[10px] text-slate-500">diepphoi / Canbo@123</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('kiemngu', 'Canbo@123')}
-              className="p-2 text-left rounded-xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 transition-colors"
-            >
-              <p className="font-bold text-slate-800 flex items-center space-x-1">
-                <Shield className="w-3 h-3 text-amber-500" />
-                <span>Thanh Tra Kiểm Ngư</span>
-              </p>
-              <p className="text-[10px] text-slate-500">kiemngu / Canbo@123</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('ngudan', 'Dan@123')}
-              className="p-2 text-left rounded-xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 transition-colors"
-            >
-              <p className="font-bold text-slate-800 flex items-center space-x-1">
-                <User className="w-3 h-3 text-emerald-500" />
-                <span>Ngư Dân Đất Mũi</span>
-              </p>
-              <p className="text-[10px] text-slate-500">ngudan / Dan@123</p>
-            </button>
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-100" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Hoặc đăng nhập nhanh 1 chạm
+              </span>
+            </div>
           </div>
-        </div>
 
-        <p className="text-center text-xs text-slate-600">
-          Chưa có tài khoản?{' '}
-          <Link to="/register" className="font-bold text-sky-600 hover:underline">
-            Đăng ký tài khoản công dân
-          </Link>
-        </p>
+          {/* Tab filter */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all cursor-pointer ${
+                  activeTab === tab.key
+                    ? 'bg-[#006194] text-white border-[#006194] shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+                <span className={`ml-0.5 px-1 rounded-full text-[9px] ${
+                  activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {tab.key === 'all' ? DEMO_ACCOUNTS.length : DEMO_ACCOUNTS.filter(a => a.group === tab.key).length}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Danh sách tài khoản */}
+          <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+            {filteredAccounts.map((account) => {
+              const isLoading = quickLoadingUser === account.username;
+              return (
+                <button
+                  key={account.username}
+                  type="button"
+                  disabled={!!quickLoadingUser}
+                  onClick={() => handleDirectLogin(account)}
+                  className={`relative flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer group ${
+                    isLoading
+                      ? 'border-sky-300 bg-sky-50 scale-[0.98]'
+                      : 'border-slate-200 hover:border-sky-300 hover:bg-sky-50/40 hover:shadow-sm'
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  {/* Avatar */}
+                  <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${AVATAR_COLORS[account.group]} flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm`}>
+                    {isLoading
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : account.displayName.charAt(account.displayName.lastIndexOf(' ') + 1)
+                    }
+                  </div>
+
+                  {/* Text */}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-slate-800 text-[11px] leading-tight truncate">
+                      {account.displayName}
+                    </p>
+                    <p className="text-[10px] text-slate-500 truncate leading-tight mt-0.5">
+                      {account.subTitle}
+                    </p>
+                    <span className={`inline-block mt-0.5 text-[9px] font-bold px-1.5 py-0 rounded-full border ${GROUP_COLORS[account.group]}`}>
+                      @{account.username}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="text-center text-xs text-slate-500">
+            Chưa có tài khoản?{' '}
+            <Link to="/register" className="font-bold text-sky-600 hover:underline">
+              Đăng ký tài khoản công dân
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
