@@ -21,6 +21,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { AdminPetitionsPage } from './pages/AdminPetitionsPage';
 import { AdminPetitionDetailPage } from './pages/AdminPetitionDetailPage';
 import { AdminGisMapPage } from './pages/AdminGisMapPage';
+import { UnitDashboardPage } from './pages/admin/UnitDashboardPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -140,6 +141,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher']}>
                     <AdminGisMapPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/unit-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['SuperAdmin', 'Specialist']}>
+                    <UnitDashboardPage />
                   </ProtectedRoute>
                 }
               />

@@ -16,7 +16,8 @@ import {
   AlertTriangle, 
   Globe, 
   FileText,
-  Compass
+  Compass,
+  Users
 } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 import { hasRole, PERMISSIONS } from '../../utils/permissions';
@@ -44,6 +45,7 @@ export const Navbar: React.FC = () => {
 
   const isOfficer = user && (user.role === 'SuperAdmin' || user.role === 'Dispatcher' || user.role === 'Specialist');
   const canViewGis = hasRole(user?.role, PERMISSIONS.GIS_COMMAND_CENTER);
+  const canViewUnitDashboard = user?.role === 'SuperAdmin' || (user?.role === 'Specialist' && user?.isUnitLead);
   const isSpecialist = user?.role === 'Specialist';
   const dashboardTitle = isSpecialist ? 'KPI Phòng Ban' : 'Điều Phối & Báo Cáo';
 
@@ -182,6 +184,16 @@ export const Navbar: React.FC = () => {
                           <Shield className="w-4 h-4 text-amber-600" />
                           <span>{dashboardTitle}</span>
                         </Link>
+                        {canViewUnitDashboard && (
+                          <Link
+                            to="/admin/unit-dashboard"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-indigo-800 hover:bg-indigo-50"
+                          >
+                            <Users className="w-4 h-4 text-indigo-600" />
+                            <span>Điều Phối Đơn Vị</span>
+                          </Link>
+                        )}
                         {canViewGis && (
                           <Link
                             to="/admin/gis-map"
@@ -280,6 +292,19 @@ export const Navbar: React.FC = () => {
                 <Shield className="w-3.5 h-3.5 text-amber-500" />
                 <span>{dashboardTitle}</span>
               </Link>
+              {canViewUnitDashboard && (
+                <Link
+                  to="/admin/unit-dashboard"
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                    location.pathname === '/admin/unit-dashboard'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Điều Phối Đơn Vị</span>
+                </Link>
+              )}
               {canViewGis && (
                 <Link
                   to="/admin/gis-map"
@@ -337,6 +362,16 @@ export const Navbar: React.FC = () => {
                 <Shield className="w-4 h-4 text-amber-600" />
                 <span>{dashboardTitle}</span>
               </Link>
+              {canViewUnitDashboard && (
+                <Link
+                  to="/admin/unit-dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-indigo-900 bg-indigo-50"
+                >
+                  <Users className="w-4 h-4 text-indigo-600" />
+                  <span>Điều Phối Đơn Vị</span>
+                </Link>
+              )}
               {canViewGis && (
                 <Link
                   to="/admin/gis-map"
