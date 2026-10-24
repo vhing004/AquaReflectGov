@@ -13,6 +13,7 @@ export type PetitionStatus =
   | 'Submitted'
   | 'Assigned'
   | 'Investigating'
+  | 'PendingApproval'
   | 'Resolved'
   | 'Rejected'
   | 'Closed'
@@ -377,6 +378,9 @@ export interface PetitionComment {
   petitionId: string;
   authorName: string;
   authorUserId?: string;
+  authorUsername?: string;
+  authorRoleName?: string;
+  authorIsUnitLead?: boolean;
   isInternal: boolean;
   content: string;
   createdAt: string;
@@ -417,6 +421,15 @@ export interface AdminPetitionDetail {
   isOverdue: boolean;
   remainingHours?: number;
   resolutionSummary?: string;
+  // Báo cáo nghiệm thu nội bộ
+  inspectionReport?: string;
+  inspectionReportSubmittedAt?: string;
+  inspectionReportSubmittedByUserId?: string;
+  inspectionReportSubmittedByName?: string;
+  inspectionReportApprovedAt?: string;
+  inspectionReportApprovedByUserId?: string;
+  inspectionReportApprovedByName?: string;
+  inspectionRejectionReason?: string;
   duplicateOfId?: string;
   duplicateOfTrackingCode?: string;
   forwardToOrganization?: string;
@@ -468,6 +481,7 @@ export interface DepartmentOfficer {
   workloadLevel: 'Low' | 'Medium' | 'High';
   isRecommended: boolean;
   isUnitLead?: boolean; // Cờ trưởng đơn vị
+  roleName?: string;
 }
 
 export interface SubmitAdditionalInfoResult {

@@ -154,5 +154,37 @@ export const adminApi = {
     );
     return response.data;
   },
+
+  /**
+   * Trưởng đơn vị phân công thành viên trong đơn vị thụ lý hồ sơ
+   */
+  assignMember: async (
+    petitionId: string,
+    data: { assignedUserId: string; note?: string }
+  ): Promise<ApiResponse<{
+    petitionId: string;
+    trackingCode: string;
+    departmentId?: string;
+    departmentName?: string;
+    assignedUserId: string;
+    assignedUserName: string;
+    message: string;
+  }>> => {
+    const response = await axiosClient.post(
+      `/admin/petitions/${petitionId}/assign-member`,
+      data
+    );
+    return response.data;
+  },
+
+  /**
+   * Lấy lịch sử trao đổi nội bộ của các cán bộ trong hồ sơ (Internal Thread)
+   */
+  getInternalThread: async (petitionId: string): Promise<ApiResponse<PetitionComment[]>> => {
+    const response = await axiosClient.get<ApiResponse<PetitionComment[]>>(
+      `/admin/petitions/${petitionId}/internal-thread`
+    );
+    return response.data;
+  },
 };
 
