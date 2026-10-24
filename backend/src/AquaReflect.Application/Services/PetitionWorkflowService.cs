@@ -82,13 +82,38 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 break;
 
             case PetitionStatus.Investigating:
-                // Chỉ cán bộ được giao hoặc SuperAdmin mới ban hành kết luận (Resolved)
-                if ((role == UserRole.Specialist && isAssignedToUser) || role == UserRole.SuperAdmin)
+                // Cán bộ thụ lý hoặc Trưởng đơn vị có thể nộp Báo cáo nghiệm thu (PendingApproval)
+                if (role == UserRole.Specialist)
                 {
+                    if (isAssignedToUser || isUnitLead)
+                    {
+                        result.Add(PetitionStatus.PendingApproval);
+                        result.Add(PetitionStatus.Resolved);
+                        result.Add(PetitionStatus.NeedInfo);
+                    }
+                }
+                else if (role == UserRole.SuperAdmin)
+                {
+                    result.Add(PetitionStatus.PendingApproval);
                     result.Add(PetitionStatus.Resolved);
                     result.Add(PetitionStatus.NeedInfo);
                 }
+
                 // Điều chuyển đơn vị khác
+                if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
+                {
+                    result.Add(PetitionStatus.Assigned);
+                }
+                break;
+
+            case PetitionStatus.PendingApproval:
+                // Trưởng đơn vị (isUnitLead) hoặc SuperAdmin: thẩm định báo cáo, xác nhận nghiệm thu & ban hành kết luận (Resolved)
+                // hoặc từ chối nghiệm thu trả về yêu cầu thẩm tra lại (Investigating)
+                if ((role == UserRole.Specialist && isUnitLead) || role == UserRole.SuperAdmin)
+                {
+                    result.Add(PetitionStatus.Resolved);
+                    result.Add(PetitionStatus.Investigating);
+                }
                 if (role == UserRole.Dispatcher || role == UserRole.SuperAdmin)
                 {
                     result.Add(PetitionStatus.Assigned);
@@ -217,12 +242,40 @@ public class PetitionWorkflowService : IPetitionWorkflowService
                 }
             }
 
-            // Kịch bản 3: Specialist cùng phòng ban nhưng không được giao gọi resolve
+            // Phân quyền nộp báo cáo nghiệm thu
+            if (toStatus == PetitionStatus.PendingApproval)
+            {
+                if (currentUserId.HasValue && petition.AssignedUserId.HasValue && petition.AssignedUserId.Value != currentUserId.Value && !isUnitLead)
+                {
+                    throw new ForbiddenException("Chỉ cán bộ chuyên viên được giao trực tiếp thụ lý hồ sơ này mới có quyền nộp báo cáo nghiệm thu.");
+                }
+            }
+
+            // Phân quyền ban hành kết luận / duyệt nghiệm thu
             if (toStatus == PetitionStatus.Resolved)
             {
-                if (currentUserId.HasValue && petition.AssignedUserId.HasValue && petition.AssignedUserId.Value != currentUserId.Value)
+                if (petition.Status == PetitionStatus.PendingApproval)
                 {
-                    throw new ForbiddenException("Chỉ cán bộ chuyên viên được giao trực tiếp thụ lý hồ sơ này mới có quyền ban hành kết luận.");
+                    if (!isUnitLead)
+                    {
+                        throw new ForbiddenException("Chỉ Trưởng đơn vị chuyên môn mới có quyền xác nhận nghiệm thu và ban hành kết luận chính thức.");
+                    }
+                }
+                else
+                {
+                    if (currentUserId.HasValue && petition.AssignedUserId.HasValue && petition.AssignedUserId.Value != currentUserId.Value && !isUnitLead)
+                    {
+                        throw new ForbiddenException("Chỉ cán bộ chuyên viên được giao trực tiếp thụ lý hồ sơ này mới có quyền ban hành kết luận.");
+                    }
+                }
+            }
+
+            // Phân quyền từ chối nghiệm thu, trả về thẩm tra lại
+            if (petition.Status == PetitionStatus.PendingApproval && toStatus == PetitionStatus.Investigating)
+            {
+                if (!isUnitLead)
+                {
+                    throw new ForbiddenException("Chỉ Trưởng đơn vị chuyên môn mới có quyền từ chối nghiệm thu và yêu cầu thẩm tra lại.");
                 }
             }
         }
@@ -311,6 +364,23 @@ public class PetitionWorkflowService : IPetitionWorkflowService
             }
         }
 
+        if (toStatus == PetitionStatus.PendingApproval)
+        {
+            var report = resolutionSummary ?? note;
+            if (string.IsNullOrWhiteSpace(report))
+            {
+                throw new ValidationException("Vui lòng nhập nội dung báo cáo nghiệm thu kết quả thẩm tra thực địa.");
+            }
+        }
+
+        if (petition.Status == PetitionStatus.PendingApproval && toStatus == PetitionStatus.Investigating)
+        {
+            if (string.IsNullOrWhiteSpace(note) || note.Trim().Length < 10)
+            {
+                throw new ValidationException("Vui lòng nêu rõ lý do từ chối nghiệm thu (tối thiểu 10 ký tự) để cán bộ thụ lý thực hiện bổ sung.");
+            }
+        }
+
         if (petition.Status == PetitionStatus.Resolved && toStatus == PetitionStatus.Investigating)
         {
             if (string.IsNullOrWhiteSpace(note) || note.Trim().Length < 10)
@@ -328,6 +398,9 @@ public class PetitionWorkflowService : IPetitionWorkflowService
             (PetitionStatus.Submitted, PetitionStatus.Assigned) => "Phân công cơ quan chuyên môn thụ lý",
             (PetitionStatus.Assigned, PetitionStatus.Assigned) => "Điều chuyển / Phân công lại cán bộ thụ lý",
             (PetitionStatus.Assigned, PetitionStatus.Investigating) => "Bắt đầu xác minh, kiểm tra thực địa",
+            (PetitionStatus.Investigating, PetitionStatus.PendingApproval) => "Nộp báo cáo nghiệm thu chờ Trưởng đơn vị phê duyệt",
+            (PetitionStatus.PendingApproval, PetitionStatus.Resolved) => "Trưởng đơn vị xác nhận nghiệm thu & Ban hành kết luận",
+            (PetitionStatus.PendingApproval, PetitionStatus.Investigating) => "Trưởng đơn vị yêu cầu thẩm tra, hoàn thiện lại báo cáo",
             (PetitionStatus.Investigating, PetitionStatus.Resolved) => "Ban hành kết luận & hoàn tất giải quyết",
             (PetitionStatus.Investigating, PetitionStatus.Assigned) => "Điều chuyển cơ quan do không thuộc thẩm quyền",
             (PetitionStatus.Resolved, PetitionStatus.Investigating) => "Yêu cầu xử lý lại kết quả giải quyết",
@@ -351,6 +424,7 @@ public class PetitionWorkflowService : IPetitionWorkflowService
         PetitionStatus.Submitted => "Mới tiếp nhận",
         PetitionStatus.Assigned => "Đã phân công",
         PetitionStatus.Investigating => "Đang xử lý",
+        PetitionStatus.PendingApproval => "Chờ duyệt nghiệm thu",
         PetitionStatus.Resolved => "Đã giải quyết",
         PetitionStatus.Rejected => "Từ chối thụ lý",
         PetitionStatus.Closed => "Đã đóng",

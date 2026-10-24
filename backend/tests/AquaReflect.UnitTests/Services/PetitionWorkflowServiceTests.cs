@@ -333,4 +333,91 @@ public class PetitionWorkflowServiceTests
         act.Should().Throw<BadRequestException>()
             .WithMessage("*chưa bước vào giai đoạn xác minh*");
     }
+
+    [Fact]
+    public void ValidateTransition_SpecialistMember_SubmitInspectionReport_ShouldSucceed()
+    {
+        var deptId = Guid.NewGuid();
+        var specialistId = Guid.NewGuid();
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            DepartmentId = deptId,
+            AssignedUserId = specialistId,
+            Status = PetitionStatus.Investigating
+        };
+
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.PendingApproval,
+            UserRole.Specialist,
+            userDepartmentId: deptId,
+            targetDepartmentId: null,
+            resolutionSummary: "Đã kiểm tra hiện trường, phát hiện vi phạm và lập biên bản.",
+            note: null,
+            isUnitLead: false,
+            currentUserId: specialistId
+        );
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void ValidateTransition_RegularSpecialist_ApproveReportToResolved_ShouldThrowForbidden()
+    {
+        var deptId = Guid.NewGuid();
+        var specialistId = Guid.NewGuid();
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            DepartmentId = deptId,
+            AssignedUserId = specialistId,
+            Status = PetitionStatus.PendingApproval
+        };
+
+        // Chuyên viên thường (isUnitLead = false) cố tự duyệt kết luận
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.Resolved,
+            UserRole.Specialist,
+            userDepartmentId: deptId,
+            targetDepartmentId: null,
+            resolutionSummary: "Kết luận chính thức",
+            note: null,
+            isUnitLead: false,
+            currentUserId: specialistId
+        );
+
+        act.Should().Throw<ForbiddenException>()
+            .WithMessage("*Chỉ Trưởng đơn vị chuyên môn mới có quyền xác nhận nghiệm thu*");
+    }
+
+    [Fact]
+    public void ValidateTransition_UnitLead_ApproveReportToResolved_ShouldSucceed()
+    {
+        var deptId = Guid.NewGuid();
+        var unitLeadId = Guid.NewGuid();
+        var petition = new Petition
+        {
+            Id = Guid.NewGuid(),
+            DepartmentId = deptId,
+            AssignedUserId = Guid.NewGuid(),
+            Status = PetitionStatus.PendingApproval
+        };
+
+        // Trưởng đơn vị (isUnitLead = true) duyệt kết luận
+        var act = () => _workflowService.ValidateTransition(
+            petition,
+            PetitionStatus.Resolved,
+            UserRole.Specialist,
+            userDepartmentId: deptId,
+            targetDepartmentId: null,
+            resolutionSummary: "Trưởng đơn vị phê duyệt báo cáo nghiệm thu và ban hành kết luận xử lý vi phạm.",
+            note: null,
+            isUnitLead: true,
+            currentUserId: unitLeadId
+        );
+
+        act.Should().NotThrow();
+    }
 }

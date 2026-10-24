@@ -18,6 +18,8 @@ public record DepartmentOfficerDto
     public int ActiveCaseCount { get; init; }
     public string WorkloadLevel { get; init; } = "Low"; // Low (0-2), Medium (3-5), High (>5)
     public bool IsRecommended { get; init; }
+    public bool IsUnitLead { get; init; }
+    public string RoleName { get; init; } = "Cán bộ";
 }
 
 public record GetDepartmentOfficersQuery(Guid DepartmentId) : IRequest<List<DepartmentOfficerDto>>;
@@ -93,7 +95,9 @@ public class GetDepartmentOfficersQueryHandler : IRequestHandler<GetDepartmentOf
                 DepartmentName = u.Department?.Name,
                 ActiveCaseCount = count,
                 WorkloadLevel = level,
-                IsRecommended = (count == minCount)
+                IsRecommended = (count == minCount),
+                IsUnitLead = u.IsUnitLead,
+                RoleName = u.IsUnitLead ? "Trưởng đơn vị" : "Thành viên"
             };
         })
         .OrderBy(x => x.ActiveCaseCount)

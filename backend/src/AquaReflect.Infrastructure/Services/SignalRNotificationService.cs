@@ -299,6 +299,7 @@ public class SignalRNotificationService : INotificationService
         PetitionStatus.Submitted => "Mới tiếp nhận",
         PetitionStatus.Assigned => "Đã phân công",
         PetitionStatus.Investigating => "Đang xử lý",
+        PetitionStatus.PendingApproval => "Chờ duyệt nghiệm thu",
         PetitionStatus.Resolved => "Đã giải quyết",
         PetitionStatus.Rejected => "Từ chối thụ lý",
         PetitionStatus.Closed => "Đã đóng",

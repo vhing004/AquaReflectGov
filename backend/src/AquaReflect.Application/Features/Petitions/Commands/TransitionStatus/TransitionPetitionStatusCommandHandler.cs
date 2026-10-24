@@ -187,14 +187,30 @@ public class TransitionPetitionStatusCommandHandler
                 petition.DueDate = await _workingDaysService.CalculateDueDateAsync(petition.CreatedAt, petition.PriorityLevel, cancellationToken);
             }
         }
+        else if (request.ToStatus == PetitionStatus.PendingApproval)
+        {
+            petition.InspectionReport = request.ResolutionSummary ?? request.Note;
+            petition.InspectionReportSubmittedAt = DateTime.UtcNow;
+            petition.InspectionReportSubmittedByUserId = _currentUser.UserId;
+        }
         else if (request.ToStatus == PetitionStatus.Resolved)
         {
+            if (previousStatus == PetitionStatus.PendingApproval)
+            {
+                petition.InspectionReportApprovedAt = DateTime.UtcNow;
+                petition.InspectionReportApprovedByUserId = _currentUser.UserId;
+            }
+
             petition.ResolvedAt = DateTime.UtcNow;
             petition.ResolutionSummary = request.ResolutionSummary;
         }
         else if (request.ToStatus == PetitionStatus.Closed)
         {
             petition.ClosedAt = DateTime.UtcNow;
+        }
+        else if (previousStatus == PetitionStatus.PendingApproval && request.ToStatus == PetitionStatus.Investigating)
+        {
+            petition.InspectionRejectionReason = request.Note?.Trim();
         }
         else if (previousStatus == PetitionStatus.Resolved && request.ToStatus == PetitionStatus.Investigating)
         {
@@ -294,6 +310,7 @@ public class TransitionPetitionStatusCommandHandler
         PetitionStatus.Submitted => "Mới tiếp nhận",
         PetitionStatus.Assigned => "Đã phân công",
         PetitionStatus.Investigating => "Đang xử lý",
+        PetitionStatus.PendingApproval => "Chờ duyệt nghiệm thu",
         PetitionStatus.Resolved => "Đã giải quyết",
         PetitionStatus.Rejected => "Từ chối thụ lý",
         PetitionStatus.Closed => "Đã đóng",

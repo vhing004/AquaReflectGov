@@ -87,6 +87,9 @@ public class AddPetitionCommentCommandHandler : IRequestHandler<AddPetitionComme
             PetitionId = comment.PetitionId,
             AuthorName = comment.AuthorName,
             AuthorUserId = comment.AuthorUserId,
+            AuthorUsername = _currentUser.Username,
+            AuthorRoleName = _currentUser.Role == UserRole.SuperAdmin ? "Quản trị viên" : (_currentUser.Role == UserRole.Dispatcher ? "Cán bộ Điều phối" : (_currentUser.IsUnitLead ? "Trưởng đơn vị" : "Cán bộ thụ lý")),
+            AuthorIsUnitLead = _currentUser.IsUnitLead,
             IsInternal = comment.IsInternal,
             Content = comment.Content,
             CreatedAt = comment.CreatedAt

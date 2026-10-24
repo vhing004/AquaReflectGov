@@ -58,6 +58,16 @@ public class AdminPetitionDetailDto
     public string? ConclusionTypeName { get; set; }
     public string? PublicSummary { get; set; }
 
+    // Báo cáo nghiệm thu nội bộ đơn vị
+    public string? InspectionReport { get; set; }
+    public DateTime? InspectionReportSubmittedAt { get; set; }
+    public Guid? InspectionReportSubmittedByUserId { get; set; }
+    public string? InspectionReportSubmittedByName { get; set; }
+    public DateTime? InspectionReportApprovedAt { get; set; }
+    public Guid? InspectionReportApprovedByUserId { get; set; }
+    public string? InspectionReportApprovedByName { get; set; }
+    public string? InspectionRejectionReason { get; set; }
+
     // Thông tin các luồng xử lý ngoại lệ
     public Guid? DuplicateOfId { get; set; }
     public string? DuplicateOfTrackingCode { get; set; }

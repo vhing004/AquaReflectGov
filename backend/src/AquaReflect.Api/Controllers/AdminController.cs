@@ -194,6 +194,51 @@ public class AdminController : BaseApiController
     }
 
     /// <summary>
+    /// Trưởng đơn vị phân công cán bộ thành viên trong đơn vị thụ lý hồ sơ
+    /// </summary>
+    /// <param name="id">ID hồ sơ phản ánh</param>
+    /// <param name="request">Thông tin thành viên được giao</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Kết quả phân công thành viên</returns>
+    [HttpPost("petitions/{id:guid}/assign-member")]
+    [ProducesResponseType(typeof(ApiResponse<AquaReflect.Application.Features.Petitions.Commands.AssignMember.AssignMemberResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AquaReflect.Application.Features.Petitions.Commands.AssignMember.AssignMemberResultDto>>> AssignMember(
+        Guid id,
+        [FromBody] AssignMemberRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AquaReflect.Application.Features.Petitions.Commands.AssignMember.AssignMemberCommand
+        {
+            PetitionId = id,
+            AssignedUserId = request.AssignedUserId,
+            Note = request.Note
+        };
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<AquaReflect.Application.Features.Petitions.Commands.AssignMember.AssignMemberResultDto>.Ok(result, result.Message));
+    }
+
+    /// <summary>
+    /// Lấy toàn bộ lịch sử trao đổi nội bộ của các cán bộ trong hồ sơ (Internal Thread)
+    /// </summary>
+    /// <param name="id">ID hồ sơ phản ánh</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Danh sách tin nhắn trao đổi nội bộ</returns>
+    [HttpGet("petitions/{id:guid}/internal-thread")]
+    [ProducesResponseType(typeof(ApiResponse<List<AquaReflect.Application.Features.Petitions.DTOs.PetitionCommentDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<AquaReflect.Application.Features.Petitions.DTOs.PetitionCommentDto>>>> GetInternalThread(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var query = new AquaReflect.Application.Features.Petitions.Queries.GetInternalThread.GetInternalThreadQuery(id);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(ApiResponse<List<AquaReflect.Application.Features.Petitions.DTOs.PetitionCommentDto>>.Ok(result));
+    }
+
+    /// <summary>
     /// Lấy danh sách cán bộ/chuyên viên thuộc phòng ban kèm chỉ số tải công việc (Workload Status) để tự động gợi ý phân công
     /// </summary>
     /// <param name="departmentId">ID phòng ban cần lấy danh sách cán bộ</param>
@@ -484,4 +529,10 @@ public class CreateOnBehalfRequest
     public AquaReflect.Domain.Enums.PriorityLevel? PriorityLevel { get; set; }
     public int ReceptionSource { get; set; }
     public List<IFormFile>? Files { get; set; }
+}
+
+public class AssignMemberRequest
+{
+    public Guid AssignedUserId { get; set; }
+    public string? Note { get; set; }
 }

@@ -16,4 +16,16 @@ public class DepartmentsController : BaseApiController
         var result = await Mediator.Send(new GetDepartmentsQuery(), cancellationToken);
         return HandleResult(result);
     }
+
+    /// <summary>
+    /// Lấy danh sách cán bộ/chuyên viên thuộc phòng ban kèm chỉ số tải công việc
+    /// </summary>
+    [HttpGet("{id:guid}/officers")]
+    public async Task<ActionResult<ApiResponse<List<AquaReflect.Application.Features.Departments.Queries.GetDepartmentOfficers.DepartmentOfficerDto>>>> GetDepartmentOfficers(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await Mediator.Send(new AquaReflect.Application.Features.Departments.Queries.GetDepartmentOfficers.GetDepartmentOfficersQuery(id), cancellationToken);
+        return HandleResult(ApiResponse<List<AquaReflect.Application.Features.Departments.Queries.GetDepartmentOfficers.DepartmentOfficerDto>>.Ok(result));
+    }
 }

@@ -156,6 +156,14 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
             },
             PublicSummary = petition.PublicSummary,
 
+            // Báo cáo nghiệm thu nội bộ
+            InspectionReport = petition.InspectionReport,
+            InspectionReportSubmittedAt = petition.InspectionReportSubmittedAt,
+            InspectionReportSubmittedByUserId = petition.InspectionReportSubmittedByUserId,
+            InspectionReportApprovedAt = petition.InspectionReportApprovedAt,
+            InspectionReportApprovedByUserId = petition.InspectionReportApprovedByUserId,
+            InspectionRejectionReason = petition.InspectionRejectionReason,
+
             // Thông tin ngoại lệ
             DuplicateOfId = petition.DuplicateOfId,
             DuplicateOfTrackingCode = duplicateOfTrackingCode,
@@ -270,6 +278,7 @@ public class GetAdminPetitionDetailQueryHandler : IRequestHandler<GetAdminPetiti
         PetitionStatus.Submitted => "Mới tiếp nhận",
         PetitionStatus.Assigned => "Đã phân công",
         PetitionStatus.Investigating => "Đang xác minh & xử lý",
+        PetitionStatus.PendingApproval => "Chờ duyệt nghiệm thu",
         PetitionStatus.Resolved => "Đã giải quyết",
         PetitionStatus.Rejected => "Từ chối tiếp nhận",
         PetitionStatus.Closed => "Đã đóng",
