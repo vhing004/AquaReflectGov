@@ -5,6 +5,7 @@ import { petitionApi } from '../api/petitionApi';
 import { WithdrawPetitionModal } from '../components/petition/WithdrawPetitionModal';
 import { SubmitAdditionalInfoModal } from '../components/petition/SubmitAdditionalInfoModal';
 import { ReopenRequestModal } from '../components/ReopenRequestModal';
+import { useAuthStore } from '../store/useAuthStore';
 import type { PetitionTrackingDetail, PetitionSummary } from '../types';
 import { 
   Search, 
@@ -47,12 +48,13 @@ interface RecentSearchItem {
 }
 
 export const TrackPetitionPage: React.FC = () => {
+  const { user, isAuthenticated } = useAuthStore();
   const { code: paramCode } = useParams<{ code?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCode = paramCode || searchParams.get('code') || '';
 
   const [searchMode, setSearchMode] = useState<'code' | 'phone'>('code');
-  const [queryInput, setQueryInput] = useState(initialCode || 'TS-202609-HGZH4');
+  const [queryInput, setQueryInput] = useState(initialCode || (user?.role === 'Citizen' && user?.phoneNumber ? user.phoneNumber : 'TS-202609-HGZH4'));
   const [phoneVerification, setPhoneVerification] = useState('');
 
   // States for Code search result
@@ -140,6 +142,15 @@ export const TrackPetitionPage: React.FC = () => {
       handleSearchCode(initialCode);
     }
   }, [initialCode]);
+
+  // [Yêu cầu 5] Đối với các công dân đã có tài khoản thì ở trang tra cứu tiến độ sẽ show các phản ánh của mình luôn
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'Citizen' && user?.phoneNumber && !initialCode) {
+      setSearchMode('phone');
+      setQueryInput(user.phoneNumber);
+      handleSearchPhone(user.phoneNumber);
+    }
+  }, [isAuthenticated, user?.role, user?.phoneNumber, initialCode]);
 
   // Generate QR code when trackingDetail changes
   useEffect(() => {
@@ -387,6 +398,39 @@ export const TrackPetitionPage: React.FC = () => {
           Kiểm tra trực tuyến quy trình 4 giai đoạn từ tiếp nhận, thẩm tra thực địa, giám sát hải trình VMS đến quyết định kết luận chính thức có số hiệu đóng dấu.
         </p>
       </div>
+
+      {/* [Yêu cầu 5] Banner chào mừng công dân & hiển thị tự động hồ sơ cá nhân */}
+      {isAuthenticated && user?.role === 'Citizen' && (
+        <div className="max-w-3xl mx-auto bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 p-4 sm:p-5 rounded-3xl border border-blue-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+              👤
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Hồ sơ phản ánh của {user.fullName}
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                  Công dân xác thực
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Tài khoản liên kết số điện thoại <strong>{user.phoneNumber}</strong>. Toàn bộ phản ánh của bạn được tự động hiển thị bên dưới.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => user.phoneNumber && handleSearchPhone(user.phoneNumber)}
+            className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Tải lại hồ sơ của tôi</span>
+          </button>
+        </div>
+      )}
 
       {/* 3. SEARCH BOX WITH TAB SWITCH */}
       <div className="max-w-3xl mx-auto bg-white p-6 sm:p-7 rounded-3xl border border-slate-200 shadow-xs space-y-5 print:hidden">

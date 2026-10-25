@@ -509,6 +509,24 @@ public static class ApplicationDbContextSeed
                 logger.LogInformation("Khởi tạo 06 phản ánh kiến nghị mẫu kèm tọa độ GPS thành công!");
             }
 
+            // Đảm bảo tài khoản công dân ngudan (0909888999) có hồ sơ phản ánh
+            var existingNgudanPetitions = await context.Petitions.Where(p => p.CitizenPhone == "0909888999").ToListAsync();
+            if (!existingNgudanPetitions.Any())
+            {
+                var sampleP = await context.Petitions.Take(2).ToListAsync();
+                foreach (var p in sampleP)
+                {
+                    p.CitizenPhone = "0909888999";
+                    p.CitizenName = "Nguyễn Văn Ngư (Hộ nuôi tôm Đất Mũi)";
+                    p.CitizenEmail = "ngudan@gmail.com";
+                }
+                if (sampleP.Any())
+                {
+                    await context.SaveChangesAsync();
+                    logger.LogInformation("Đã liên kết hồ sơ phản ánh mẫu cho tài khoản công dân ngudan (0909888999).");
+                }
+            }
+
             // 7. Seed Đánh giá mức độ hài lòng của công dân (CitizenFeedback)
             if (!await context.CitizenFeedbacks.AnyAsync())
             {
