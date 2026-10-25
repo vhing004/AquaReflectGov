@@ -3,7 +3,9 @@ import {
   Send, 
   MessageSquare, 
   ShieldAlert, 
-  Loader2 
+  Loader2,
+  Network,
+  Users
 } from 'lucide-react';
 import { adminApi } from '../../api/adminApi';
 import { signalRService } from '../../api/signalrService';
@@ -21,6 +23,7 @@ interface InternalThreadPanelProps {
 export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
   petitionId,
   trackingCode = '',
+  departmentName = 'Đơn vị chuyên trách',
   currentUser,
   initialComments = [],
 }) => {
@@ -34,6 +37,15 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
   const [isSending, setIsSending] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Phân quyền kênh chat theo Yêu cầu 1:
+  // - Kênh chung điều phối: chỉ dành cho Trưởng phòng/Trưởng đơn vị (isUnitLead), Cán bộ tiếp nhận (Dispatcher), và Admin (SuperAdmin).
+  // - Chuyên viên xử lý (!isUnitLead): chỉ có quyền trong Kênh trao đổi nội bộ đơn vị.
+  const canAccessCoordination = activeUser?.role === 'SuperAdmin' || 
+    activeUser?.role === 'Dispatcher' || 
+    (activeUser?.role === 'Specialist' && activeUser?.isUnitLead);
+
+  const [activeChannel, setActiveChannel] = useState<'unit' | 'coordination'>('unit');
 
   // Tải danh sách comment ban đầu nếu chưa có
   useEffect(() => {
@@ -66,7 +78,7 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
   // Tự động cuộn xuống cuối khi có tin nhắn mới
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [comments]);
+  }, [comments, activeChannel]);
 
   const loadThread = async () => {
     setIsLoading(true);
@@ -89,19 +101,36 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
     setIsSending(true);
     setErrorMessage(null);
 
+    // Nếu đang ở kênh điều phối chung, thêm tiền tố nhận diện
+    const formattedContent = activeChannel === 'coordination' 
+      ? `[ĐIỀU PHỐI CHUNG] ${content.trim()}`
+      : content.trim();
+
     try {
-      const res = await adminApi.addComment(petitionId, content.trim());
+      const res = await adminApi.addComment(petitionId, formattedContent);
       if (res.success && res.data) {
         setComments(prev => [...prev, res.data]);
         setContent('');
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setErrorMessage(error.response?.data?.message || 'Không thể gửi tin nhắn trao đổi nội bộ.');
+      setErrorMessage(error.response?.data?.message || 'Không thể gửi tin nhắn trao đổi.');
     } finally {
       setIsSending(false);
     }
   };
+
+  // Phân tách tin nhắn theo kênh
+  const isCoordinationMessage = (comment: PetitionComment) => {
+    return comment.content.startsWith('[ĐIỀU PHỐI CHUNG]') || 
+      comment.authorRoleName?.includes('Điều phối') ||
+      comment.authorRoleName?.includes('Quản trị viên');
+  };
+
+  const unitComments = comments.filter(c => !isCoordinationMessage(c));
+  const coordComments = comments.filter(c => isCoordinationMessage(c));
+
+  const currentDisplayComments = activeChannel === 'unit' ? unitComments : coordComments;
 
   const getAvatarBg = (name: string) => {
     const colors = ['bg-blue-600', 'bg-emerald-600', 'bg-indigo-600', 'bg-cyan-600', 'bg-amber-600', 'bg-rose-600', 'bg-teal-600', 'bg-violet-600'];
@@ -142,55 +171,100 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col h-[520px] overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-3.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-            <MessageSquare className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-              Kênh Trao Đổi Nghiệp Vụ Nội Bộ
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-100 text-blue-700">
-                {comments.length} tin
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col h-[540px] overflow-hidden">
+      {/* Header & Channel Selector */}
+      <div className="bg-slate-50/90 border-b border-slate-200">
+        {/* Channel Tabs */}
+        <div className="px-4 pt-3 flex items-center justify-between gap-2 border-b border-slate-200/60 pb-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setActiveChannel('unit')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeChannel === 'unit'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Nội Bộ Đơn Vị ({departmentName})</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                activeChannel === 'unit' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-600'
+              }`}>
+                {unitComments.length}
               </span>
-            </h4>
-            <p className="text-[11px] text-slate-500">
-              Chỉ các cán bộ trong đơn vị và cán bộ điều phối mới có quyền xem kênh này
-            </p>
+            </button>
+
+            {canAccessCoordination && (
+              <button
+                type="button"
+                onClick={() => setActiveChannel('coordination')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeChannel === 'coordination'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
+                }`}
+              >
+                <Network className="w-3.5 h-3.5" />
+                <span>Kênh Điều Phối Chung (Cấp Phòng)</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                  activeChannel === 'coordination' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {coordComments.length}
+                </span>
+              </button>
+            )}
+          </div>
+
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Real-time SignalR
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 font-medium">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Real-time SignalR
+        {/* Channel Description Banner */}
+        <div className="px-4 py-2 bg-slate-100/60 text-[11px] text-slate-500 flex items-center justify-between">
+          <span>
+            {activeChannel === 'unit' ? (
+              <>🏢 Kênh riêng của <strong>{departmentName}</strong>: Trưởng đơn vị và các thành viên trao đổi nghiệp vụ để giải quyết hồ sơ.</>
+            ) : (
+              <>🌐 Kênh điều phối chung: Nơi các <strong>Trưởng phòng đơn vị</strong> giao tiếp, báo cáo với <strong>Cán bộ tiếp nhận</strong> và <strong>Admin</strong>.</>
+            )}
+          </span>
+          <span className="font-semibold text-slate-600">Mã HS: {trackingCode}</span>
         </div>
       </div>
 
       {/* Messages area */}
       <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50/30">
-        {isLoading && comments.length === 0 ? (
+        {isLoading && currentDisplayComments.length === 0 ? (
           <div className="h-full flex items-center justify-center text-slate-400 gap-2">
             <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
             <span className="text-sm">Đang tải trao đổi nội bộ...</span>
           </div>
-        ) : comments.length === 0 ? (
+        ) : currentDisplayComments.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
               <MessageSquare className="w-6 h-6" />
             </div>
-            <p className="text-sm font-medium text-slate-600">Chưa có trao đổi nào</p>
+            <p className="text-sm font-medium text-slate-600">
+              {activeChannel === 'unit' ? 'Chưa có trao đổi nội bộ đơn vị nào' : 'Chưa có trao đổi điều phối chung nào'}
+            </p>
             <p className="text-xs text-slate-400 mt-1 max-w-sm">
-              Trưởng đơn vị và các thành viên có thể nhắn tin chỉ đạo, cập nhật tiến độ kiểm tra thực địa hoặc phối hợp xử lý tại đây.
+              {activeChannel === 'unit' 
+                ? 'Trưởng đơn vị và các thành viên trong đơn vị có thể nhắn tin chỉ đạo, cập nhật tiến độ kiểm tra thực địa hoặc phối hợp xử lý tại đây.'
+                : 'Trưởng các phòng ban giao tiếp với Cán bộ tiếp nhận (Điều phối) và Quản trị viên tại đây.'}
             </p>
           </div>
         ) : (
-          comments.map((comment) => {
+          currentDisplayComments.map((comment) => {
             const isMe = activeUser && (
               (comment.authorUserId && comment.authorUserId === activeUser.id) ||
               (comment.authorUsername && comment.authorUsername.toLowerCase() === (activeUser.username || activeUser.email || '').toLowerCase())
             );
+
+            // Xóa prefix [ĐIỀU PHỐI CHUNG] khi hiển thị cho đẹp
+            const cleanContent = comment.content.replace(/^\[ĐIỀU PHỐI CHUNG\]\s*/, '');
 
             return (
               <div 
@@ -216,6 +290,11 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
                         Trưởng đơn vị
                       </span>
                     )}
+                    {comment.authorRoleName && !comment.authorIsUnitLead && (
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                        {comment.authorRoleName}
+                      </span>
+                    )}
                     <span className="text-slate-400">
                       • {formatTimestamp(comment.createdAt)}
                     </span>
@@ -223,10 +302,10 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
 
                   <div className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${
                     isMe 
-                      ? 'bg-blue-600 text-white rounded-tr-none' 
+                      ? (activeChannel === 'coordination' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-blue-600 text-white rounded-tr-none')
                       : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none'
                   }`}>
-                    {comment.content}
+                    {cleanContent}
                   </div>
                 </div>
               </div>
@@ -249,14 +328,22 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
             type="text"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder={`Nhập trao đổi nghiệp vụ cho hồ sơ ${trackingCode}...`}
+            placeholder={
+              activeChannel === 'unit'
+                ? `Nhắn tin nội bộ ${departmentName} về hồ sơ ${trackingCode}...`
+                : `Báo cáo / trao đổi với Cán bộ tiếp nhận & Quản trị viên...`
+            }
             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
           />
 
           <button
             type="submit"
             disabled={!content.trim() || isSending}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm shadow-blue-600/20 transition-all flex-shrink-0"
+            className={`px-4 py-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-all flex-shrink-0 cursor-pointer ${
+              activeChannel === 'coordination'
+                ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+                : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+            }`}
           >
             {isSending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
