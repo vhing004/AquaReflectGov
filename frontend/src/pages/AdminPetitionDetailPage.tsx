@@ -92,6 +92,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
   const petition = response?.data;
 
   // Tính toán quyền hạn theo State Machine và Vai trò
+  // [Yêu cầu 4] Tính năng Luân chuyển trạng thái chỉ dành cho cán bộ tiếp nhận (điều phối / admin)
   const canTransition = (() => {
     if (!petition || petition.status === 6 || !user) return false;
     // Chống xung đột lợi ích: Cán bộ không được thao tác trên đơn của chính mình
@@ -101,14 +102,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     if (user.role === 'Dispatcher') {
       return petition.status >= 1 && petition.status <= 5;
     }
-    if (user.role === 'Specialist') {
-      const isSameDept = canAccessPetition(user.role, user.departmentId, petition.departmentId);
-      if (!isSameDept) return false;
-      // Trưởng đơn vị được phân công (status=2) hoặc trả đơn (status=2)
-      if (user.isUnitLead && petition.status === 2) return true;
-      // Chuyên viên phụ trách được chuyển trạng thái khi đang thụ lý
-      return petition.status === 3;
-    }
+    // Cán bộ chuyên môn (Specialist) không có thẩm quyền luân chuyển trạng thái tự do, ẩn đi
     return false;
   })();
 
@@ -118,7 +112,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     // Tuần tự: Phải đang ở giai đoạn Thẩm tra (Investigating = 3)
     if (petition.status !== 3) return false;
     if (user.role === 'SuperAdmin') return true;
-    if (user.role === 'Specialist') {
+    if (user.role === 'Specialist' && user.isUnitLead) {
       return canAccessPetition(user.role, user.departmentId, petition.departmentId);
     }
     return false;
@@ -134,16 +128,33 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return false;
   })();
 
-  // [Task 4.1] Quyền bắt đầu thẩm tra thực địa (Chuyển Assigned 2 -> Investigating 3)
+  // [Yêu cầu 3] Nút Bắt đầu thẩm tra: chỉ xuất hiện ở nhân viên xử lý khi trưởng đơn vị điều phối cho nhân viên của mình
   const canBeginInvestigation = (() => {
     if (!petition || petition.status !== 2 || !user) return false;
     if (petition.isConflictOfInterest) return false;
     if (user.role === 'SuperAdmin') return true;
     if (user.role === 'Specialist') {
+      const isSameDept = canAccessPetition(user.role, user.departmentId, petition.departmentId);
+      if (!isSameDept) return false;
+      // Chỉ xuất hiện khi đã được phân công nhân viên và người đăng nhập chính là nhân viên đó
+      return !!petition.assignedUserId && petition.assignedUserId === user.id;
+    }
+    return false;
+  })();
+
+  // [Yêu cầu 2] Quyền ban hành/chỉnh sửa văn bản kết luận: chỉ Trưởng đơn vị phụ trách hoặc SuperAdmin
+  const canManageResolution = (() => {
+    if (!petition || !user) return false;
+    if (petition.isConflictOfInterest) return false;
+    if (user.role === 'SuperAdmin') return true;
+    if (user.role === 'Specialist' && user.isUnitLead) {
       return canAccessPetition(user.role, user.departmentId, petition.departmentId);
     }
     return false;
   })();
+
+  // [Yêu cầu 2] Điều kiện hiển thị khối Văn bản kết luận: chỉ khi đã nghiệm thu xong hoặc đã có kết luận
+  const isInspectionCompleted = !!petition?.inspectionReportApprovedAt || petition?.status === 5 || petition?.status === 6 || !!petition?.resolution;
 
   // [Task 4.1] Quyền lập biên bản / ghi chú thực địa kèm ảnh GPS
   const canAddInspectionNote = (() => {
@@ -1050,172 +1061,178 @@ export const AdminPetitionDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* D. Khối Kết Luận Giải Quyết Chính Thức (Official Resolution) */}
-            <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700">
-                    <Shield className="w-4 h-4" />
+            {/* D. Khối Kết Luận Giải Quyết Chính Thức (Official Resolution) - [Yêu cầu 2] Chỉ hiển thị khi đã nghiệm thu xong */}
+            {isInspectionCompleted && (
+              <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700">
+                      <Shield className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900">Văn Bản Kết Luận & Quyết Định Xử Lý</h2>
+                      <p className="text-[11px] text-slate-500">
+                        Kết luận chính thức của cơ quan thẩm quyền ban hành đến công dân
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-900">Văn Bản Kết Luận & Quyết Định Xử Lý</h2>
-                    <p className="text-[11px] text-slate-500">
-                      Kết luận chính thức của cơ quan thẩm quyền ban hành đến công dân
-                    </p>
-                  </div>
+
+                  {petition.resolution && canManageResolution && (
+                    <button
+                      onClick={() => setIsResolutionOpen(true)}
+                      className="text-xs font-bold text-sky-700 hover:text-sky-900 cursor-pointer"
+                    >
+                      Chỉnh sửa văn bản
+                    </button>
+                  )}
                 </div>
 
-                {petition.resolution && (
-                  <button
-                    onClick={() => setIsResolutionOpen(true)}
-                    className="text-xs font-bold text-sky-700 hover:text-sky-900"
-                  >
-                    Chỉnh sửa văn bản
-                  </button>
-                )}
-              </div>
+                {petition.resolution ? (
+                  <div className="bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-sky-50/40 border-2 border-emerald-200/90 rounded-2xl p-5 space-y-3 relative overflow-hidden shadow-xs">
+                    {/* Watermark seal */}
+                    <div className="absolute right-3 -bottom-4 opacity-10 pointer-events-none">
+                      <Shield className="w-36 h-36 text-emerald-900" />
+                    </div>
 
-              {petition.resolution ? (
-                <div className="bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-sky-50/40 border-2 border-emerald-200/90 rounded-2xl p-5 space-y-3 relative overflow-hidden shadow-xs">
-                  {/* Watermark seal */}
-                  <div className="absolute right-3 -bottom-4 opacity-10 pointer-events-none">
-                    <Shield className="w-36 h-36 text-emerald-900" />
-                  </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-md text-xs font-extrabold bg-emerald-600 text-white shadow-xs">
+                          {petition.resolution.documentNumber || 'VĂN BẢN KẾT LUẬN CHÍNH THỨC'}
+                        </span>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2.5 py-1 rounded-md text-xs font-extrabold bg-emerald-600 text-white shadow-xs">
-                        {petition.resolution.documentNumber || 'VĂN BẢN KẾT LUẬN CHÍNH THỨC'}
-                      </span>
+                        {/* [Task 4.2] Badge phân loại kết luận pháp lý */}
+                        {petition.conclusionType === 1 || petition.conclusionType === 'Valid' || petition.resolution.conclusionType === 1 ? (
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            ✓ Đúng sự thật
+                          </span>
+                        ) : petition.conclusionType === 2 || petition.conclusionType === 'PartiallyValid' || petition.resolution.conclusionType === 2 ? (
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                            ⚠ Đúng một phần
+                          </span>
+                        ) : petition.conclusionType === 3 || petition.conclusionType === 'InsufficientEvidence' || petition.resolution.conclusionType === 3 ? (
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                            ✕ Không đủ căn cứ / Sai sự thật
+                          </span>
+                        ) : null}
 
-                      {/* [Task 4.2] Badge phân loại kết luận pháp lý */}
-                      {petition.conclusionType === 1 || petition.conclusionType === 'Valid' || petition.resolution.conclusionType === 1 ? (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          ✓ Đúng sự thật
-                        </span>
-                      ) : petition.conclusionType === 2 || petition.conclusionType === 'PartiallyValid' || petition.resolution.conclusionType === 2 ? (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                          ⚠ Đúng một phần
-                        </span>
-                      ) : petition.conclusionType === 3 || petition.conclusionType === 'InsufficientEvidence' || petition.resolution.conclusionType === 3 ? (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
-                          ✕ Không đủ căn cứ / Sai sự thật
-                        </span>
-                      ) : null}
+                        {/* [Task 4.2] Chốt mốc SLA giải quyết */}
+                        {petition.isOverdue ? (
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-rose-500 text-white shadow-xs">
+                            Quá hạn SLA
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-teal-600 text-white shadow-xs">
+                            Đúng hạn SLA
+                          </span>
+                        )}
 
-                      {/* [Task 4.2] Chốt mốc SLA giải quyết */}
-                      {petition.isOverdue ? (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-rose-500 text-white shadow-xs">
-                          Quá hạn SLA
+                        <span className="text-[11px] text-slate-500">
+                          Ban hành: {new Date(petition.resolution.issuedAt).toLocaleString('vi-VN')}
                         </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-teal-600 text-white shadow-xs">
-                          Đúng hạn SLA
+                      </div>
+
+                      {petition.resolution.approvedByName && (
+                        <span className="text-xs font-semibold text-slate-700">
+                          Người ký: <strong className="text-slate-900">{petition.resolution.approvedByName}</strong>
                         </span>
                       )}
-
-                      <span className="text-[11px] text-slate-500">
-                        Ban hành: {new Date(petition.resolution.issuedAt).toLocaleString('vi-VN')}
-                      </span>
                     </div>
 
-                    {petition.resolution.approvedByName && (
-                      <span className="text-xs font-semibold text-slate-700">
-                        Người ký: <strong className="text-slate-900">{petition.resolution.approvedByName}</strong>
-                      </span>
+                    <div className="text-sm text-slate-800 leading-relaxed font-medium bg-white/90 p-4 rounded-xl border border-emerald-100 shadow-xs whitespace-pre-line">
+                      {petition.resolution.conclusionText}
+                    </div>
+
+                    {/* [Task 4.2] Khung Tóm tắt công khai (Public Summary) */}
+                    {(petition.publicSummary || petition.resolution.publicSummary) && (
+                      <div className="bg-sky-50/80 border border-sky-200/80 rounded-xl p-3.5 space-y-1 text-xs">
+                        <div className="flex items-center space-x-1.5 font-bold text-[#006194]">
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Tóm tắt công khai hiển thị cho công dân & bản đồ GIS:</span>
+                        </div>
+                        <p className="text-slate-700 leading-relaxed font-medium pl-5">
+                          {petition.publicSummary || petition.resolution.publicSummary}
+                        </p>
+                      </div>
+                    )}
+
+                    {petition.resolution.officialDocumentUrl && (
+                      <div className="pt-2 flex items-center justify-between">
+                        <div className="flex items-center space-x-2 text-xs font-bold text-emerald-900">
+                          <FileCheck2 className="w-4 h-4 text-emerald-600" />
+                          <span>Văn bản có con dấu / Ký số:</span>
+                        </div>
+                        <a
+                          href={petition.resolution.officialDocumentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition-all"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Tải văn bản chính thức</span>
+                        </a>
+                      </div>
+                    )}
+
+                    {/* [Task 5.1] Dispatcher Quality Gate Review Bar */}
+                    {canReviewResolution && (
+                      <div className="mt-4 pt-4 border-t border-emerald-300/60 bg-white/90 backdrop-blur-xs p-4 rounded-2xl border border-emerald-200/80 space-y-3">
+                        <div className="flex items-center space-x-2 text-xs font-bold text-slate-900">
+                          <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                          <span>Khu vực Kiểm duyệt của Điều phối viên (Quality Gate):</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          Chuyên viên đã ban hành kết luận giải quyết. Vui lòng rà soát tính chuẩn xác của kết quả trước khi phê duyệt đóng đơn hoặc gửi yêu cầu khắc phục lại.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                          <button
+                            onClick={() => {
+                              setReviewModalMode('close');
+                              setIsReviewModalOpen(true);
+                            }}
+                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Phê duyệt & Đóng hồ sơ</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setReviewModalMode('rework');
+                              setIsReviewModalOpen(true);
+                            }}
+                            className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                            <span>Yêu cầu xử lý lại (Rework)</span>
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
-
-                  <div className="text-sm text-slate-800 leading-relaxed font-medium bg-white/90 p-4 rounded-xl border border-emerald-100 shadow-xs whitespace-pre-line">
-                    {petition.resolution.conclusionText}
-                  </div>
-
-                  {/* [Task 4.2] Khung Tóm tắt công khai (Public Summary) */}
-                  {(petition.publicSummary || petition.resolution.publicSummary) && (
-                    <div className="bg-sky-50/80 border border-sky-200/80 rounded-xl p-3.5 space-y-1 text-xs">
-                      <div className="flex items-center space-x-1.5 font-bold text-[#006194]">
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Tóm tắt công khai hiển thị cho công dân & bản đồ GIS:</span>
-                      </div>
-                      <p className="text-slate-700 leading-relaxed font-medium pl-5">
-                        {petition.publicSummary || petition.resolution.publicSummary}
+                ) : canManageResolution ? (
+                  <div className="rounded-xl border border-dashed border-emerald-300 p-6 text-center bg-emerald-50/40 space-y-3">
+                    <FileText className="w-8 h-8 text-emerald-600 mx-auto" />
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">Đã hoàn thành nghiệm thu thực địa</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Trưởng đơn vị tiến hành ban hành kết luận xử lý chính thức cho công dân tại đây.
                       </p>
                     </div>
-                  )}
-
-                  {petition.resolution.officialDocumentUrl && (
-                    <div className="pt-2 flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-xs font-bold text-emerald-900">
-                        <FileCheck2 className="w-4 h-4 text-emerald-600" />
-                        <span>Văn bản có con dấu / Ký số:</span>
-                      </div>
-                      <a
-                        href={petition.resolution.officialDocumentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition-all"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Tải văn bản chính thức</span>
-                      </a>
-                    </div>
-                  )}
-
-                  {/* [Task 5.1] Dispatcher Quality Gate Review Bar */}
-                  {canReviewResolution && (
-                    <div className="mt-4 pt-4 border-t border-emerald-300/60 bg-white/90 backdrop-blur-xs p-4 rounded-2xl border border-emerald-200/80 space-y-3">
-                      <div className="flex items-center space-x-2 text-xs font-bold text-slate-900">
-                        <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                        <span>Khu vực Kiểm duyệt của Điều phối viên (Quality Gate):</span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 leading-relaxed">
-                        Chuyên viên đã ban hành kết luận giải quyết. Vui lòng rà soát tính chuẩn xác của kết quả trước khi phê duyệt đóng đơn hoặc gửi yêu cầu khắc phục lại.
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                        <button
-                          onClick={() => {
-                            setReviewModalMode('close');
-                            setIsReviewModalOpen(true);
-                          }}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Phê duyệt & Đóng hồ sơ</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setReviewModalMode('rework');
-                            setIsReviewModalOpen(true);
-                          }}
-                          className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                          <span>Yêu cầu xử lý lại (Rework)</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center bg-slate-50/50 space-y-3">
-                  <FileText className="w-8 h-8 text-slate-400 mx-auto" />
-                  <div>
-                    <p className="text-xs font-bold text-slate-700">Chưa ban hành văn bản kết luận giải quyết</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Sau khi thẩm tra thực địa và phối hợp liên ngành, cán bộ ban hành quyết định kết luận tại đây.
-                    </p>
+                    <button
+                      onClick={() => setIsResolutionOpen(true)}
+                      className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                    >
+                      <FileCheck2 className="w-3.5 h-3.5" />
+                      <span>Ban hành kết luận ngay</span>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setIsResolutionOpen(true)}
-                    className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all"
-                  >
-                    <FileCheck2 className="w-3.5 h-3.5" />
-                    <span>Ban hành kết luận ngay</span>
-                  </button>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 p-4 text-center bg-slate-50/50">
+                    <p className="text-xs text-slate-500 font-medium">Hồ sơ đã hoàn tất nghiệm thu thực địa. Đang chờ Trưởng đơn vị ký duyệt ban hành văn bản kết luận chính thức.</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* E. Đánh giá của Người dân (Nếu có) */}
             {petition.hasFeedback && (
@@ -1327,7 +1344,9 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 {activeInternalTab === 'thread' ? (
                   <InternalThreadPanel
                     petitionId={petition.id}
+                    trackingCode={petition.trackingCode}
                     departmentName={petition.departmentName}
+                    currentUser={user}
                   />
                 ) : (
                   <div className="space-y-4">

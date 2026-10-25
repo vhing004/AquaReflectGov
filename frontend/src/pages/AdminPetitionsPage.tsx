@@ -44,7 +44,6 @@ import {
 import { TransitionStatusModal } from '../components/admin/TransitionStatusModal';
 import { KanbanBoard } from '../components/admin/KanbanBoard';
 import { CreateOnBehalfModal } from '../components/CreateOnBehalfModal';
-import { canAccessPetition } from '../utils/permissions';
 
 export const AdminPetitionsPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -52,14 +51,12 @@ export const AdminPetitionsPage: React.FC = () => {
   const canTransitionItem = (item: AdminPetitionItem) => {
     if (item.status === 6) return false;
     if (!user) return false;
+    // [Yêu cầu 4] Tính năng Luân chuyển trạng thái chỉ dành riêng cho Cán bộ tiếp nhận (Dispatcher / SuperAdmin)
     if (user.role === 'SuperAdmin') return true;
     if (user.role === 'Dispatcher') {
       return item.status === 1 || item.status === 2 || item.status === 3 || item.status === 4 || item.status === 5;
     }
-    if (user.role === 'Specialist') {
-      const isSameDept = canAccessPetition(user.role, user.departmentId, item.departmentId);
-      return (item.status === 2 || item.status === 3) && isSameDept;
-    }
+    // Cán bộ chuyên môn (Specialist) không có thẩm quyền luân chuyển trạng thái tự do
     return false;
   };
 
