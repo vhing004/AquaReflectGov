@@ -330,28 +330,29 @@ export const HomePage: React.FC = () => {
         )}
       </section>
 
-      {/* 5. SECTION: HỒ SƠ PHẢN ÁNH ĐÃ GIẢI QUYẾT & CÔNG KHAI */}
+      {/* 5. SECTION: HỒ SƠ PHẢN ÁNH ĐÃ GIẢI QUYẾT & CÔNG KHAI (PHONG CÁCH BÁO CHÍ CHÍNH LUẬN) */}
       <section ref={resolvedSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b-2 border-slate-900 pb-4">
           <div>
-            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-              Minh bạch & Công khai
-            </span>
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              Hồ Sơ Phản Ánh Đã Giải Quyết Thành Công
+            <div className="flex items-center space-x-2 text-xs font-bold text-[#006194] uppercase tracking-widest">
+              <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
+              <span>BẢN TIN MINH BẠCH • KẾT QUẢ THỰC THI CÔNG VỤ</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-serif font-black text-slate-950 tracking-tight mt-1">
+              Hồ Sơ Đã Xác Minh & Ban Hành Kết Luận Xử Lý
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Văn bản kết luận chính thức, thời gian thụ lý thực tế và đánh giá mức độ hài lòng từ người dân.
+            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
+              Tổng hợp các vụ việc đã hoàn thành xác minh hiện trường, lập biên bản xử lý vi phạm và công bố quyết định giải quyết chính thức.
             </p>
           </div>
 
           {/* Bộ lọc sắp xếp */}
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+          <div className="flex items-center gap-2 shrink-0">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
             <select
               value={resolvedSort}
               onChange={(e) => setResolvedSort(e.target.value as 'latest' | 'rating')}
-              className="text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-300"
+              className="text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400 whitespace-nowrap cursor-pointer shadow-2xs"
             >
               <option value="latest">Mới giải quyết nhất</option>
               <option value="rating">Đánh giá hài lòng nhất</option>
@@ -411,30 +412,50 @@ export const HomePage: React.FC = () => {
           </button>
         </div>
 
-        {/* Grid các Card phản ánh đã giải quyết */}
+        {/* Layout Báo chí: Lead Story + Grid Cards */}
         {loadingResolved ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="rounded-2xl bg-white border border-slate-200 animate-pulse h-72"></div>
-            ))}
+          <div className="space-y-6">
+            <div className="rounded-3xl bg-white border border-slate-200 animate-pulse h-80"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="rounded-2xl bg-white border border-slate-200 animate-pulse h-72"></div>
+              ))}
+            </div>
           </div>
         ) : resolvedPetitions.length === 0 ? (
-          <div className="text-center py-16 rounded-2xl bg-slate-50 border border-slate-200/80">
+          <div className="text-center py-16 rounded-3xl bg-white border border-slate-200/80 shadow-2xs">
             <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-slate-500">
+            <p className="text-sm font-semibold text-slate-600">
               {resolvedFilter
                 ? 'Chưa có hồ sơ nào được giải quyết trong danh mục này'
                 : 'Chưa có hồ sơ phản ánh nào đã được giải quyết'}
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              Dữ liệu sẽ được cập nhật khi có hồ sơ hoàn tất thụ lý.
+              Dữ liệu sẽ được cập nhật liên tục khi cơ quan chức năng hoàn tất thụ lý thực địa.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resolvedPetitions.map((p) => (
-              <ResolvedPetitionCard key={p.id} petition={p} />
-            ))}
+          <div className="space-y-6">
+            {/* 1. Bản Tin Tiêu Điểm Lớn (Lead Featured Story) */}
+            <ResolvedPetitionCard petition={resolvedPetitions[0]} variant="featured" />
+
+            {/* 2. Lưới các bản tin tiếp theo */}
+            {resolvedPetitions.length > 1 && (
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-1.5 h-4 bg-[#006194] rounded-full inline-block"></span>
+                    Các vụ việc giải quyết nổi bật khác ({resolvedPetitions.length - 1})
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {resolvedPetitions.slice(1).map((p) => (
+                    <ResolvedPetitionCard key={p.id} petition={p} variant="standard" />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>

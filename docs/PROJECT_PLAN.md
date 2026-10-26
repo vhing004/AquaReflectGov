@@ -37,6 +37,7 @@
 | **Bảo mật**  | TASK-AUTH-REFLECTGOV | Chuẩn hóa RBAC 2 tầng (IsUnitLead, createOnBehalf, chống xung đột lợi ích, phân vùng Specialist 404) | `a4993d3` | ✅ Hoàn thành |
 | **Quy trình**| TASK-UNIT-TEAM-WORKFLOW | Mô hình Đơn vị - Thành viên, Nghiệm thu nội bộ & Ban hành kết luận (5 Đơn vị, 15 Cán bộ) | `PLAN-20261024` | ✅ Hoàn thành |
 | **Sửa lỗi**  | TASK-FIX-INSPECTION-NOTE-ERROR | Khắc phục lỗi thiếu boundary `multipart/form-data` khi cán bộ thụ lý tạo biên bản thực địa | `PLAN-20261026` | ✅ Hoàn thành |
+| **Giao diện**| TASK-FIX-UI-ADMIN-HEADER-HOMEPAGE-NEWS | Sửa lỗi xuống dòng buttons, click outside đóng dropdown header, icon Hồ sơ nghiệp vụ và layout báo chí Trang chủ | `PLAN-20261026` | ✅ Hoàn thành |
 
 ---
 
@@ -345,6 +346,27 @@ Quy trình quản lý theo mô hình Đơn vị chuyên môn xử lý phản án
   - Backend Unit Tests: 50/50 test cases PASSED.
   - Backend Integration Tests: 6/6 test cases PASSED.
   - Frontend Build: `tsc -b && vite build` – PASSED 100% (0 errors).
+
+---
+
+### TASK-FIX-UI-ADMIN-HEADER-HOMEPAGE-NEWS: Tinh Chỉnh Giao Diện Admin, Header & Layout Báo Chí Trang Chủ *(26/10/2026 – PLAN-20261026)*
+
+- [X] **1. Khắc phục nút bấm bị xuống dòng (Wrap-text) trên toàn hệ thống**:
+  - `DashboardPage.tsx`: Bổ sung `whitespace-nowrap shrink-0` cho các nút Xuất Excel, Xuất PDF, Làm mới và khung container toolbar.
+  - `UnitDashboardPage.tsx`: Thêm `whitespace-nowrap shrink-0` cho các nút tác vụ Làm mới, Phân công, Duyệt nghiệm thu.
+  - `AdminPetitionsPage.tsx`: Chống rớt chữ cho nút Tiếp nhận hộ, Làm mới, Dashboard trên top banner.
+  - `AdminPetitionDetailPage.tsx`: Áp dụng `whitespace-nowrap shrink-0` đồng bộ cho toàn bộ 11 nút tác vụ trên Top Control Bar (In hồ sơ, Xem như người dân, Phân công cán bộ, Nộp báo cáo nghiệm thu, Thẩm định & Duyệt nghiệm thu, Bắt đầu thẩm tra, Biên bản thực địa, Yêu cầu bổ sung, Luân chuyển trạng thái, Ban hành kết luận, Duyệt & Đóng đơn, Yêu cầu xử lý lại).
+- [X] **2. Sửa lỗi màu icon nút "Hồ sơ nghiệp vụ"**:
+  - `Navbar.tsx`: Điều chỉnh icon khi active ở route `/admin/petitions` đổi sang màu trắng (`text-white`) trên nền xanh `#006194`, tránh hiện tượng tiệp màu làm tàng hình icon.
+- [X] **3. Tự động đóng User Dropdown khi click ra ngoài (Click Outside)**:
+  - `Navbar.tsx`: Khởi tạo `userDropdownRef` và lắng nghe sự kiện `mousedown` trên `document` để tự động đóng menu popup người dùng khi nhấp chuột ra ngoài phạm vi dropdown.
+- [X] **4. Nâng cấp giao diện "Hồ sơ đã giải quyết" phong cách Báo chí - Bản tin Thông tấn**:
+  - `ResolvedPetitionCard.tsx`: Tái cấu trúc thành component thẻ bản tin báo chí hỗ trợ 3 variants: `featured` (Bản tin tiêu điểm lớn), `horizontal` (Bản tin ngang), `standard` (Card báo chí chuẩn).
+  - Tích hợp số hiệu văn bản/quyết định, trích dẫn kết luận giải quyết chính thức (Official statement callout), thời gian xử lý thực tế, huy hiệu SLA và số sao hài lòng của công dân.
+  - `HomePage.tsx`: Thiết kế lại Section 5 theo concept "BẢN TIN MINH BẠCH • KẾT QUẢ THỰC THI CÔNG VỤ" với 1 bài tiêu điểm Lead Story chiếm trọn chiều ngang và lưới các bài viết tin tức nổi bật bên dưới.
+- [X] **5. Kiểm thử & Đảm bảo chất lượng**:
+  - Frontend Build: `npm run build` (`tsc -b && vite build`) chạy mượt mà, **0 lỗi TypeScript**.
+  - Backend Unit Tests: **50/50 test cases PASSED** (0 failed).
 
 
 

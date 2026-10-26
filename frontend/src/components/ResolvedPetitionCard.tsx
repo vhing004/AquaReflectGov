@@ -9,11 +9,14 @@ import {
   FileCheck2,
   ArrowRight,
   Timer,
-  Building2,
+  Newspaper,
+  ShieldCheck,
+  Award
 } from 'lucide-react';
 
 interface ResolvedPetitionCardProps {
   petition: PublicResolvedPetition;
+  variant?: 'featured' | 'standard' | 'horizontal';
 }
 
 // Hiển thị sao đánh giá CSAT
@@ -32,35 +35,49 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => (
   </div>
 );
 
-// Lấy màu badge chuyên mục
-const getCategoryColor = (code: string) => {
+// Lấy màu badge chuyên mục phong cách báo điện tử
+const getCategoryBadge = (code: string, name: string) => {
+  let colorStyle = 'bg-slate-100 text-slate-800 border-slate-200';
   switch (code) {
     case 'O_NHIEM_NUOC':
-      return 'bg-cyan-50 text-cyan-700 border-cyan-200';
+      colorStyle = 'bg-cyan-100/80 text-cyan-900 border-cyan-300';
+      break;
     case 'DICH_BENH':
-      return 'bg-rose-50 text-rose-700 border-rose-200';
+      colorStyle = 'bg-rose-100/80 text-rose-900 border-rose-300';
+      break;
     case 'VI_PHAM_IUU':
-      return 'bg-blue-50 text-[#006194] border-blue-200';
+      colorStyle = 'bg-sky-100/90 text-sky-950 border-sky-300';
+      break;
     case 'GIONG_THUC_AN':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      colorStyle = 'bg-emerald-100/80 text-emerald-950 border-emerald-300';
+      break;
     case 'HA_TANG_CANG_CA':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
+      colorStyle = 'bg-amber-100/80 text-amber-950 border-amber-300';
+      break;
     case 'THU_TUC_HANH_CHINH':
-      return 'bg-purple-50 text-purple-700 border-purple-200';
-    default:
-      return 'bg-slate-50 text-slate-700 border-slate-200';
+      colorStyle = 'bg-purple-100/80 text-purple-950 border-purple-300';
+      break;
   }
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase tracking-wider border shadow-2xs ${colorStyle}`}>
+      {name}
+    </span>
+  );
 };
 
-export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({ petition }) => {
-  // Tính thời gian hiển thị
+export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({ 
+  petition, 
+  variant = 'standard' 
+}) => {
+  // Tính thời gian xử lý
   const formatProcessingTime = () => {
     const hours = petition.actualProcessingHours ?? 0;
     if (hours < 1) return 'Dưới 1 giờ';
     if (hours < 24) return `${Math.round(hours)} giờ`;
     const days = Math.floor(hours / 24);
     const remainHours = Math.round(hours % 24);
-    return remainHours > 0 ? `${days} ngày ${remainHours} giờ` : `${days} ngày`;
+    return remainHours > 0 ? `${days} ngày ${remainHours}h` : `${days} ngày`;
   };
 
   const formatSlaMargin = () => {
@@ -69,167 +86,327 @@ export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({ peti
     if (absMargin < 1) return '';
     if (absMargin < 24) {
       return petition.isAheadOfSla
-        ? `Sớm hơn SLA ${Math.round(absMargin)}h`
-        : `Quá hạn SLA ${Math.round(absMargin)}h`;
+        ? `Sớm ${Math.round(absMargin)}h`
+        : `Quá hạn ${Math.round(absMargin)}h`;
     }
     const days = Math.floor(absMargin / 24);
     return petition.isAheadOfSla
-      ? `Sớm hơn SLA ${days} ngày`
-      : `Quá hạn SLA ${days} ngày`;
+      ? `Sớm ${days} ngày`
+      : `Quá hạn ${days} ngày`;
   };
 
-  // Ngày giải quyết
+  // Ngày giải quyết theo chuẩn phong cách bản tin báo chí
   const resolvedDate = petition.resolvedAt
     ? new Date(petition.resolvedAt).toLocaleDateString('vi-VN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
       })
-    : null;
+    : 'Gần đây';
 
+  // ==========================================
+  // VARIANT 1: BẢN TIN TIÊU ĐIỂM (FEATURED EDITORIAL)
+  // ==========================================
+  if (variant === 'featured') {
+    return (
+      <article className="group bg-white rounded-3xl border border-slate-200/90 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col lg:flex-row">
+        {/* Hình ảnh tiêu điểm (Trái) */}
+        <div className="relative lg:w-1/2 min-h-[260px] sm:min-h-[320px] lg:min-h-[380px] bg-slate-900 overflow-hidden shrink-0">
+          {petition.thumbnailUrl ? (
+            <img
+              src={petition.thumbnailUrl}
+              alt={petition.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#003755] to-[#006194] text-white p-8 text-center">
+              <Newspaper className="w-16 h-16 text-sky-300/60 mb-3" />
+              <p className="text-xs font-mono uppercase tracking-widest text-sky-200">Bản Tin Phản Ánh Thủy Sản</p>
+              <p className="text-sm font-semibold text-white/90 mt-1 max-w-xs">{petition.title}</p>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent lg:hidden" />
+
+          {/* Huy hiệu Tiêu điểm Báo chí */}
+          <div className="absolute top-4 left-4 flex flex-wrap gap-2 items-center">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600 text-white text-[11px] font-extrabold uppercase tracking-wider shadow-md animate-pulse">
+              <Award className="w-3.5 h-3.5" />
+              Tiêu điểm xử lý
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600/90 backdrop-blur-xs text-white text-[11px] font-bold shadow-md">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Đã kết luận
+            </span>
+          </div>
+
+          {/* Mã hồ sơ trên ảnh */}
+          <div className="absolute bottom-4 left-4">
+            <span className="px-3 py-1 rounded-xl bg-slate-950/80 backdrop-blur-md text-white font-mono text-xs font-bold border border-white/20">
+              #{petition.trackingCode}
+            </span>
+          </div>
+        </div>
+
+        {/* Nội dung báo chí (Phải) */}
+        <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
+          <div className="space-y-4">
+            {/* Meta bar: Chuyên mục, Ngày ban hành, Cơ quan */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                {getCategoryBadge(petition.categoryCode, petition.categoryName)}
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <span>Ban hành: <strong className="text-slate-700">{resolvedDate}</strong></span>
+              </div>
+            </div>
+
+            {/* Headline Tiêu đề Báo chí */}
+            <h3 className="text-lg sm:text-xl font-extrabold text-slate-950 leading-snug group-hover:text-[#006194] transition-colors line-clamp-2">
+              <Link to={`/track?code=${petition.trackingCode}`}>
+                {petition.title}
+              </Link>
+            </h3>
+
+            {/* Địa bàn xác minh */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+              <MapPin className="w-4 h-4 text-[#006194] shrink-0" />
+              <span className="truncate">{petition.administrativeUnitName || petition.addressText || 'Cà Mau'}</span>
+              {petition.departmentName && (
+                <>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-700 font-semibold truncate">{petition.departmentName}</span>
+                </>
+              )}
+            </div>
+
+            {/* Hộp Trích Dẫn Toàn Văn Kết Luận Giải Quyết (Official Statement Box) */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-sky-50/90 via-sky-50/50 to-slate-50 border-l-4 border-[#006194] border-t border-r border-b border-sky-100 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileCheck2 className="w-4 h-4 text-[#006194]" />
+                  <span className="text-xs font-black uppercase tracking-wider text-[#006194]">
+                    Kết luận & Quyết định xử lý chính thức
+                  </span>
+                </div>
+                {petition.resolutionDocumentNumber && (
+                  <span className="px-2 py-0.5 rounded bg-white font-mono text-[11px] font-bold text-sky-800 border border-sky-200">
+                    Số {petition.resolutionDocumentNumber}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-800 leading-relaxed font-normal line-clamp-3 italic">
+                "{petition.resolutionSummary || 'Đã tổ chức kiểm tra thực địa, lập biên bản làm việc và xử lý dứt điểm theo quy định pháp luật ngành thủy sản.'}"
+              </p>
+            </div>
+
+            {/* Chỉ số hoàn thành SLA */}
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <div className="flex items-center gap-1 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-semibold">
+                <Timer className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Thời gian giải quyết: <strong>{formatProcessingTime()}</strong></span>
+              </div>
+              {formatSlaMargin() && (
+                <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
+                  petition.isAheadOfSla ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
+                }`}>
+                  {formatSlaMargin()}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Footer Card: CSAT & CTA Link */}
+          <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {petition.hasFeedback && petition.feedbackRating ? (
+                <div className="flex items-center gap-2 bg-amber-50 px-3 py-1 rounded-xl border border-amber-200">
+                  <StarRating rating={petition.feedbackRating} />
+                  <span className="text-xs font-bold text-amber-900">Người dân đánh giá {petition.feedbackRating}/5 sao</span>
+                </div>
+              ) : (
+                <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
+                  Hồ sơ công vụ minh bạch
+                </span>
+              )}
+            </div>
+
+            <Link
+              to={`/track?code=${petition.trackingCode}`}
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#006194] hover:bg-[#0284c7] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all group-hover:translate-x-0.5 whitespace-nowrap shrink-0"
+            >
+              <span>Xem toàn văn kết luận & biên bản</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </article>
+    );
+  }
+
+  // ==========================================
+  // VARIANT 2: DANH SÁCH BẢN TIN NGANG (SIDE EDITORIAL FEED)
+  // ==========================================
+  if (variant === 'horizontal') {
+    return (
+      <article className="group bg-white p-4 rounded-2xl border border-slate-200/80 hover:border-sky-300 shadow-2xs hover:shadow-md transition-all flex items-start gap-4">
+        {/* Thumbnail nhỏ góc báo chí */}
+        <div className="w-24 sm:w-28 h-20 sm:h-24 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative">
+          {petition.thumbnailUrl ? (
+            <img
+              src={petition.thumbnailUrl}
+              alt={petition.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
+              <Newspaper className="w-6 h-6" />
+            </div>
+          )}
+          <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-white font-mono text-[9px] font-bold">
+            #{petition.trackingCode.slice(-5)}
+          </span>
+        </div>
+
+        {/* Thông tin bài viết */}
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            {getCategoryBadge(petition.categoryCode, petition.categoryName)}
+            <span className="text-[11px] text-slate-400 font-medium">
+              {resolvedDate}
+            </span>
+          </div>
+
+          <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug group-hover:text-[#006194] transition-colors line-clamp-2">
+            <Link to={`/track?code=${petition.trackingCode}`}>
+              {petition.title}
+            </Link>
+          </h4>
+
+          {petition.resolutionSummary && (
+            <p className="text-[11px] text-slate-600 line-clamp-1 italic">
+              "{petition.resolutionSummary}"
+            </p>
+          )}
+
+          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+            <span className="truncate max-w-[150px]">{petition.administrativeUnitName || 'Cà Mau'}</span>
+            <Link
+              to={`/track?code=${petition.trackingCode}`}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-[#006194] hover:text-sky-700 whitespace-nowrap"
+            >
+              <span>Chi tiết</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+      </article>
+    );
+  }
+
+  // ==========================================
+  // VARIANT 3: THẺ BÁO CHÍ CHUẨN (STANDARD EDITORIAL CARD)
+  // ==========================================
   return (
-    <div className="group rounded-2xl bg-white border border-slate-200/80 hover:border-sky-300 shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
-      {/* Thumbnail ảnh hiện trường */}
-      {petition.thumbnailUrl && (
-        <div className="relative h-36 overflow-hidden">
+    <article className="group rounded-2xl bg-white border border-slate-200/90 hover:border-sky-300 shadow-2xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
+      {/* Thumbnail ảnh hiện trường tỉ lệ báo chí */}
+      <div className="relative h-44 overflow-hidden bg-slate-900 shrink-0">
+        {petition.thumbnailUrl ? (
           <img
             src={petition.thumbnailUrl}
             alt={petition.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          {/* Badge trạng thái */}
-          <div className="absolute top-3 left-3">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow-sm">
-              <CheckCircle2 className="w-3 h-3" />
-              {petition.statusName}
-            </span>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-sky-950 text-white p-4 text-center">
+            <Newspaper className="w-8 h-8 text-sky-400/60 mb-1.5" />
+            <p className="text-[10px] font-mono tracking-wider text-sky-200 uppercase">Hồ sơ công khai</p>
           </div>
-          {/* Badge mã hồ sơ */}
-          <div className="absolute bottom-3 left-3">
-            <span className="px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm text-white text-[10px] font-mono font-bold">
-              #{petition.trackingCode}
-            </span>
-          </div>
-        </div>
-      )}
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-      {/* Nội dung */}
-      <div className="p-4 flex-1 flex flex-col">
-        {/* Header: Chuyên mục + Mã đơn (nếu không có ảnh) */}
-        <div className="flex items-center gap-2 flex-wrap mb-2.5">
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${getCategoryColor(
-              petition.categoryCode
-            )}`}
-          >
-            {petition.categoryName.length > 25
-              ? petition.categoryName.substring(0, 25) + '...'
-              : petition.categoryName}
-          </span>
-          {!petition.thumbnailUrl && (
-            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-mono font-bold">
-              #{petition.trackingCode}
-            </span>
-          )}
-        </div>
-
-        {/* Tiêu đề */}
-        <h4 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 group-hover:text-[#006194] transition-colors mb-2">
-          {petition.title}
-        </h4>
-
-        {/* Địa bàn */}
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-3">
-          <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-          <span className="truncate">
-            {petition.administrativeUnitName || petition.addressText || 'Không xác định'}
+        {/* Badge trạng thái */}
+        <div className="absolute top-3 left-3">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow-md">
+            <CheckCircle2 className="w-3 h-3" />
+            {petition.statusName || 'Đã giải quyết'}
           </span>
         </div>
 
-        {/* Thời gian xử lý thực tế */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex items-center gap-1 text-[11px]">
-            <Timer className="w-3 h-3 text-emerald-500" />
-            <span className="font-semibold text-slate-700">
-              Hoàn tất trong {formatProcessingTime()}
-            </span>
-          </div>
-          {formatSlaMargin() && (
-            <span
-              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                petition.isAheadOfSla
-                  ? 'bg-emerald-50 text-emerald-600'
-                  : 'bg-rose-50 text-rose-600'
-              }`}
-            >
-              {formatSlaMargin()}
-            </span>
-          )}
+        {/* Badge mã hồ sơ */}
+        <div className="absolute bottom-3 left-3">
+          <span className="px-2.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-white text-[10px] font-mono font-bold border border-white/20">
+            #{petition.trackingCode}
+          </span>
         </div>
 
-        {/* Kết luận thụ lý */}
-        {petition.resolutionSummary && (
-          <div className="p-2.5 rounded-xl bg-sky-50/70 border border-sky-100 mb-3">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <FileCheck2 className="w-3 h-3 text-[#006194]" />
-              <span className="text-[10px] font-bold text-[#006194] uppercase tracking-wider">
-                Kết luận thụ lý
-              </span>
-              {petition.resolutionDocumentNumber && (
-                <span className="text-[10px] text-sky-500 font-mono">
-                  Số {petition.resolutionDocumentNumber}
+        {/* Ngày giải quyết trên ảnh */}
+        <div className="absolute bottom-3 right-3 text-[10px] text-white/90 font-medium">
+          {resolvedDate}
+        </div>
+      </div>
+
+      {/* Nội dung báo chí */}
+      <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+        <div className="space-y-2.5">
+          {/* Chuyên mục */}
+          <div>
+            {getCategoryBadge(petition.categoryCode, petition.categoryName)}
+          </div>
+
+          {/* Tiêu đề tin bài */}
+          <h4 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2 group-hover:text-[#006194] transition-colors">
+            <Link to={`/track?code=${petition.trackingCode}`}>
+              {petition.title}
+            </Link>
+          </h4>
+
+          {/* Địa bàn */}
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="truncate">
+              {petition.administrativeUnitName || petition.addressText || 'Cà Mau'}
+            </span>
+          </div>
+
+          {/* Hộp tóm tắt kết luận của cơ quan nhà nước */}
+          {petition.resolutionSummary && (
+            <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-100 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold text-[#006194] uppercase tracking-wider flex items-center gap-1">
+                  <FileCheck2 className="w-3 h-3" />
+                  Kết luận xử lý
                 </span>
-              )}
-            </div>
-            <p className="text-[11px] text-slate-700 leading-relaxed line-clamp-2">
-              {petition.resolutionSummary}
-            </p>
-          </div>
-        )}
-
-        {/* Đơn vị thụ lý */}
-        {petition.departmentName && (
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-3">
-            <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-            <span className="truncate">{petition.departmentName}</span>
-          </div>
-        )}
-
-        {/* Spacer để đẩy footer xuống đáy */}
-        <div className="flex-1" />
-
-        {/* Footer: Đánh giá CSAT + Ngày + Link chi tiết */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {petition.hasFeedback && petition.feedbackRating ? (
-              <div className="flex items-center gap-1.5">
-                <StarRating rating={petition.feedbackRating} />
-                {petition.feedbackComment && (
-                  <span className="text-[10px] text-slate-400 italic truncate max-w-[100px]">
-                    "{petition.feedbackComment.length > 20
-                      ? petition.feedbackComment.substring(0, 20) + '...'
-                      : petition.feedbackComment}"
+                {petition.resolutionDocumentNumber && (
+                  <span className="text-[10px] text-sky-700 font-mono font-semibold">
+                    Số {petition.resolutionDocumentNumber}
                   </span>
                 )}
               </div>
-            ) : (
-              <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                <Clock className="w-3 h-3" />
-                <span>{resolvedDate}</span>
-              </div>
-            )}
+              <p className="text-[11px] text-slate-700 leading-relaxed line-clamp-2 italic">
+                "{petition.resolutionSummary}"
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer: Thời gian hoàn tất & Link */}
+        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
+            <Timer className="w-3 h-3 text-emerald-500" />
+            <span>Xử lý trong {formatProcessingTime()}</span>
           </div>
 
           <Link
             to={`/track?code=${petition.trackingCode}`}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#006194] hover:text-sky-700 group-hover:translate-x-0.5 transition-transform"
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#006194] hover:text-sky-700 group-hover:translate-x-0.5 transition-transform whitespace-nowrap shrink-0"
           >
-            <span>Xem chi tiết</span>
+            <span>Đọc tiếp</span>
             <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
       </div>
-    </div>
+    </article>
   );
 };

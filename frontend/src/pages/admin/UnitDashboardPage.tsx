@@ -179,10 +179,10 @@ export const UnitDashboardPage: React.FC = () => {
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium flex items-center gap-2 transition-all"
+              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Làm mới
+              <RefreshCw className={`w-4 h-4 shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Làm mới</span>
             </button>
           </div>
         </div>
@@ -468,18 +468,20 @@ export const UnitDashboardPage: React.FC = () => {
                           {isUnassigned && (
                             <button
                               onClick={() => handleOpenAssignModal(petition)}
-                              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 shadow-sm transition-all flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 shadow-sm transition-all flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer"
                             >
-                              <UserCheck className="w-3.5 h-3.5" /> Phân công
+                              <UserCheck className="w-3.5 h-3.5 shrink-0" />
+                              <span>Phân công</span>
                             </button>
                           )}
 
                           {isPendingApproval && (
                             <button
                               onClick={() => handleOpenReviewModal(petition.id)}
-                              className="px-3 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 shadow-sm transition-all flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 shadow-sm transition-all flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer"
                             >
-                              <FileCheck2 className="w-3.5 h-3.5" /> Duyệt nghiệm thu
+                              <FileCheck2 className="w-3.5 h-3.5 shrink-0" />
+                              <span>Duyệt nghiệm thu</span>
                             </button>
                           )}
 

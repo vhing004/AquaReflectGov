@@ -153,15 +153,15 @@ export const DashboardPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Department Filter & Refresh Button */}
-        <div className="flex items-center space-x-2">
+        {/* Department Filter & Export Buttons */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {canViewAllDepts ? (
-            <div className="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shrink-0">
+              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <select
                 value={selectedDeptId}
                 onChange={(e) => setSelectedDeptId(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer whitespace-nowrap"
               >
                 <option value="">Tất cả phòng ban ({departments.length})</option>
                 {departments.map((d) => (
@@ -170,8 +170,8 @@ export const DashboardPage: React.FC = () => {
               </select>
             </div>
           ) : (
-            <div className="flex items-center space-x-1.5 bg-sky-50 px-3 py-1.5 rounded-xl border border-sky-200 text-sky-800 text-xs font-bold">
-              <Building2 className="w-3.5 h-3.5 text-sky-600" />
+            <div className="flex items-center space-x-1.5 bg-sky-50 px-3 py-1.5 rounded-xl border border-sky-200 text-sky-800 text-xs font-bold shrink-0 whitespace-nowrap">
+              <Building2 className="w-3.5 h-3.5 text-sky-600 shrink-0" />
               <span>{user?.departmentName || 'Phòng ban chuyên môn'}</span>
             </div>
           )}
@@ -179,29 +179,29 @@ export const DashboardPage: React.FC = () => {
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all disabled:opacity-60 shadow-xs"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all disabled:opacity-60 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
             title={isSpecialist ? "Xuất danh sách phản ánh phòng ban ra Excel" : "Xuất danh sách phản ánh ra Excel"}
           >
-            <FileSpreadsheet className={`w-3.5 h-3.5 ${exportingExcel ? 'animate-pulse' : ''}`} />
-            <span>{exportingExcel ? 'Đang xuất...' : (isSpecialist ? 'Xuất Excel' : 'Xuất Excel')}</span>
+            <FileSpreadsheet className={`w-3.5 h-3.5 shrink-0 ${exportingExcel ? 'animate-pulse' : ''}`} />
+            <span className="whitespace-nowrap">{exportingExcel ? 'Đang xuất...' : (isSpecialist ? 'Xuất Excel Phòng Ban' : 'Xuất Excel')}</span>
           </button>
 
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-all disabled:opacity-60 shadow-xs"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-all disabled:opacity-60 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
             title={isSpecialist ? "Xuất báo cáo KPI phòng ban ra PDF" : "Xuất báo cáo KPI ra PDF"}
           >
-            <FileText className={`w-3.5 h-3.5 ${exportingPdf ? 'animate-pulse' : ''}`} />
-            <span>{exportingPdf ? 'Đang xuất...' : (isSpecialist ? 'Xuất PDF' : 'Xuất PDF KPI')}</span>
+            <FileText className={`w-3.5 h-3.5 shrink-0 ${exportingPdf ? 'animate-pulse' : ''}`} />
+            <span className="whitespace-nowrap">{exportingPdf ? 'Đang xuất...' : (isSpecialist ? 'Xuất PDF Phòng Ban' : 'Xuất PDF KPI')}</span>
           </button>
 
           <button
             onClick={() => refetch()}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors shrink-0 cursor-pointer"
             title="Làm mới số liệu thống kê"
           >
-            <RotateCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            <RotateCw className={`w-4 h-4 shrink-0 ${isFetching ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>

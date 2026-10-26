@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { 
@@ -29,6 +29,22 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Đóng User Dropdown khi click chuột ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    };
+    if (userDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [userDropdownOpen]);
 
   const handleLogout = () => {
     logout();
@@ -140,7 +156,7 @@ export const Navbar: React.FC = () => {
 
             {/* Profile Dropdown */}
             {isAuthenticated && user ? (
-              <div className="relative">
+              <div className="relative" ref={userDropdownRef}>
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   className="flex items-center space-x-2.5 px-3 py-1.5 rounded-full border border-slate-200 hover:border-sky-400 bg-white shadow-xs hover:shadow transition-all"
@@ -278,7 +294,7 @@ export const Navbar: React.FC = () => {
                     : 'text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200'
                 }`}
               >
-                <FileText className="w-3.5 h-3.5 text-[#006194]" />
+                <FileText className={`w-3.5 h-3.5 ${location.pathname === '/admin/petitions' ? 'text-white' : 'text-[#006194]'}`} />
                 <span>Hồ Sơ Nghiệp Vụ</span>
               </Link>
               <Link
@@ -289,7 +305,7 @@ export const Navbar: React.FC = () => {
                     : 'text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200'
                 }`}
               >
-                <Shield className="w-3.5 h-3.5 text-amber-500" />
+                <Shield className={`w-3.5 h-3.5 ${location.pathname === '/admin/dashboard' ? 'text-white' : 'text-amber-500'}`} />
                 <span>{dashboardTitle}</span>
               </Link>
               {canViewUnitDashboard && (
@@ -301,7 +317,7 @@ export const Navbar: React.FC = () => {
                       : 'text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200'
                   }`}
                 >
-                  <Users className="w-3.5 h-3.5 text-indigo-600" />
+                  <Users className={`w-3.5 h-3.5 ${location.pathname === '/admin/unit-dashboard' ? 'text-white' : 'text-indigo-600'}`} />
                   <span>Điều Phối Đơn Vị</span>
                 </Link>
               )}
@@ -314,7 +330,7 @@ export const Navbar: React.FC = () => {
                       : 'text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
                   }`}
                 >
-                  <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                  <Compass className={`w-3.5 h-3.5 ${location.pathname === '/admin/gis-map' ? 'text-white' : 'text-emerald-600'}`} />
                   <span>Bản Đồ GIS</span>
                 </Link>
               )}

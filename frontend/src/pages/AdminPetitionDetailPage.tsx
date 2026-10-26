@@ -427,14 +427,14 @@ export const AdminPetitionDetailPage: React.FC = () => {
               <span>Quay lại Danh sách Hồ sơ</span>
             </Link>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button
                 onClick={() => window.print()}
-                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all border border-white/20 cursor-pointer"
+                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all border border-white/20 cursor-pointer whitespace-nowrap shrink-0"
                 title="In phiếu hồ sơ khổ A4"
               >
-                <Printer className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">In hồ sơ</span>
+                <Printer className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline whitespace-nowrap">In hồ sơ</span>
               </button>
 
               {/* Nút Xem như người dân (petition.previewPublic) */}
@@ -442,22 +442,22 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 to={`/tracking?code=${petition.trackingCode}&preview=true`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-100 text-xs font-semibold transition-all border border-sky-300/40 cursor-pointer"
+                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-100 text-xs font-semibold transition-all border border-sky-300/40 cursor-pointer whitespace-nowrap shrink-0"
                 title="Xem trước giao diện công khai như người dân thấy (Chỉ đọc)"
               >
-                <Eye className="w-3.5 h-3.5 text-sky-200" />
-                <span className="hidden sm:inline">Xem như người dân</span>
+                <Eye className="w-3.5 h-3.5 text-sky-200 shrink-0" />
+                <span className="hidden sm:inline whitespace-nowrap">Xem như người dân</span>
               </Link>
 
               {/* [Task-Unit-Workflow] Nút Phân công Cán bộ nội bộ đơn vị (Tầng 2) */}
               {canAssignMember && (petition.status === 2 || petition.status === 3) && (
                 <button
                   onClick={() => setIsAssignMemberOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
                   title="Trưởng đơn vị cử cán bộ trực tiếp thụ lý vụ việc"
                 >
-                  <Users className="w-3.5 h-3.5 text-white" />
-                  <span>Phân công cán bộ</span>
+                  <Users className="w-3.5 h-3.5 text-white shrink-0" />
+                  <span className="whitespace-nowrap">Phân công cán bộ</span>
                 </button>
               )}
 
@@ -468,11 +468,11 @@ export const AdminPetitionDetailPage: React.FC = () => {
                     setInspectionReportMode('submit');
                     setIsInspectionReportOpen(true);
                   }}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-white text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
                   title="Nộp báo cáo nghiệm thu thực địa lên Trưởng đơn vị phê duyệt"
                 >
-                  <ClipboardCheck className="w-3.5 h-3.5 text-white" />
-                  <span>Nộp báo cáo nghiệm thu</span>
+                  <ClipboardCheck className="w-3.5 h-3.5 text-white shrink-0" />
+                  <span className="whitespace-nowrap">Nộp báo cáo nghiệm thu</span>
                 </button>
               )}
 
@@ -483,11 +483,11 @@ export const AdminPetitionDetailPage: React.FC = () => {
                     setInspectionReportMode('review');
                     setIsInspectionReportOpen(true);
                   }}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer animate-pulse"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer animate-pulse whitespace-nowrap shrink-0"
                   title="Trưởng đơn vị thẩm định và ban hành kết luận giải quyết"
                 >
-                  <CheckSquare className="w-3.5 h-3.5 text-slate-950" />
-                  <span>Thẩm định & Duyệt nghiệm thu</span>
+                  <CheckSquare className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                  <span className="whitespace-nowrap">Thẩm định & Duyệt nghiệm thu</span>
                 </button>
               )}
 
@@ -496,15 +496,15 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 <button
                   onClick={handleBeginInvestigation}
                   disabled={isBeginningInvestigation}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
                   title="Chuyển trạng thái sang Đang thẩm tra (Investigating)"
                 >
                   {isBeginningInvestigation ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
                   ) : (
-                    <Compass className="w-3.5 h-3.5" />
+                    <Compass className="w-3.5 h-3.5 shrink-0" />
                   )}
-                  <span>Bắt đầu thẩm tra</span>
+                  <span className="whitespace-nowrap">Bắt đầu thẩm tra</span>
                 </button>
               )}
 
@@ -512,11 +512,11 @@ export const AdminPetitionDetailPage: React.FC = () => {
               {canAddInspectionNote && (
                 <button
                   onClick={() => setIsInspectionOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/30 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/30 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
                   title="Ghi chép quan sát, lập biên bản kiểm tra, đính kèm ảnh GPS"
                 >
-                  <Camera className="w-3.5 h-3.5 text-sky-200" />
-                  <span>Biên bản thực địa</span>
+                  <Camera className="w-3.5 h-3.5 text-sky-200 shrink-0" />
+                  <span className="whitespace-nowrap">Biên bản thực địa</span>
                 </button>
               )}
 
@@ -527,11 +527,11 @@ export const AdminPetitionDetailPage: React.FC = () => {
                     setTransitionInitialStatus(7); // NeedInfo
                     setIsTransitionOpen(true);
                   }}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-300/40 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-300/40 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
                   title="Yêu cầu người dân bổ sung thêm thông tin khi thiếu căn cứ xác minh"
                 >
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-300" />
-                  <span className="hidden sm:inline">Yêu cầu bổ sung</span>
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <span className="hidden sm:inline whitespace-nowrap">Yêu cầu bổ sung</span>
                 </button>
               )}
 
@@ -541,22 +541,22 @@ export const AdminPetitionDetailPage: React.FC = () => {
                     setTransitionInitialStatus(null);
                     setIsTransitionOpen(true);
                   }}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white text-[#006194] hover:bg-sky-50 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white text-[#006194] hover:bg-sky-50 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                   title="Chuyển trạng thái hồ sơ theo quy trình"
                 >
-                  <Layers className="w-3.5 h-3.5 text-[#006194]" />
-                  <span>Luân chuyển trạng thái</span>
+                  <Layers className="w-3.5 h-3.5 text-[#006194] shrink-0" />
+                  <span className="whitespace-nowrap">Luân chuyển trạng thái</span>
                 </button>
               )}
 
               {canResolve && (
                 <button
                   onClick={() => setIsResolutionOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition-all shadow-md cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
                   title="Ban hành kết luận giải quyết chính thức"
                 >
-                  <FileCheck2 className="w-3.5 h-3.5 text-slate-950" />
-                  <span>Ban hành kết luận</span>
+                  <FileCheck2 className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                  <span className="whitespace-nowrap">Ban hành kết luận</span>
                 </button>
               )}
 
@@ -568,11 +568,11 @@ export const AdminPetitionDetailPage: React.FC = () => {
                       setReviewModalMode('close');
                       setIsReviewModalOpen(true);
                     }}
-                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
                     title="Phê duyệt kết luận và Đóng hồ sơ (Closed)"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
-                    <span>Duyệt & Đóng đơn</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                    <span className="whitespace-nowrap">Duyệt & Đóng đơn</span>
                   </button>
 
                   <button
@@ -580,11 +580,11 @@ export const AdminPetitionDetailPage: React.FC = () => {
                       setReviewModalMode('rework');
                       setIsReviewModalOpen(true);
                     }}
-                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
                     title="Yêu cầu chuyên viên xử lý lại (Rework -> Investigating)"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 text-slate-950" />
-                    <span className="hidden sm:inline">Yêu cầu xử lý lại</span>
+                    <RotateCcw className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                    <span className="hidden sm:inline whitespace-nowrap">Yêu cầu xử lý lại</span>
                   </button>
                 </>
               )}

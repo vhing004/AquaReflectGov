@@ -396,28 +396,28 @@ export const AdminPetitionsPage: React.FC = () => {
             {(user?.role === 'Dispatcher' || user?.role === 'SuperAdmin') && (
               <button
                 onClick={() => setIsCreateOnBehalfOpen(true)}
-                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold shadow-md hover:shadow transition-all cursor-pointer"
+                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold shadow-md hover:shadow transition-all cursor-pointer whitespace-nowrap shrink-0"
                 title="Nhập hộ phản ánh tiếp nhận qua điện thoại, trực tiếp hoặc văn bản"
               >
-                <PhoneCall className="w-3.5 h-3.5" />
-                <span>Tiếp nhận hộ</span>
+                <PhoneCall className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">Tiếp nhận hộ</span>
               </button>
             )}
 
             <button
               onClick={() => refetch()}
               disabled={isFetching}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-xs transition-all border border-white/20 disabled:opacity-50"
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-xs transition-all border border-white/20 disabled:opacity-50 whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-              <span>Làm mới</span>
+              <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isFetching ? 'animate-spin' : ''}`} />
+              <span className="whitespace-nowrap">Làm mới</span>
             </button>
             <Link
               to="/admin/dashboard"
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs font-bold shadow-md hover:shadow transition-all"
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs font-bold shadow-md hover:shadow transition-all whitespace-nowrap shrink-0"
             >
-              <Sparkles className="w-3.5 h-3.5 text-slate-900" />
-              <span className="hidden sm:inline">Dashboard</span>
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-slate-900" />
+              <span className="hidden sm:inline whitespace-nowrap">Dashboard</span>
             </Link>
           </div>
         </div>
