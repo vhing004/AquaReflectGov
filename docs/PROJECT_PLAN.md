@@ -36,6 +36,7 @@
 | **Báo cáo**  | Task Internship| Biên soạn Báo cáo thực tập - Chương 2: Nội dung thực tập (`INTERNSHIP_REPORT_CH2.md`)    | `PLAN-20261003`      | ✅ Hoàn thành |
 | **Bảo mật**  | TASK-AUTH-REFLECTGOV | Chuẩn hóa RBAC 2 tầng (IsUnitLead, createOnBehalf, chống xung đột lợi ích, phân vùng Specialist 404) | `a4993d3` | ✅ Hoàn thành |
 | **Quy trình**| TASK-UNIT-TEAM-WORKFLOW | Mô hình Đơn vị - Thành viên, Nghiệm thu nội bộ & Ban hành kết luận (5 Đơn vị, 15 Cán bộ) | `PLAN-20261024` | ✅ Hoàn thành |
+| **Sửa lỗi**  | TASK-FIX-INSPECTION-NOTE-ERROR | Khắc phục lỗi thiếu boundary `multipart/form-data` khi cán bộ thụ lý tạo biên bản thực địa | `PLAN-20261026` | ✅ Hoàn thành |
 
 ---
 
@@ -327,6 +328,24 @@ Quy trình quản lý theo mô hình Đơn vị chuyên môn xử lý phản án
   - Trang tra cứu tiến độ (`/tra-cuu` - `TrackPetitionPage`) tự động nhận diện công dân đăng nhập, lấy số điện thoại của tài khoản (`user.phoneNumber`) và tải về danh sách phản ánh.
   - Hiển thị banner chào mừng công dân, danh sách hồ sơ với đầy đủ bộ lọc, thẻ trực quan và xem nhanh chi tiết tiến độ 1-chạm.
   - Seed dữ liệu gán sẵn hồ sơ cho tài khoản `ngudan` (`0909888999`).
+
+---
+
+### TASK-FIX-INSPECTION-NOTE-ERROR: Khắc Phục Lỗi Cán Bộ Thụ Lý Tạo Biên Bản Thực Địa *(26/10/2026 – PLAN-20261026)*
+
+- [X] **Nguyên nhân gốc rễ**:
+  - `axiosClient.ts` cấu hình mặc định `'Content-Type': 'application/json'`.
+  - Trong `adminApi.ts` và `petitionApi.ts`, các phương thức gửi `FormData` (`addInspectionNote`, `createOnBehalf`, `createPetition`, `submitAdditionalInfo`) gán thủ công header `{ headers: { 'Content-Type': 'multipart/form-data' } }`.
+  - Việc gán tường minh làm mất chuỗi boundary của multipart/form-data, khiến Kestrel .NET 9 trả về lỗi `400 Bad Request: Failed to read the request form. Missing content-type boundary.`
+- [X] **Giải pháp triển khai**:
+  - `axiosClient.ts`: Bổ sung request interceptor tự động xóa `Content-Type` khi payload là `FormData` (`delete config.headers['Content-Type']`) để Axios và trình duyệt tự động đính kèm boundary chuẩn xác.
+  - `adminApi.ts` & `petitionApi.ts`: Chuẩn hóa các hàm gọi API upload file, loại bỏ các header ghi đè thủ công.
+  - `AddInspectionNoteModal.tsx`: Nâng cấp cơ chế trích xuất thông báo lỗi từ cấu trúc `ProblemDetails` (`title`, `errors`, `message`).
+- [X] **Kiểm thử**:
+  - Backend Unit Tests: 50/50 test cases PASSED.
+  - Backend Integration Tests: 6/6 test cases PASSED.
+  - Frontend Build: `tsc -b && vite build` – PASSED 100% (0 errors).
+
 
 
 

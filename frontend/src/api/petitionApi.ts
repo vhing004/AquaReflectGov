@@ -17,9 +17,6 @@ export const petitionApi = {
     onUploadProgress?: (progressEvent: AxiosProgressEvent) => void
   ): Promise<ApiResponse<CreatePetitionResult>> => {
     const res = await axiosClient.post<ApiResponse<CreatePetitionResult>>('/petitions', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
       onUploadProgress,
     });
     return res.data;
@@ -72,12 +69,7 @@ export const petitionApi = {
   ): Promise<ApiResponse<SubmitAdditionalInfoResult>> => {
     const res = await axiosClient.post<ApiResponse<SubmitAdditionalInfoResult>>(
       `/petitions/${encodeURIComponent(trackingCode.trim())}/additional-info`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
+      formData
     );
     return res.data;
   },

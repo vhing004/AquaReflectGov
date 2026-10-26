@@ -7,13 +7,19 @@ const axiosClient = axios.create({
   },
 });
 
-// Request interceptor: Tự động gắn JWT Token
+// Request interceptor: Tự động gắn JWT Token và xử lý FormData boundary
 axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Nếu payload là FormData, xóa Content-Type để Axios và browser tự sinh boundary chuẩn
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

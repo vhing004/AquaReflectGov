@@ -5,11 +5,11 @@ import { useAuthStore } from '../store/useAuthStore';
 import { dashboardApi } from '../api/dashboardApi';
 import { masterDataApi } from '../api/masterDataApi';
 import { reportsApi } from '../api/reportsApi';
-import { 
-  RotateCw, 
-  Calendar, 
-  Building2, 
-  Layers, 
+import {
+  RotateCw,
+  Calendar,
+  Building2,
+  Layers,
   Compass,
   FileSpreadsheet,
   FileText
@@ -65,11 +65,11 @@ export const DashboardPage: React.FC = () => {
   const departments = deptsRes?.data || [];
 
   // 2. Query dữ liệu Dashboard KPI
-  const { 
-    data: reportRes, 
-    isLoading, 
-    isFetching, 
-    refetch 
+  const {
+    data: reportRes,
+    isLoading,
+    isFetching,
+    refetch
   } = useQuery({
     queryKey: ['dashboard-kpi', days, effectiveDeptId],
     queryFn: () => dashboardApi.getKpiReport(days, effectiveDeptId || undefined),
@@ -143,11 +143,10 @@ export const DashboardPage: React.FC = () => {
             <button
               key={opt.value}
               onClick={() => setDays(opt.value)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                days === opt.value
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${days === opt.value
                   ? 'bg-[#006194] text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100'
-              }`}
+                }`}
             >
               {opt.label}
             </button>
@@ -184,7 +183,7 @@ export const DashboardPage: React.FC = () => {
             title={isSpecialist ? "Xuất danh sách phản ánh phòng ban ra Excel" : "Xuất danh sách phản ánh ra Excel"}
           >
             <FileSpreadsheet className={`w-3.5 h-3.5 ${exportingExcel ? 'animate-pulse' : ''}`} />
-            <span>{exportingExcel ? 'Đang xuất...' : (isSpecialist ? 'Xuất Excel Phòng Ban' : 'Xuất Excel')}</span>
+            <span>{exportingExcel ? 'Đang xuất...' : (isSpecialist ? 'Xuất Excel' : 'Xuất Excel')}</span>
           </button>
 
           <button
@@ -194,7 +193,7 @@ export const DashboardPage: React.FC = () => {
             title={isSpecialist ? "Xuất báo cáo KPI phòng ban ra PDF" : "Xuất báo cáo KPI ra PDF"}
           >
             <FileText className={`w-3.5 h-3.5 ${exportingPdf ? 'animate-pulse' : ''}`} />
-            <span>{exportingPdf ? 'Đang xuất...' : (isSpecialist ? 'Xuất PDF Phòng Ban' : 'Xuất PDF KPI')}</span>
+            <span>{exportingPdf ? 'Đang xuất...' : (isSpecialist ? 'Xuất PDF' : 'Xuất PDF KPI')}</span>
           </button>
 
           <button

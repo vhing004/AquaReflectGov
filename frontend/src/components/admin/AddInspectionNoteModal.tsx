@@ -145,10 +145,24 @@ export const AddInspectionNoteModal: React.FC<AddInspectionNoteModalProps> = ({
       onSuccess(res.message || 'Đã lưu ghi chú / biên bản hiện trường thành công.');
       onClose();
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string } } };
-      setErrorMessage(
-        axiosError?.response?.data?.message || 'Có lỗi xảy ra khi lưu ghi chú hiện trường.'
-      );
+      const axiosError = err as {
+        response?: {
+          data?: {
+            message?: string;
+            title?: string;
+            errors?: Record<string, string[]>;
+          };
+        };
+      };
+      const responseData = axiosError?.response?.data;
+      let detailedMsg = responseData?.message;
+      if (!detailedMsg && responseData?.errors) {
+        detailedMsg = Object.values(responseData.errors).flat().join(', ');
+      }
+      if (!detailedMsg && responseData?.title) {
+        detailedMsg = responseData.title;
+      }
+      setErrorMessage(detailedMsg || 'Có lỗi xảy ra khi lưu ghi chú hiện trường.');
     } finally {
       setIsSubmitting(false);
     }

@@ -76,12 +76,7 @@ export const adminApi = {
   ): Promise<ApiResponse<PetitionResolution>> => {
     const response = await axiosClient.post<ApiResponse<PetitionResolution>>(
       `/admin/petitions/${petitionId}/resolution`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
+      formData
     );
     return response.data;
   },
@@ -133,10 +128,7 @@ export const adminApi = {
   ): Promise<ApiResponse<InspectionNoteResult>> => {
     const response = await axiosClient.post<ApiResponse<InspectionNoteResult>>(
       `/admin/petitions/${petitionId}/inspection-notes`,
-      formData,
-      {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }
+      formData
     );
     return response.data;
   },
@@ -147,10 +139,7 @@ export const adminApi = {
   createOnBehalf: async (formData: FormData): Promise<ApiResponse<{ id: string; trackingCode: string; title: string; message: string }>> => {
     const response = await axiosClient.post<ApiResponse<{ id: string; trackingCode: string; title: string; message: string }>>(
       '/admin/petitions/on-behalf',
-      formData,
-      {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }
+      formData
     );
     return response.data;
   },
