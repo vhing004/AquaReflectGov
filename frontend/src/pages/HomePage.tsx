@@ -69,11 +69,27 @@ export const HomePage: React.FC = () => {
   // Fetch phản ánh đã giải quyết
   const { data: resolvedRes, isLoading: loadingResolved } = useQuery({
     queryKey: ['publicResolvedPetitions', resolvedFilter, resolvedSort],
-    queryFn: () => petitionApi.getPublicResolvedPetitions(resolvedFilter, resolvedSort, 6),
+    queryFn: () => petitionApi.getPublicResolvedPetitions(resolvedFilter, resolvedSort, 8),
   });
 
   const categories = categoriesRes?.data || [];
-  const resolvedPetitions = resolvedRes?.data || [];
+  const rawResolvedPetitions = resolvedRes?.data || [];
+
+  // Lấy chính xác 4 hồ sơ tiêu biểu nhất hoặc có đánh giá CSAT tốt nhất
+  const displayPetitions = React.useMemo(() => {
+    const list = [...rawResolvedPetitions];
+    if (resolvedSort === 'rating') {
+      list.sort((a, b) => {
+        const ratingA = a.feedbackRating || 0;
+        const ratingB = b.feedbackRating || 0;
+        if (ratingB !== ratingA) return ratingB - ratingA;
+        return new Date(b.resolvedAt || 0).getTime() - new Date(a.resolvedAt || 0).getTime();
+      });
+    } else {
+      list.sort((a, b) => new Date(b.resolvedAt || 0).getTime() - new Date(a.resolvedAt || 0).getTime());
+    }
+    return list.slice(0, 4);
+  }, [rawResolvedPetitions, resolvedSort]);
 
   const getCategoryIcon = (code: string) => {
     switch (code) {
@@ -330,19 +346,19 @@ export const HomePage: React.FC = () => {
         )}
       </section>
 
-      {/* 5. SECTION: HỒ SƠ PHẢN ÁNH ĐÃ GIẢI QUYẾT & CÔNG KHAI (PHONG CÁCH BÁO CHÍ CHÍNH LUẬN) */}
+      {/* 5. SECTION: HỒ SƠ PHẢN ÁNH ĐÃ GIẢI QUYẾT & CÔNG KHAI (LAYOUT DẠNG NGANG BẢN TIN CHÍNH LUẬN) */}
       <section ref={resolvedSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b-2 border-slate-900 pb-4">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-bold text-[#006194] uppercase tracking-widest">
-              <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
-              <span>BẢN TIN MINH BẠCH • KẾT QUẢ THỰC THI CÔNG VỤ</span>
+            <div className="flex items-center space-x-2 text-xs font-bold text-[#006194] uppercase tracking-wide">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span>Bản tin minh bạch • Kết quả thực thi công vụ</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-slate-950 tracking-tight mt-1">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
               Hồ Sơ Đã Xác Minh & Ban Hành Kết Luận Xử Lý
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
-              Tổng hợp các vụ việc đã hoàn thành xác minh hiện trường, lập biên bản xử lý vi phạm và công bố quyết định giải quyết chính thức.
+            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
+              Tổng hợp 4 vụ việc tiêu biểu đã hoàn thành xác minh thực địa, lập biên bản xử lý và công bố quyết định giải quyết chính thức.
             </p>
           </div>
 
@@ -412,17 +428,14 @@ export const HomePage: React.FC = () => {
           </button>
         </div>
 
-        {/* Layout Báo chí: Lead Story + Grid Cards */}
+        {/* Danh sách 4 bản tin dạng ngang bố cục lưới 2x2 */}
         {loadingResolved ? (
-          <div className="space-y-6">
-            <div className="rounded-3xl bg-white border border-slate-200 animate-pulse h-80"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="rounded-2xl bg-white border border-slate-200 animate-pulse h-72"></div>
-              ))}
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="rounded-2xl bg-white border border-slate-200 animate-pulse h-52"></div>
+            ))}
           </div>
-        ) : resolvedPetitions.length === 0 ? (
+        ) : displayPetitions.length === 0 ? (
           <div className="text-center py-16 rounded-3xl bg-white border border-slate-200/80 shadow-2xs">
             <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-sm font-semibold text-slate-600">
@@ -436,26 +449,23 @@ export const HomePage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* 1. Bản Tin Tiêu Điểm Lớn (Lead Featured Story) */}
-            <ResolvedPetitionCard petition={resolvedPetitions[0]} variant="featured" />
+            {/* Lưới 2x2 gồm 4 hồ sơ tiêu biểu dạng ngang */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+              {displayPetitions.map((p) => (
+                <ResolvedPetitionCard key={p.id} petition={p} variant="horizontal" />
+              ))}
+            </div>
 
-            {/* 2. Lưới các bản tin tiếp theo */}
-            {resolvedPetitions.length > 1 && (
-              <div className="space-y-4 pt-2">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1.5 h-4 bg-[#006194] rounded-full inline-block"></span>
-                    Các vụ việc giải quyết nổi bật khác ({resolvedPetitions.length - 1})
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {resolvedPetitions.slice(1).map((p) => (
-                    <ResolvedPetitionCard key={p.id} petition={p} variant="standard" />
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Nút tra cứu thêm */}
+            <div className="pt-2 text-center">
+              <Link
+                to="/track"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all shadow-2xs hover:shadow-xs"
+              >
+                <span>Tra cứu tiến độ & kết quả xử lý toàn bộ hồ sơ trên địa bàn tỉnh</span>
+                <ArrowRight className="w-4 h-4 text-[#006194]" />
+              </Link>
+            </div>
           </div>
         )}
       </section>

@@ -38,6 +38,7 @@
 | **Quy trình**| TASK-UNIT-TEAM-WORKFLOW | Mô hình Đơn vị - Thành viên, Nghiệm thu nội bộ & Ban hành kết luận (5 Đơn vị, 15 Cán bộ) | `PLAN-20261024` | ✅ Hoàn thành |
 | **Sửa lỗi**  | TASK-FIX-INSPECTION-NOTE-ERROR | Khắc phục lỗi thiếu boundary `multipart/form-data` khi cán bộ thụ lý tạo biên bản thực địa | `PLAN-20261026` | ✅ Hoàn thành |
 | **Giao diện**| TASK-FIX-UI-ADMIN-HEADER-HOMEPAGE-NEWS | Sửa lỗi xuống dòng buttons, click outside đóng dropdown header, icon Hồ sơ nghiệp vụ và layout báo chí Trang chủ | `PLAN-20261026` | ✅ Hoàn thành |
+| **Giao diện**| TASK-RESOLVED-PETITIONS-2X2-GRID | Chuẩn hóa font chữ, tracking và hiển thị 4 hồ sơ đã giải quyết dạng ngang trong lưới 2x2 | `PLAN-20261026` | ✅ Hoàn thành |
 
 ---
 
@@ -367,6 +368,23 @@ Quy trình quản lý theo mô hình Đơn vị chuyên môn xử lý phản án
 - [X] **5. Kiểm thử & Đảm bảo chất lượng**:
   - Frontend Build: `npm run build` (`tsc -b && vite build`) chạy mượt mà, **0 lỗi TypeScript**.
   - Backend Unit Tests: **50/50 test cases PASSED** (0 failed).
+
+---
+
+### TASK-RESOLVED-PETITIONS-2X2-GRID: Chuẩn Hóa Font Chữ & Hiển Thị 4 Hồ Sơ Đã Xử Lý Dạng Ngang Lưới 2x2 *(26/10/2026 – PLAN-20261026)*
+
+- [X] **1. Chuẩn hóa Font chữ & Khoảng cách ký tự (Typography & Tracking)**:
+  - Loại bỏ hoàn toàn `font-serif` gây lệch tông trên tiêu đề section tại `HomePage.tsx`. Sử dụng font sans-serif đồng bộ toàn hệ thống (`font-extrabold text-slate-900 tracking-tight`).
+  - Thay thế `tracking-widest` và `tracking-wider` thành `tracking-wide` vừa vặn, loại bỏ hiện tượng các chữ bị kéo dãn cách linh tinh trên các nhãn và tiêu đề con.
+- [X] **2. Lọc & Lấy 4 hồ sơ tiêu biểu nhất / đánh giá tốt nhất**:
+  - `HomePage.tsx`: Tối ưu hook `useMemo` tính toán `displayPetitions` lấy đúng 4 phần tử (`slice(0, 4)`).
+  - Khi chọn lọc theo "Đánh giá hài lòng nhất", hệ thống tự động ưu tiên các hồ sơ có phản hồi đánh giá 5 sao từ người dân lên đầu, sau đó sắp xếp theo thời gian giải quyết mới nhất.
+- [X] **3. Layout thẻ ngang (Horizontal Card) bố cục lưới 2x2**:
+  - `ResolvedPetitionCard.tsx`: Tối ưu hóa `variant="horizontal"` cho bố cục đa cột: thiết lập `flex-col sm:flex-row h-full`, kích thước ảnh thumbnail cân đối (`sm:w-44 md:w-48 lg:w-44 xl:w-48`), hiển thị đầy đủ tem số hiệu quyết định, trích dẫn kết luận, thời gian xử lý và đánh giá sao CSAT.
+  - `HomePage.tsx`: Thiết lập container dạng lưới 2 cột x 2 hàng (`grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6`), hiển thị cân đối và rõ ràng 4 hồ sơ trên cùng một khung nhìn.
+- [X] **4. Kiểm thử**:
+  - Frontend Build: `tsc -b && vite build` hoàn thành trong 1.95s, **0 lỗi TypeScript**.
+  - Backend Unit Tests: **50/50 test cases PASSED**.
 
 
 
