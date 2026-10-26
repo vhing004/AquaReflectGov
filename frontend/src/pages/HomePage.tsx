@@ -75,7 +75,7 @@ export const HomePage: React.FC = () => {
   const categories = categoriesRes?.data || [];
   const rawResolvedPetitions = resolvedRes?.data || [];
 
-  // Lấy chính xác 4 hồ sơ tiêu biểu nhất hoặc có đánh giá CSAT tốt nhất
+  // Lấy chính xác 3 hồ sơ tiêu biểu nhất hoặc có đánh giá CSAT tốt nhất
   const displayPetitions = React.useMemo(() => {
     const list = [...rawResolvedPetitions];
     if (resolvedSort === 'rating') {
@@ -88,7 +88,7 @@ export const HomePage: React.FC = () => {
     } else {
       list.sort((a, b) => new Date(b.resolvedAt || 0).getTime() - new Date(a.resolvedAt || 0).getTime());
     }
-    return list.slice(0, 4);
+    return list.slice(0, 3);
   }, [rawResolvedPetitions, resolvedSort]);
 
   const getCategoryIcon = (code: string) => {
@@ -358,7 +358,7 @@ export const HomePage: React.FC = () => {
               Hồ Sơ Đã Xác Minh & Ban Hành Kết Luận Xử Lý
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-              Tổng hợp 4 vụ việc tiêu biểu đã hoàn thành xác minh thực địa, lập biên bản xử lý và công bố quyết định giải quyết chính thức.
+              Tổng hợp 3 vụ việc tiêu biểu đã hoàn thành xác minh thực địa, lập biên bản xử lý và công bố quyết định giải quyết chính thức.
             </p>
           </div>
 
@@ -428,10 +428,10 @@ export const HomePage: React.FC = () => {
           </button>
         </div>
 
-        {/* Danh sách 3-4 hồ sơ tiêu biểu dạng dọc (Vertical Cards) */}
+        {/* Danh sách 3 hồ sơ tiêu biểu dạng dọc (Vertical Cards 3 cột) */}
         {loadingResolved ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
               <div key={i} className="rounded-2xl bg-white border border-slate-200 animate-pulse h-80"></div>
             ))}
           </div>
@@ -449,8 +449,8 @@ export const HomePage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Lưới các hồ sơ tiêu biểu dạng dọc (3 cột nếu có 3 hồ sơ, 4 cột nếu có 4 hồ sơ) */}
-            <div className={`grid grid-cols-1 sm:grid-cols-2 ${displayPetitions.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-5 sm:gap-6`}>
+            {/* Lưới 3 cột dành cho 3 hồ sơ tiêu biểu dạng dọc */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayPetitions.map((p) => (
                 <ResolvedPetitionCard key={p.id} petition={p} variant="standard" />
               ))}

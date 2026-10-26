@@ -26,12 +26,11 @@
        - Thêm `h-full` để các thẻ dọc luôn cao đều nhau tăm tắp trong cùng một hàng.
 
   2. **Bố cục hiển thị trên [HomePage.tsx](file:///d:/AquaReflect/frontend/src/pages/HomePage.tsx):**
-     - Lọc lấy **Top 3-4 hồ sơ tốt nhất / đánh giá cao nhất**:
-       - Mặc định sắp xếp ưu tiên hồ sơ có đánh giá 5 sao từ người dân, kết hợp ngày giải quyết mới nhất.
-       - Lấy 4 hồ sơ (hoặc 3 hồ sơ nếu dữ liệu chỉ có 3).
-     - **Bố cục lưới (Grid Layout):**
-       - Lưới responsive thông minh: `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5` (hoặc `lg:grid-cols-3` nếu danh sách có đúng 3 hồ sơ), giúp các thẻ dọc dàn đều, thoáng đãng và sang trọng.
-       - Sửa skeleton loading tương ứng (4 thẻ dọc loading).
+     - Lọc lấy **Top 3 hồ sơ tốt nhất / đánh giá cao nhất**:
+       - Mặc định sắp xếp ưu tiên hồ sơ có đánh giá 5 sao từ người dân, kết hợp ngày giải quyết mới nhất (`slice(0, 3)`).
+     - **Bố cục lưới 3 cột (Grid Layout 3 Columns):**
+       - Lưới `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`: phân bổ 3 thẻ dọc thoáng đãng, cân đối trên mọi kích thước màn hình.
+       - Sửa skeleton loading tương ứng (3 thẻ dọc loading).
 
 ---
 
