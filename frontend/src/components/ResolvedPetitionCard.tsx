@@ -380,50 +380,50 @@ export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({
   }
 
   // ==========================================
-  // VARIANT 3: THẺ BÁO CHÍ CHUẨN (STANDARD EDITORIAL CARD)
+  // VARIANT 3: THẺ BÁO CHÍ CHUẨN DẠNG DỌC (STANDARD EDITORIAL CARD)
   // ==========================================
   return (
-    <article className="group rounded-2xl bg-white border border-slate-200/90 hover:border-sky-300 shadow-2xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
-      {/* Thumbnail ảnh hiện trường tỉ lệ báo chí */}
-      <div className="relative h-44 overflow-hidden bg-slate-900 shrink-0">
-        {petition.thumbnailUrl ? (
-          <img
-            src={petition.thumbnailUrl}
-            alt={petition.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-sky-950 text-white p-4 text-center">
-            <Newspaper className="w-8 h-8 text-sky-400/60 mb-1.5" />
-            <p className="text-[10px] font-mono tracking-wider text-sky-200 uppercase">Hồ sơ công khai</p>
+    <article className="group rounded-2xl bg-white border border-slate-200/90 hover:border-sky-300 shadow-2xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full justify-between">
+      <div>
+        {/* Thumbnail ảnh hiện trường tỉ lệ báo chí */}
+        <div className="relative h-44 overflow-hidden bg-slate-900 shrink-0">
+          {petition.thumbnailUrl ? (
+            <img
+              src={petition.thumbnailUrl}
+              alt={petition.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-sky-950 text-white p-4 text-center">
+              <Newspaper className="w-8 h-8 text-sky-400/60 mb-1.5" />
+              <p className="text-[10px] font-mono tracking-wide text-sky-200 uppercase">Hồ sơ công khai</p>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+          {/* Badge trạng thái */}
+          <div className="absolute top-3 left-3">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow-md">
+              <CheckCircle2 className="w-3 h-3" />
+              Đã kết luận
+            </span>
           </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-        {/* Badge trạng thái */}
-        <div className="absolute top-3 left-3">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow-md">
-            <CheckCircle2 className="w-3 h-3" />
-            {petition.statusName || 'Đã giải quyết'}
-          </span>
+          {/* Badge mã hồ sơ */}
+          <div className="absolute bottom-3 left-3">
+            <span className="px-2.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-white text-[10px] font-mono font-bold border border-white/20">
+              #{petition.trackingCode}
+            </span>
+          </div>
+
+          {/* Ngày giải quyết trên ảnh */}
+          <div className="absolute bottom-3 right-3 text-[10px] text-white/90 font-medium">
+            {resolvedDate}
+          </div>
         </div>
 
-        {/* Badge mã hồ sơ */}
-        <div className="absolute bottom-3 left-3">
-          <span className="px-2.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-white text-[10px] font-mono font-bold border border-white/20">
-            #{petition.trackingCode}
-          </span>
-        </div>
-
-        {/* Ngày giải quyết trên ảnh */}
-        <div className="absolute bottom-3 right-3 text-[10px] text-white/90 font-medium">
-          {resolvedDate}
-        </div>
-      </div>
-
-      {/* Nội dung báo chí */}
-      <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
-        <div className="space-y-2.5">
+        {/* Nội dung báo chí */}
+        <div className="p-4 sm:p-5 space-y-3">
           {/* Chuyên mục */}
           <div>
             {getCategoryBadge(petition.categoryCode, petition.categoryName)}
@@ -436,50 +436,62 @@ export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({
             </Link>
           </h4>
 
-          {/* Địa bàn */}
+          {/* Địa bàn & Cơ quan */}
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className="truncate">
               {petition.administrativeUnitName || petition.addressText || 'Cà Mau'}
             </span>
+            {petition.departmentName && (
+              <>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-600 font-medium truncate">{petition.departmentName}</span>
+              </>
+            )}
           </div>
 
           {/* Hộp tóm tắt kết luận của cơ quan nhà nước */}
-          {petition.resolutionSummary && (
-            <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-100 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold text-[#006194] uppercase tracking-wider flex items-center gap-1">
-                  <FileCheck2 className="w-3 h-3" />
-                  Kết luận xử lý
+          <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-100 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[#006194] uppercase tracking-wide flex items-center gap-1">
+                <FileCheck2 className="w-3 h-3" />
+                Kết luận xử lý
+              </span>
+              {petition.resolutionDocumentNumber && (
+                <span className="text-[10px] text-sky-700 font-mono font-semibold">
+                  Số {petition.resolutionDocumentNumber}
                 </span>
-                {petition.resolutionDocumentNumber && (
-                  <span className="text-[10px] text-sky-700 font-mono font-semibold">
-                    Số {petition.resolutionDocumentNumber}
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-700 leading-relaxed line-clamp-2 italic">
-                "{petition.resolutionSummary}"
-              </p>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Footer: Thời gian hoàn tất & Link */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
-            <Timer className="w-3 h-3 text-emerald-500" />
-            <span>Xử lý trong {formatProcessingTime()}</span>
+            <p className="text-[11px] text-slate-700 leading-relaxed line-clamp-2 italic">
+              "{petition.resolutionSummary || 'Đã tổ chức kiểm tra thực địa, lập biên bản làm việc và xử lý dứt điểm theo quy định pháp luật ngành thủy sản.'}"
+            </p>
           </div>
 
-          <Link
-            to={`/track?code=${petition.trackingCode}`}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#006194] hover:text-sky-700 group-hover:translate-x-0.5 transition-transform whitespace-nowrap shrink-0"
-          >
-            <span>Đọc tiếp</span>
-            <ArrowRight className="w-3 h-3" />
-          </Link>
+          {/* Đánh giá của người dân nếu có */}
+          {petition.hasFeedback && petition.feedbackRating ? (
+            <div className="flex items-center gap-1.5 bg-amber-50/80 px-2.5 py-1 rounded-lg border border-amber-200/80">
+              <StarRating rating={petition.feedbackRating} />
+              <span className="text-[10px] font-bold text-amber-900">{petition.feedbackRating}/5 sao hài lòng</span>
+            </div>
+          ) : null}
         </div>
+      </div>
+
+      {/* Footer: Thời gian hoàn tất & Link */}
+      <div className="px-4 sm:px-5 pb-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
+          <Timer className="w-3 h-3 text-emerald-500" />
+          <span>Xử lý: <strong>{formatProcessingTime()}</strong></span>
+        </div>
+
+        <Link
+          to={`/track?code=${petition.trackingCode}`}
+          className="inline-flex items-center gap-1 text-[11px] font-bold text-[#006194] hover:text-sky-700 group-hover:translate-x-0.5 transition-transform whitespace-nowrap shrink-0"
+        >
+          <span>Xem chi tiết</span>
+          <ArrowRight className="w-3 h-3" />
+        </Link>
       </div>
     </article>
   );

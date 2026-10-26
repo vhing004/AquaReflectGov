@@ -39,6 +39,7 @@
 | **Sửa lỗi**  | TASK-FIX-INSPECTION-NOTE-ERROR | Khắc phục lỗi thiếu boundary `multipart/form-data` khi cán bộ thụ lý tạo biên bản thực địa | `PLAN-20261026` | ✅ Hoàn thành |
 | **Giao diện**| TASK-FIX-UI-ADMIN-HEADER-HOMEPAGE-NEWS | Sửa lỗi xuống dòng buttons, click outside đóng dropdown header, icon Hồ sơ nghiệp vụ và layout báo chí Trang chủ | `PLAN-20261026` | ✅ Hoàn thành |
 | **Giao diện**| TASK-RESOLVED-PETITIONS-2X2-GRID | Chuẩn hóa font chữ, tracking và hiển thị 4 hồ sơ đã giải quyết dạng ngang trong lưới 2x2 | `PLAN-20261026` | ✅ Hoàn thành |
+| **Giao diện**| TASK-RESOLVED-PETITIONS-VERTICAL-CARDS | Chuyển đổi hiển thị hồ sơ đã giải quyết sang thẻ dạng dọc (Vertical Cards) cho 3-4 hồ sơ tốt nhất | `PLAN-20261026` | ✅ Hoàn thành |
 
 ---
 
@@ -384,6 +385,21 @@ Quy trình quản lý theo mô hình Đơn vị chuyên môn xử lý phản án
   - `HomePage.tsx`: Thiết lập container dạng lưới 2 cột x 2 hàng (`grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6`), hiển thị cân đối và rõ ràng 4 hồ sơ trên cùng một khung nhìn.
 - [X] **4. Kiểm thử**:
   - Frontend Build: `tsc -b && vite build` hoàn thành trong 1.95s, **0 lỗi TypeScript**.
+  - Backend Unit Tests: **50/50 test cases PASSED**.
+
+---
+
+### TASK-RESOLVED-PETITIONS-VERTICAL-CARDS: Hiển Thị Thẻ Dạng Dọc (Vertical Cards) Cho 3-4 Hồ Sơ Tốt Nhất *(26/10/2026 – PLAN-20261026)*
+
+- [X] **1. Nâng cấp Thẻ dạng dọc (`variant="standard"` trong `ResolvedPetitionCard.tsx`)**:
+  - Thiết kế hoàn chỉnh thẻ dọc với ảnh thumbnail tỉ lệ 16:10 ở trên, đính kèm mã hồ sơ `#TS-...`, ngày ban hành và huy hiệu *"Đã kết luận"*.
+  - Nội dung phía dưới gồm: chuyên mục, tiêu đề font sans đậm, địa bàn & phòng ban thụ lý, hộp trích dẫn kết luận & số quyết định, đánh giá sao CSAT từ công dân, thời gian giải quyết SLA và nút *"Xem chi tiết"*.
+  - Khóa chiều cao `h-full flex flex-col justify-between` giúp các thẻ dọc trong cùng hàng luôn cao bằng nhau tăm tắp.
+- [X] **2. Tối ưu bố cục hiển thị Top 3-4 hồ sơ trên `HomePage.tsx`**:
+  - Tự động lọc hiển thị 3-4 hồ sơ có đánh giá CSAT 5 sao cao nhất từ người dân và thời gian giải quyết mới nhất.
+  - Lưới responsive tự thích ứng: tự động co giãn 4 cột trên desktop (`lg:grid-cols-4`) nếu có 4 hồ sơ, hoặc 3 cột (`lg:grid-cols-3`) nếu có 3 hồ sơ.
+- [X] **3. Kiểm thử**:
+  - Frontend Build: `tsc -b && vite build` hoàn thành trong 1.36s, **0 lỗi TypeScript**.
   - Backend Unit Tests: **50/50 test cases PASSED**.
 
 

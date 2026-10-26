@@ -428,11 +428,11 @@ export const HomePage: React.FC = () => {
           </button>
         </div>
 
-        {/* Danh sách 4 bản tin dạng ngang bố cục lưới 2x2 */}
+        {/* Danh sách 3-4 hồ sơ tiêu biểu dạng dọc (Vertical Cards) */}
         {loadingResolved ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="rounded-2xl bg-white border border-slate-200 animate-pulse h-52"></div>
+              <div key={i} className="rounded-2xl bg-white border border-slate-200 animate-pulse h-80"></div>
             ))}
           </div>
         ) : displayPetitions.length === 0 ? (
@@ -449,10 +449,10 @@ export const HomePage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Lưới 2x2 gồm 4 hồ sơ tiêu biểu dạng ngang */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+            {/* Lưới các hồ sơ tiêu biểu dạng dọc (3 cột nếu có 3 hồ sơ, 4 cột nếu có 4 hồ sơ) */}
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${displayPetitions.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-5 sm:gap-6`}>
               {displayPetitions.map((p) => (
-                <ResolvedPetitionCard key={p.id} petition={p} variant="horizontal" />
+                <ResolvedPetitionCard key={p.id} petition={p} variant="standard" />
               ))}
             </div>
 
