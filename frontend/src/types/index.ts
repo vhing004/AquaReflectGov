@@ -197,6 +197,15 @@ export interface PetitionTrackingDetail {
   feedbackRating?: number;
   feedbackComment?: string;
   feedbackAt?: string;
+  publicComments?: PublicComment[];
+}
+
+export interface PublicComment {
+  id: string;
+  authorName: string;
+  content: string;
+  createdAt: string;
+  isAuthorOfPetition: boolean;
 }
 
 export type ReopenStatusType = 'None' | 'Requested' | 'Approved' | 'Rejected';

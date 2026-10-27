@@ -8,7 +8,8 @@ import type {
   SubmitFeedbackResult,
   PublicResolvedPetition,
   WithdrawPetitionResult,
-  SubmitAdditionalInfoResult
+  SubmitAdditionalInfoResult,
+  PublicComment
 } from '../types';
 
 export const petitionApi = {
@@ -47,6 +48,17 @@ export const petitionApi = {
     const res = await axiosClient.post<ApiResponse<SubmitFeedbackResult>>(
       `/petitions/${encodeURIComponent(trackingCode.trim())}/feedback`,
       { rating, comment }
+    );
+    return res.data;
+  },
+
+  addPublicComment: async (
+    trackingCode: string,
+    content: string
+  ): Promise<ApiResponse<PublicComment>> => {
+    const res = await axiosClient.post<ApiResponse<PublicComment>>(
+      `/petitions/${encodeURIComponent(trackingCode.trim())}/comments`,
+      { content: content.trim() }
     );
     return res.data;
   },

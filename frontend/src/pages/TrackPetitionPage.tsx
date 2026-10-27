@@ -37,7 +37,10 @@ import {
   CheckCircle,
   FileX,
   UploadCloud,
-  LogIn
+  LogIn,
+  MessageSquare,
+  Send,
+  User
 } from 'lucide-react';
 
 const LOCAL_STORAGE_RECENT_KEY = 'aquareflect_recent_searches';
@@ -90,6 +93,12 @@ export const TrackPetitionPage: React.FC = () => {
   const [feedbackIsSubmitting, setFeedbackIsSubmitting] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<{ rating: number; comment?: string } | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+
+  // Public Comments state (Bình luận cộng đồng trên hồ sơ đã xử lý)
+  const [publicCommentText, setPublicCommentText] = useState('');
+  const [publicCommentIsSubmitting, setPublicCommentIsSubmitting] = useState(false);
+  const [publicCommentError, setPublicCommentError] = useState<string | null>(null);
+  const [publicCommentSuccess, setPublicCommentSuccess] = useState<string | null>(null);
 
   // Withdraw petition state (Task 2.3)
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -309,6 +318,43 @@ export const TrackPetitionPage: React.FC = () => {
       setFeedbackError(msg);
     } finally {
       setFeedbackIsSubmitting(false);
+    }
+  };
+
+  // --- Submit Public Comment Handler (Bình luận của nhân dân) ---
+  const handleSubmitPublicComment = async () => {
+    if (!trackingDetail) return;
+    if (!isAuthenticated || !user) {
+      setPublicCommentError('Vui lòng đăng nhập tài khoản công dân để tham gia gửi ý kiến bình luận.');
+      return;
+    }
+    if (!publicCommentText.trim()) {
+      setPublicCommentError('Vui lòng nhập nội dung bình luận.');
+      return;
+    }
+    try {
+      setPublicCommentIsSubmitting(true);
+      setPublicCommentError(null);
+      const res = await petitionApi.addPublicComment(
+        trackingDetail.trackingCode,
+        publicCommentText.trim()
+      );
+      if (res.success && res.data) {
+        setTrackingDetail(prev => prev ? {
+          ...prev,
+          publicComments: [...(prev.publicComments || []), res.data]
+        } : prev);
+        setPublicCommentText('');
+        setPublicCommentSuccess('Gửi ý kiến bình luận thành công.');
+        setTimeout(() => setPublicCommentSuccess(null), 3500);
+      } else {
+        setPublicCommentError(res.message || 'Lỗi khi gửi bình luận.');
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Có lỗi xảy ra khi gửi bình luận. Vui lòng thử lại sau.';
+      setPublicCommentError(msg);
+    } finally {
+      setPublicCommentIsSubmitting(false);
     }
   };
 
@@ -1351,6 +1397,167 @@ export const TrackPetitionPage: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* --- KHU VỰC Ý KIẾN & BÌNH LUẬN CỦA NHÂN DÂN --- */}
+              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+                {/* Header bình luận */}
+                <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-sky-100 text-[#006194] flex items-center justify-center font-bold">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                        Ý Kiến & Bình Luận Của Nhân Dân
+                      </h3>
+                      <p className="text-[11px] text-slate-500">
+                        Không gian trao đổi, đóng góp ý kiến công khai về kết quả giải quyết
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-sky-50 text-[#006194] border border-sky-100 shrink-0">
+                    {trackingDetail.publicComments?.length || 0} ý kiến
+                  </span>
+                </div>
+
+                {/* Danh sách bình luận */}
+                <div className="p-5 sm:p-6 space-y-4">
+                  {(!trackingDetail.publicComments || trackingDetail.publicComments.length === 0) ? (
+                    <div className="text-center py-6 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                      <p className="text-xs font-medium text-slate-600">
+                        Chưa có ý kiến bình luận nào cho hồ sơ này.
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Hãy là người đầu tiên đóng góp ý kiến phản hồi về kết quả giải quyết.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {trackingDetail.publicComments.map((comment) => (
+                        <div
+                          key={comment.id}
+                          className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2 hover:bg-slate-50 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-7 h-7 rounded-full bg-[#006194]/10 text-[#006194] font-bold text-xs flex items-center justify-center shrink-0">
+                                {comment.authorName ? comment.authorName.charAt(0).toUpperCase() : 'U'}
+                              </div>
+                              <span className="text-xs font-bold text-slate-800">
+                                {comment.authorName}
+                              </span>
+                              {comment.isAuthorOfPetition && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                                  Người gửi phản ánh
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-400 shrink-0">
+                              {new Date(comment.createdAt).toLocaleDateString('vi-VN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed pl-9">
+                            {comment.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Form gửi bình luận mới */}
+                  <div className="pt-3 border-t border-slate-100">
+                    {!isAuthenticated || !user ? (
+                      /* Banner nhắc nhở đăng nhập */
+                      <div className="p-4 rounded-2xl bg-sky-50/60 border border-sky-100 text-center space-y-2.5">
+                        <p className="text-xs text-slate-600">
+                          Bạn muốn chia sẻ ý kiến hoặc đóng góp phản hồi về hồ sơ này?
+                        </p>
+                        <div className="flex items-center justify-center space-x-2">
+                          <Link
+                            to={`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+                            className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-[#006194] hover:bg-[#0284c7] text-white text-xs font-semibold shadow-xs transition-all"
+                          >
+                            <LogIn className="w-3.5 h-3.5" />
+                            <span>Đăng nhập để bình luận</span>
+                          </Link>
+                          <Link
+                            to={`/register?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+                            className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-all"
+                          >
+                            <span>Tạo tài khoản</span>
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Form gửi bình luận đã đăng nhập */
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-700 flex items-center space-x-1.5">
+                            <User className="w-3.5 h-3.5 text-[#006194]" />
+                            <span>Ý kiến của bạn với tư cách: <strong>{user.fullName || user.username}</strong></span>
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {publicCommentText.length}/1000 ký tự
+                          </span>
+                        </div>
+
+                        <div className="relative">
+                          <textarea
+                            value={publicCommentText}
+                            onChange={(e) => setPublicCommentText(e.target.value)}
+                            placeholder="Nhập ý kiến đóng góp, nhận định hoặc thắc mắc của bạn về kết quả giải quyết hồ sơ này..."
+                            rows={3}
+                            maxLength={1000}
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006194]/30 focus:border-[#006194] text-xs resize-none transition-all"
+                          />
+                        </div>
+
+                        {publicCommentError && (
+                          <div className="flex items-center space-x-1.5 text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{publicCommentError}</span>
+                          </div>
+                        )}
+
+                        {publicCommentSuccess && (
+                          <div className="flex items-center space-x-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>{publicCommentSuccess}</span>
+                          </div>
+                        )}
+
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={handleSubmitPublicComment}
+                            disabled={publicCommentIsSubmitting || !publicCommentText.trim()}
+                            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#006194] hover:bg-[#0284c7] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                          >
+                            {publicCommentIsSubmitting ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Đang gửi ý kiến...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-3.5 h-3.5" />
+                                <span>Gửi bình luận</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Cột phải (5 cols): Thông tin cơ quan, người nộp, dòng thời gian nhật ký */}

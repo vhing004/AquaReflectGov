@@ -238,6 +238,38 @@ public class PetitionsController : BaseApiController
     }
 
     /// <summary>
+    /// Công dân gửi bình luận / ý kiến đóng góp công khai về hồ sơ phản ánh đã được giải quyết
+    /// </summary>
+    /// <param name="trackingCode">Mã tra cứu hồ sơ (ví dụ: TS-202609-HGZH4)</param>
+    /// <param name="request">Nội dung bình luận</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Thông tin bình luận đã được lưu thành công</returns>
+    [HttpPost("{trackingCode}/comments")]
+    [ProducesResponseType(typeof(ApiResponse<PublicCommentDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<PublicCommentDto>>> AddPublicComment(
+        string trackingCode,
+        [FromBody] AddPublicCommentRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return StatusCode(StatusCodes.Status401Unauthorized, ApiResponse<object>.Fail(
+                "Vui lòng đăng nhập tài khoản công dân để gửi bình luận.", StatusCodes.Status401Unauthorized));
+        }
+
+        var command = new AquaReflect.Application.Features.Petitions.Commands.AddPublicComment.AddPublicCommentCommand
+        {
+            TrackingCode = trackingCode,
+            Content = request.Content
+        };
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(ApiResponse<PublicCommentDto>.Created(result, "Gửi bình luận thành công."));
+    }
+
+    /// <summary>
     /// Lấy thông tin đánh giá CSAT và kiểm tra điều kiện đề nghị xem xét lại (Reopen).
     /// </summary>
     /// <param name="trackingCode">Mã tra cứu hồ sơ (ví dụ: TS-202610-AB3KZ)</param>
@@ -543,4 +575,13 @@ public class RequestReopenRequest
     /// </summary>
     public string? AccessPin { get; set; }
 }
+
+public class AddPublicCommentRequest
+{
+    /// <summary>
+    /// Nội dung bình luận của công dân (tối đa 1000 ký tự).
+    /// </summary>
+    public string Content { get; set; } = string.Empty;
+}
+
 

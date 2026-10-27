@@ -59,6 +59,9 @@ public class PetitionTrackingDto
     public string? FeedbackComment { get; set; }
     public DateTime? FeedbackAt { get; set; }
 
+    // Bình luận & Ý kiến thảo luận công khai của nhân dân
+    public List<PublicCommentDto> PublicComments { get; set; } = new();
+
     // Luồng CSAT & Xem xét lại hồ sơ (Task 5.2)
     public int? CsatScore { get; set; }
     public bool CanReopen { get; set; }

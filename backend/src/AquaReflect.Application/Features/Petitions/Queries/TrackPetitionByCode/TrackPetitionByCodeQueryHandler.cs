@@ -42,6 +42,8 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
                 .ThenInclude(r => r!.ApprovedByUser)
             .Include(p => p.Feedback)
             .Include(p => p.DuplicateOf)
+            .Include(p => p.Comments.Where(c => !c.IsInternal && !c.IsDeleted))
+                .ThenInclude(c => c.AuthorUser)
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.TrackingCode == normalizedCode && !p.IsDeleted, cancellationToken);
 
@@ -161,6 +163,21 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
             result.FeedbackComment = petition.Feedback.Comment;
             result.FeedbackAt = petition.Feedback.FeedbackAt;
         }
+
+        // Bình luận & Ý kiến thảo luận công khai của nhân dân
+        result.PublicComments = petition.Comments
+            .Where(c => !c.IsInternal && !c.IsDeleted)
+            .OrderBy(c => c.CreatedAt)
+            .Select(c => new PublicCommentDto
+            {
+                Id = c.Id,
+                AuthorName = c.AuthorName,
+                Content = c.Content,
+                CreatedAt = c.CreatedAt,
+                IsAuthorOfPetition = (!string.IsNullOrWhiteSpace(petition.CitizenName) && c.AuthorName.Trim().Equals(petition.CitizenName.Trim(), StringComparison.OrdinalIgnoreCase))
+                    || (!string.IsNullOrWhiteSpace(petition.CreatedBy) && c.AuthorUser != null && !string.IsNullOrWhiteSpace(c.AuthorUser.Username) && petition.CreatedBy.Equals(c.AuthorUser.Username, StringComparison.OrdinalIgnoreCase))
+            })
+            .ToList();
 
         // Luồng CSAT & Xem xét lại hồ sơ (Task 5.2):
         // CSAT <= 2 sao, hồ sơ đã Closed (hoặc Resolved), ReopenCount == 0, ReopenStatus == None
