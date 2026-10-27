@@ -42,21 +42,41 @@ public class GetPublicResolvedPetitionsQueryHandler
             query = query.Where(p => p.Category.Code == code);
         }
 
+        // Lọc theo từ khóa tìm kiếm (tiêu đề, mã tra cứu, địa bàn)
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var kw = request.Keyword.Trim().ToLower();
+            query = query.Where(p =>
+                p.Title.ToLower().Contains(kw) ||
+                p.TrackingCode.ToLower().Contains(kw) ||
+                (p.AddressText != null && p.AddressText.ToLower().Contains(kw)) ||
+                (p.Resolution != null && p.Resolution.ConclusionText != null && p.Resolution.ConclusionText.ToLower().Contains(kw)));
+        }
+
         // Sắp xếp
         query = request.SortBy?.ToLower() switch
         {
             "rating" => query
                 .OrderByDescending(p => p.Feedback != null ? p.Feedback.Rating : 0)
                 .ThenByDescending(p => p.ResolvedAt ?? p.CreatedAt),
+            "oldest" => query.OrderBy(p => p.ResolvedAt ?? p.CreatedAt),
             _ => query.OrderByDescending(p => p.ResolvedAt ?? p.CreatedAt)
         };
 
-        // Giới hạn số lượng
-        var limit = Math.Clamp(request.Limit, 1, 20);
+        // Phân trang hoặc Giới hạn số lượng
+        if (request.Page.HasValue && request.PageSize.HasValue)
+        {
+            var page = Math.Max(1, request.Page.Value);
+            var pageSize = Math.Clamp(request.PageSize.Value, 1, 50);
+            query = query.Skip((page - 1) * pageSize).Take(pageSize);
+        }
+        else
+        {
+            var limit = Math.Clamp(request.Limit, 1, 50);
+            query = query.Take(limit);
+        }
 
-        var petitions = await query
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+        var petitions = await query.ToListAsync(cancellationToken);
 
         // Map sang DTO
         return petitions.Select(p =>

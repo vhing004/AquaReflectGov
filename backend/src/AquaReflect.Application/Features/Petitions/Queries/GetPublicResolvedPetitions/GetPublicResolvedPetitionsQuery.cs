@@ -15,6 +15,15 @@ public class GetPublicResolvedPetitionsQuery : IRequest<List<PublicResolvedPetit
     /// <summary>Sắp xếp: "latest" (mới nhất) hoặc "rating" (đánh giá cao nhất)</summary>
     public string SortBy { get; set; } = "latest";
 
-    /// <summary>Số lượng kết quả tối đa (mặc định: 6, tối đa: 20)</summary>
+    /// <summary>Số lượng kết quả tối đa (dùng khi không dùng Page/PageSize)</summary>
     public int Limit { get; set; } = 6;
+
+    /// <summary>Từ khóa tìm kiếm (tiêu đề, mã hồ sơ, địa bàn)</summary>
+    public string? Keyword { get; set; }
+
+    /// <summary>Trang hiện tại (tùy chọn, bắt đầu từ 1)</summary>
+    public int? Page { get; set; }
+
+    /// <summary>Số lượng mỗi trang (tùy chọn, ví dụ: 9 hoặc 12)</summary>
+    public int? PageSize { get; set; }
 }

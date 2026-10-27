@@ -22,6 +22,7 @@ import { AdminPetitionsPage } from './pages/AdminPetitionsPage';
 import { AdminPetitionDetailPage } from './pages/AdminPetitionDetailPage';
 import { AdminGisMapPage } from './pages/AdminGisMapPage';
 import { UnitDashboardPage } from './pages/admin/UnitDashboardPage';
+import { PublicResolvedPetitionsPage } from './pages/PublicResolvedPetitionsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,6 +110,7 @@ export const App: React.FC = () => {
               <Route path="/submit" element={<SubmitPetitionPage />} />
               <Route path="/track" element={<TrackPetitionPage />} />
               <Route path="/track/:code" element={<TrackPetitionPage />} />
+              <Route path="/resolved" element={<PublicResolvedPetitionsPage />} />
               <Route path="/map" element={<MapPage />} />
 
               {/* Protected Route cho Cán bộ & Lãnh đạo */}

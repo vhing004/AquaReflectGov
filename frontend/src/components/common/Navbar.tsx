@@ -17,7 +17,8 @@ import {
   Globe, 
   FileText,
   Compass,
-  Users
+  Users,
+  CheckCircle2
 } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 import { hasRole, PERMISSIONS } from '../../utils/permissions';
@@ -69,6 +70,7 @@ export const Navbar: React.FC = () => {
     { to: '/', label: 'Trang chủ & Giám sát', icon: Waves },
     { to: '/submit', label: 'Gửi phản ánh', icon: Send },
     { to: '/track', label: 'Tra cứu tiến độ', icon: Search },
+    { to: '/resolved', label: 'Hồ sơ đã xử lý', icon: CheckCircle2 },
     { to: '/categories', label: 'Danh mục thủy sản', icon: Fish },
     { to: '/map', label: 'Bản đồ số & Cảnh báo IUU', icon: MapPin },
   ];

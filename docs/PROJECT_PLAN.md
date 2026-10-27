@@ -40,6 +40,7 @@
 | **Giao diện**| TASK-FIX-UI-ADMIN-HEADER-HOMEPAGE-NEWS | Sửa lỗi xuống dòng buttons, click outside đóng dropdown header, icon Hồ sơ nghiệp vụ và layout báo chí Trang chủ | `PLAN-20261026` | ✅ Hoàn thành |
 | **Giao diện**| TASK-RESOLVED-PETITIONS-2X2-GRID | Chuẩn hóa font chữ, tracking và hiển thị 4 hồ sơ đã giải quyết dạng ngang trong lưới 2x2 | `PLAN-20261026` | ✅ Hoàn thành |
 | **Giao diện**| TASK-RESOLVED-PETITIONS-VERTICAL-CARDS | Chuyển đổi hiển thị hồ sơ đã giải quyết sang thẻ dạng dọc (Vertical Cards) cho 3 hồ sơ tốt nhất | `PLAN-20261026` | ✅ Hoàn thành |
+| **Tính năng**| TASK-TAB-RESOLVED-AND-AUTH-FEEDBACK | Thêm Tab Navbar "Hồ sơ đã xử lý" (/resolved) công khai & Phân quyền Đánh giá CSAT yêu cầu Đăng nhập tài khoản | `PLAN-20261027` | ✅ Hoàn thành |
 
 ---
 

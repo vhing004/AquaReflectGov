@@ -77,13 +77,19 @@ export const petitionApi = {
   getPublicResolvedPetitions: async (
     categoryCode?: string,
     sortBy: string = 'latest',
-    limit: number = 6
+    limit: number = 6,
+    keyword?: string,
+    page?: number,
+    pageSize?: number
   ): Promise<ApiResponse<PublicResolvedPetition[]>> => {
     const res = await axiosClient.get<ApiResponse<PublicResolvedPetition[]>>(
       '/petitions/public-resolved',
       {
         params: {
           ...(categoryCode ? { categoryCode } : {}),
+          ...(keyword ? { keyword } : {}),
+          ...(page ? { page } : {}),
+          ...(pageSize ? { pageSize } : {}),
           sortBy,
           limit,
         },

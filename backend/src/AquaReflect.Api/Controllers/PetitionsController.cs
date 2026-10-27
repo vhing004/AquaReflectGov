@@ -28,15 +28,21 @@ public class PetitionsController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse<List<PublicResolvedPetitionDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<List<PublicResolvedPetitionDto>>>> GetPublicResolvedPetitions(
         [FromQuery] string? categoryCode,
+        [FromQuery] string? keyword = null,
         [FromQuery] string sortBy = "latest",
         [FromQuery] int limit = 6,
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
         var query = new GetPublicResolvedPetitionsQuery
         {
             CategoryCode = categoryCode,
+            Keyword = keyword,
             SortBy = sortBy,
-            Limit = limit
+            Limit = limit,
+            Page = page,
+            PageSize = pageSize
         };
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(ApiResponse<List<PublicResolvedPetitionDto>>.Ok(
@@ -207,8 +213,15 @@ public class PetitionsController : BaseApiController
         [FromBody] SubmitFeedbackRequest request,
         CancellationToken cancellationToken)
     {
+        // Bắt buộc người dùng phải đăng nhập tài khoản công dân để đánh giá phản ánh
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return StatusCode(StatusCodes.Status401Unauthorized, ApiResponse<object>.Fail(
+                "Vui lòng đăng nhập tài khoản công dân để gửi đánh giá chất lượng phục vụ.", StatusCodes.Status401Unauthorized));
+        }
+
         // Kịch bản 21: Token nội bộ gọi API công dân chấm CSAT trả về 403
-        if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Dispatcher") || User.IsInRole("Specialist") || User.IsInRole("SuperAdmin")))
+        if (User.IsInRole("Dispatcher") || User.IsInRole("Specialist") || User.IsInRole("SuperAdmin"))
         {
             return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(
                 "Cán bộ nội bộ không được quyền tự đánh giá hài lòng hoặc can thiệp CSAT của người dân.", StatusCodes.Status403Forbidden));
