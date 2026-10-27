@@ -42,6 +42,7 @@
 | **Giao diện**| TASK-RESOLVED-PETITIONS-VERTICAL-CARDS | Chuyển đổi hiển thị hồ sơ đã giải quyết sang thẻ dạng dọc (Vertical Cards) cho 3 hồ sơ tốt nhất | `PLAN-20261026` | ✅ Hoàn thành |
 | **Tính năng**| TASK-TAB-RESOLVED-AND-AUTH-FEEDBACK | Thêm Tab Navbar "Hồ sơ đã xử lý" (/resolved) công khai & Phân quyền Đánh giá CSAT yêu cầu Đăng nhập tài khoản | `PLAN-20261027` | ✅ Hoàn thành |
 | **Tính năng**| TASK-PUBLIC-COMMENTS-ON-RESOLVED-PETITIONS | Bình luận & Ý kiến cộng đồng trên các hồ sơ đã xử lý công khai (Tài khoản khác vẫn bình luận được) | `PLAN-20261027` | ✅ Hoàn thành |
+| **Giao diện**| TASK-REALTIME-STATS-HOMEPAGE | Hiển thị thông số thực tế của web trên Realtime Stats / KPI Cards Trang Chủ từ CSDL | `PLAN-20261027` | ✅ Hoàn thành |
 
 ---
 

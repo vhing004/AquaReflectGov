@@ -9,7 +9,8 @@ import type {
   PublicResolvedPetition,
   WithdrawPetitionResult,
   SubmitAdditionalInfoResult,
-  PublicComment
+  PublicComment,
+  PublicStats
 } from '../types';
 
 export const petitionApi = {
@@ -107,6 +108,11 @@ export const petitionApi = {
         },
       }
     );
+    return res.data;
+  },
+
+  getPublicStats: async (): Promise<ApiResponse<PublicStats>> => {
+    const res = await axiosClient.get<ApiResponse<PublicStats>>('/petitions/public-stats');
     return res.data;
   },
 

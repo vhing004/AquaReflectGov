@@ -4,17 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import { masterDataApi } from '../api/masterDataApi';
 import { petitionApi } from '../api/petitionApi';
 import { ResolvedPetitionCard } from '../components/ResolvedPetitionCard';
-import { 
-  Send, 
-  Search, 
-  Clock, 
-  MapPin, 
-  Fish, 
-  Droplets, 
-  AlertOctagon, 
-  Anchor, 
-  FileText, 
-  CheckCircle2, 
+import {
+  Send,
+  Search,
+  Clock,
+  MapPin,
+  Fish,
+  Droplets,
+  AlertOctagon,
+  Anchor,
+  FileText,
+  CheckCircle2,
   ArrowRight,
   ShieldCheck,
   LifeBuoy,
@@ -71,6 +71,13 @@ export const HomePage: React.FC = () => {
     queryKey: ['publicResolvedPetitions', resolvedFilter, resolvedSort],
     queryFn: () => petitionApi.getPublicResolvedPetitions(resolvedFilter, resolvedSort, 8),
   });
+
+  // Fetch thông số thống kê KPI thực tế
+  const { data: statsRes, isLoading: loadingStats } = useQuery({
+    queryKey: ['publicStats'],
+    queryFn: () => petitionApi.getPublicStats(),
+  });
+  const stats = statsRes?.data;
 
   const categories = categoriesRes?.data || [];
   const rawResolvedPetitions = resolvedRes?.data || [];
@@ -147,7 +154,7 @@ export const HomePage: React.FC = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-tr from-[#003c5c] via-[#006194] to-[#0284c7] text-white p-8 sm:p-12 lg:p-16 shadow-xl border border-sky-700/40">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]"></div>
-          
+
           <div className="relative max-w-3xl space-y-6">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-sky-400/20 border border-sky-300/30 text-sky-100 text-xs font-semibold backdrop-blur-xs">
               <ShieldCheck className="w-4 h-4 text-sky-300" />
@@ -187,48 +194,76 @@ export const HomePage: React.FC = () => {
       {/* 3. REALTIME STATS / KPI CARDS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs transition-all hover:shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tổng Tiếp Nhận</span>
               <div className="w-9 h-9 rounded-xl bg-sky-50 text-[#006194] flex items-center justify-center">
                 <FileCheck2 className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">1,280</p>
-            <p className="text-[11px] text-emerald-600 font-semibold mt-1">↑ +14.2% so với tháng trước</p>
+            {loadingStats ? (
+              <div className="h-9 w-24 bg-slate-200 rounded-lg animate-pulse mt-2"></div>
+            ) : (
+              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">
+                {stats?.totalPetitions?.toLocaleString('vi-VN') ?? 0}
+              </p>
+            )}
+            <p className="text-[11px] text-emerald-600 font-semibold mt-1">
+              {stats?.thisMonthCount ? `↑ +${stats.thisMonthCount} hồ sơ tháng này` : 'Dữ liệu số hóa toàn quốc'}
+            </p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs transition-all hover:shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Đang Thẩm Tra</span>
               <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                 <Clock className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-2">48</p>
-            <p className="text-[11px] text-slate-500 font-medium mt-1">Đang đo đạc trắc địa thực tế</p>
+            {loadingStats ? (
+              <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse mt-2"></div>
+            ) : (
+              <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-2">
+                {stats?.inProgressCount?.toLocaleString('vi-VN') ?? 0}
+              </p>
+            )}
+            <p className="text-[11px] text-slate-500 font-medium mt-1">Đang phân công & xác minh thực tế</p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs transition-all hover:shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Đã Giải Quyết</span>
               <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-2">1,216</p>
-            <p className="text-[11px] text-emerald-700 font-bold mt-1">Tỷ lệ hài lòng 95.0%</p>
+            {loadingStats ? (
+              <div className="h-9 w-24 bg-slate-200 rounded-lg animate-pulse mt-2"></div>
+            ) : (
+              <p className="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-2">
+                {stats?.resolvedCount?.toLocaleString('vi-VN') ?? 0}
+              </p>
+            )}
+            <p className="text-[11px] text-emerald-700 font-bold mt-1">
+              Đúng hạn SLA: {stats?.onTimeRate ?? 100}%
+            </p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs transition-all hover:shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cảnh Báo Nóng</span>
               <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                 <Radio className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-2">16</p>
-            <p className="text-[11px] text-rose-600 font-medium mt-1">Vùng giám sát trọng điểm IUU</p>
+            {loadingStats ? (
+              <div className="h-9 w-16 bg-slate-200 rounded-lg animate-pulse mt-2"></div>
+            ) : (
+              <p className="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-2">
+                {stats?.urgentOrHotCount?.toLocaleString('vi-VN') ?? 0}
+              </p>
+            )}
+            <p className="text-[11px] text-rose-600 font-medium mt-1">Vụ việc khẩn cấp & trọng điểm IUU</p>
           </div>
         </div>
       </section>
@@ -348,7 +383,7 @@ export const HomePage: React.FC = () => {
 
       {/* 5. SECTION: HỒ SƠ PHẢN ÁNH ĐÃ GIẢI QUYẾT & CÔNG KHAI (LAYOUT DẠNG NGANG BẢN TIN CHÍNH LUẬN) */}
       <section ref={resolvedSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b-2 border-slate-900 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b-2 border-slate-200 pb-4">
           <div>
             <div className="flex items-center space-x-2 text-xs font-bold text-[#006194] uppercase tracking-wide">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
@@ -395,11 +430,10 @@ export const HomePage: React.FC = () => {
           >
             <button
               onClick={() => setResolvedFilter(undefined)}
-              className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                !resolvedFilter
+              className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${!resolvedFilter
                   ? 'bg-[#006194] text-white shadow-md scale-[1.02]'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+                }`}
             >
               Tất cả chuyên mục
             </button>
@@ -407,11 +441,10 @@ export const HomePage: React.FC = () => {
               <button
                 key={cat.id}
                 onClick={() => setResolvedFilter(cat.code)}
-                className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  resolvedFilter === cat.code
+                className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${resolvedFilter === cat.code
                     ? 'bg-[#006194] text-white shadow-md scale-[1.02]'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                  }`}
               >
                 {cat.name}
               </button>

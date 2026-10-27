@@ -243,6 +243,16 @@ export interface PetitionSummary {
   departmentName?: string;
 }
 
+export interface PublicStats {
+  totalPetitions: number;
+  inProgressCount: number;
+  resolvedCount: number;
+  urgentOrHotCount: number;
+  satisfactionRate: number;
+  onTimeRate: number;
+  thisMonthCount: number;
+}
+
 export interface PublicResolvedPetition {
   id: string;
   trackingCode: string;

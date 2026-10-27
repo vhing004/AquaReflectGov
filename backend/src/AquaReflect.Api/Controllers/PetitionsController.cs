@@ -7,6 +7,7 @@ using AquaReflect.Application.Features.Petitions.Commands.WithdrawPetition;
 using AquaReflect.Application.Features.Petitions.DTOs;
 using AquaReflect.Application.Features.Petitions.Queries.GetPetitionsByPhone;
 using AquaReflect.Application.Features.Petitions.Queries.GetPublicResolvedPetitions;
+using AquaReflect.Application.Features.Petitions.Queries.GetPublicStats;
 using AquaReflect.Application.Features.Petitions.Queries.TrackPetitionByCode;
 using AquaReflect.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +48,20 @@ public class PetitionsController : BaseApiController
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(ApiResponse<List<PublicResolvedPetitionDto>>.Ok(
             result, $"Tìm thấy {result.Count} hồ sơ phản ánh đã giải quyết."));
+    }
+
+    /// <summary>
+    /// Lấy các chỉ số thống kê thực tế công khai của hệ thống để hiển thị trên Trang chủ
+    /// </summary>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Thông số thực tế: Tổng tiếp nhận, đang thẩm tra, đã giải quyết, cảnh báo nóng, tỷ lệ hài lòng...</returns>
+    [HttpGet("public-stats")]
+    [ProducesResponseType(typeof(ApiResponse<PublicStatsDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<PublicStatsDto>>> GetPublicStats(CancellationToken cancellationToken)
+    {
+        var query = new GetPublicStatsQuery();
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(ApiResponse<PublicStatsDto>.Ok(result, "Lấy thông số thống kê công khai thành công."));
     }
     /// <summary>
     /// Tiếp nhận phản ánh kiến nghị mới từ người dân / cơ sở nuôi trồng thủy sản (Hỗ trợ kèm tệp ảnh/video thực địa)
