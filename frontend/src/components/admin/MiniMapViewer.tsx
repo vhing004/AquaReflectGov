@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, ExternalLink, Copy, Check, Compass } from 'lucide-react';
+import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface MiniMapViewerProps {
   latitude?: number;
@@ -8,6 +10,13 @@ interface MiniMapViewerProps {
   administrativeUnitName?: string;
 }
 
+const SATELLITE_TILE_CONFIG = {
+  url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+  attribution: '&copy; Google Maps',
+  maxZoom: 20,
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+};
+
 export const MiniMapViewer: React.FC<MiniMapViewerProps> = ({
   latitude,
   longitude,
@@ -15,8 +24,97 @@ export const MiniMapViewer: React.FC<MiniMapViewerProps> = ({
   administrativeUnitName,
 }) => {
   const [copied, setCopied] = useState(false);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
 
   const hasCoords = typeof latitude === 'number' && typeof longitude === 'number' && !isNaN(latitude) && !isNaN(longitude);
+
+  // 1. Khởi tạo bản đồ Leaflet cố định ở chế độ Vệ tinh
+  useEffect(() => {
+    if (!hasCoords || !mapContainerRef.current) return;
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
+
+    const map = L.map(mapContainerRef.current, {
+      center: [latitude!, longitude!],
+      zoom: 15,
+      zoomControl: true,
+      scrollWheelZoom: false,
+    });
+
+    // Tải lớp bản đồ nền Vệ tinh Google Hybrid (siêu nét, có nhãn địa danh & sông biển)
+    L.tileLayer(SATELLITE_TILE_CONFIG.url, {
+      attribution: SATELLITE_TILE_CONFIG.attribution,
+      maxZoom: SATELLITE_TILE_CONFIG.maxZoom,
+      subdomains: SATELLITE_TILE_CONFIG.subdomains as any,
+    }).addTo(map);
+
+    // Marker ghim vị trí hiện trường dạng SVG đỏ viền trắng nổi bật trên nền vệ tinh
+    const customPin = L.divIcon({
+      className: 'custom-gis-pin',
+      html: `
+        <div style="position: relative; width: 34px; height: 42px;">
+          <div style="
+            width: 32px;
+            height: 32px;
+            background: #ef4444;
+            border: 2.5px solid #ffffff;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+          ">
+            <div style="transform: rotate(45deg); display: flex; align-items: center; justify-content: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+          </div>
+        </div>
+      `,
+      iconSize: [34, 42],
+      iconAnchor: [16, 40],
+      popupAnchor: [0, -34],
+    });
+
+    const marker = L.marker([latitude!, longitude!], { icon: customPin }).addTo(map);
+
+    marker.bindPopup(`
+      <div style="font-family: inherit; font-size: 12px; line-height: 1.4; color: #1e293b; min-width: 190px;">
+        <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">Vị trí hiện trường (Ảnh vệ tinh)</div>
+        <div style="color: #64748b; font-size: 11px; margin-bottom: 4px;">${addressText || 'Chưa có thông tin'}</div>
+        <div style="font-family: monospace; font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; display: inline-block;">
+          ${latitude!.toFixed(6)}, ${longitude!.toFixed(6)}
+        </div>
+      </div>
+    `);
+
+    mapInstanceRef.current = map;
+
+    // Kích hoạt tính toán lại kích thước view của Leaflet sau khi render
+    const t1 = setTimeout(() => map.invalidateSize(), 100);
+    const t2 = setTimeout(() => map.invalidateSize(), 400);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (mapContainerRef.current && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize();
+      });
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      if (resizeObserver) resizeObserver.disconnect();
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, [hasCoords, latitude, longitude, addressText]);
 
   const formatDMS = (deg: number, isLat: boolean) => {
     const absolute = Math.abs(deg);
@@ -49,7 +147,7 @@ export const MiniMapViewer: React.FC<MiniMapViewerProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900">Vị Trí Hiện Trường & Không Gian GIS</h3>
-            <p className="text-[11px] text-slate-500">Định vị GPS / VMS tại vùng biển hoặc cơ sở nuôi trồng</p>
+            <p className="text-[11px] text-slate-500">Định vị GPS / VMS ảnh vệ tinh mặt nước và cơ sở nuôi trồng</p>
           </div>
         </div>
 
@@ -74,7 +172,7 @@ export const MiniMapViewer: React.FC<MiniMapViewerProps> = ({
         )}
       </div>
 
-      {/* Address and coordinate badges */}
+      {/* Địa chỉ và huy hiệu toạ độ */}
       <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/70 space-y-2 text-xs">
         <div className="flex items-start space-x-2">
           <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
@@ -111,19 +209,23 @@ export const MiniMapViewer: React.FC<MiniMapViewerProps> = ({
         )}
       </div>
 
-      {/* Interactive Map view */}
+      {/* Bản đồ Leaflet tương tác chuyên biệt Vệ Tinh */}
       {hasCoords ? (
-        <div className="relative rounded-xl overflow-hidden border border-slate-200 shadow-inner h-60 w-full bg-slate-100">
-          <iframe
-            title="OpenStreetMap Location"
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            scrolling="no"
-            src={`https://www.openstreetmap.org/export/embed.html?bbox=${longitude! - 0.015}%2C${latitude! - 0.01}%2C${longitude! + 0.015}%2C${latitude! + 0.01}&layer=mapnik&marker=${latitude}%2C${longitude}`}
-            className="w-full h-full"
+        <div className="relative rounded-xl overflow-hidden border border-slate-200 shadow-inner h-64 w-full bg-slate-900">
+          <div
+            ref={mapContainerRef}
+            className="w-full h-full z-0"
+            style={{ height: '100%', minHeight: '256px', width: '100%' }}
           />
-          <div className="absolute bottom-2 right-2 flex items-center space-x-2">
+
+          {/* Huy hiệu hiển thị chế độ ảnh vệ tinh */}
+          <div className="absolute top-2 right-2 z-[1000] flex items-center space-x-1.5 bg-black/65 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-lg text-[11px] font-bold text-white">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Ảnh Vệ Tinh Trực Giao</span>
+          </div>
+
+          {/* Nút chỉ đường Google Maps */}
+          <div className="absolute bottom-2 right-2 z-[1000] flex items-center space-x-2">
             <a
               href={googleMapsUrl}
               target="_blank"

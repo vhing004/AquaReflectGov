@@ -432,7 +432,7 @@ export const TrackPetitionPage: React.FC = () => {
         </div>
         <div className="flex items-center space-x-2 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-semibold border border-emerald-200">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Dữ liệu trực tuyến từ Chi cục Thủy sản 28 tỉnh ven biển</span>
+          <span>Dữ liệu trực tuyến từ Chi cục & Ban Quản lý trên toàn quốc (34 tỉnh/thành)</span>
         </div>
       </div>
 
@@ -1586,7 +1586,7 @@ export const TrackPetitionPage: React.FC = () => {
 
                 <div>
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Địa bàn hành chính</span>
-                  <p className="font-semibold text-slate-800 mt-0.5">{trackingDetail.administrativeUnitName || '28 tỉnh ven biển'}</p>
+                  <p className="font-semibold text-slate-800 mt-0.5">{trackingDetail.administrativeUnitName || 'Toàn quốc (34 tỉnh/thành)'}</p>
                 </div>
 
                 <div>

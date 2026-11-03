@@ -134,7 +134,7 @@ export const HomePage: React.FC = () => {
           <div className="flex items-center space-x-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-slate-800 font-semibold">
-              Hệ thống giám sát 28 tỉnh ven biển trực tuyến 24/7
+              Hệ thống tiếp nhận & giám sát toàn quốc (34 tỉnh/thành sau sáp nhập) trực tuyến 24/7
             </span>
             <span className="text-slate-300 hidden sm:inline">|</span>
             <span className="text-slate-500 hidden sm:inline">
