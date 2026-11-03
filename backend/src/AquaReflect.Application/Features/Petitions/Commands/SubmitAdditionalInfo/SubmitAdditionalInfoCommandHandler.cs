@@ -135,7 +135,7 @@ public class SubmitAdditionalInfoCommandHandler : IRequestHandler<SubmitAddition
                     FileSize = uploadResult.FileSize
                 };
 
-                petition.Attachments.Add(attachment);
+                _context.PetitionAttachments.Add(attachment);
 
                 newAttachmentDtos.Add(new PetitionAttachmentDto
                 {

@@ -133,7 +133,7 @@ public class AddInspectionNoteCommandHandler : IRequestHandler<AddInspectionNote
                     FileSize = uploadResult.FileSize
                 };
 
-                petition.Attachments.Add(attachment);
+                _context.PetitionAttachments.Add(attachment);
 
                 newAttachmentDtos.Add(new PetitionAttachmentDto
                 {

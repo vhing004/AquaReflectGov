@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Send, 
-  MessageSquare, 
-  ShieldAlert, 
+import {
+  Send,
+  MessageSquare,
+  ShieldAlert,
   Loader2,
   Network,
   Users
@@ -41,8 +41,8 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
   // Phân quyền kênh chat theo Yêu cầu 1:
   // - Kênh chung điều phối: chỉ dành cho Trưởng phòng/Trưởng đơn vị (isUnitLead), Cán bộ tiếp nhận (Dispatcher), và Admin (SuperAdmin).
   // - Chuyên viên xử lý (!isUnitLead): chỉ có quyền trong Kênh trao đổi nội bộ đơn vị.
-  const canAccessCoordination = activeUser?.role === 'SuperAdmin' || 
-    activeUser?.role === 'Dispatcher' || 
+  const canAccessCoordination = activeUser?.role === 'SuperAdmin' ||
+    activeUser?.role === 'Dispatcher' ||
     (activeUser?.role === 'Specialist' && activeUser?.isUnitLead);
 
   const [activeChannel, setActiveChannel] = useState<'unit' | 'coordination'>('unit');
@@ -102,7 +102,7 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
     setErrorMessage(null);
 
     // Nếu đang ở kênh điều phối chung, thêm tiền tố nhận diện
-    const formattedContent = activeChannel === 'coordination' 
+    const formattedContent = activeChannel === 'coordination'
       ? `[ĐIỀU PHỐI CHUNG] ${content.trim()}`
       : content.trim();
 
@@ -122,7 +122,7 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
 
   // Phân tách tin nhắn theo kênh
   const isCoordinationMessage = (comment: PetitionComment) => {
-    return comment.content.startsWith('[ĐIỀU PHỐI CHUNG]') || 
+    return comment.content.startsWith('[ĐIỀU PHỐI CHUNG]') ||
       comment.authorRoleName?.includes('Điều phối') ||
       comment.authorRoleName?.includes('Quản trị viên');
   };
@@ -180,17 +180,15 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
             <button
               type="button"
               onClick={() => setActiveChannel('unit')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeChannel === 'unit'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
-              }`}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeChannel === 'unit'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
+                }`}
             >
               <Users className="w-3.5 h-3.5" />
               <span>Nội Bộ Đơn Vị ({departmentName})</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                activeChannel === 'unit' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-600'
-              }`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeChannel === 'unit' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
                 {unitComments.length}
               </span>
             </button>
@@ -199,26 +197,19 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveChannel('coordination')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeChannel === 'coordination'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
-                }`}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeChannel === 'coordination'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
+                  }`}
               >
                 <Network className="w-3.5 h-3.5" />
                 <span>Kênh Điều Phối Chung (Cấp Phòng)</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                  activeChannel === 'coordination' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeChannel === 'coordination' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
                   {coordComments.length}
                 </span>
               </button>
             )}
-          </div>
-
-          <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Real-time SignalR
           </div>
         </div>
 
@@ -251,7 +242,7 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
               {activeChannel === 'unit' ? 'Chưa có trao đổi nội bộ đơn vị nào' : 'Chưa có trao đổi điều phối chung nào'}
             </p>
             <p className="text-xs text-slate-400 mt-1 max-w-sm">
-              {activeChannel === 'unit' 
+              {activeChannel === 'unit'
                 ? 'Trưởng đơn vị và các thành viên trong đơn vị có thể nhắn tin chỉ đạo, cập nhật tiến độ kiểm tra thực địa hoặc phối hợp xử lý tại đây.'
                 : 'Trưởng các phòng ban giao tiếp với Cán bộ tiếp nhận (Điều phối) và Quản trị viên tại đây.'}
             </p>
@@ -267,12 +258,12 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
             const cleanContent = comment.content.replace(/^\[ĐIỀU PHỐI CHUNG\]\s*/, '');
 
             return (
-              <div 
+              <div
                 key={comment.id}
                 className={`flex gap-2.5 max-w-[85%] ${isMe ? 'ml-auto flex-row-reverse' : ''}`}
               >
                 {/* Avatar */}
-                <div 
+                <div
                   className={`w-8 h-8 rounded-full ${getAvatarBg(comment.authorName)} text-white flex-shrink-0 flex items-center justify-center text-xs font-bold shadow-sm`}
                   title={comment.authorName}
                 >
@@ -300,11 +291,10 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
                     </span>
                   </div>
 
-                  <div className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${
-                    isMe 
-                      ? (activeChannel === 'coordination' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-blue-600 text-white rounded-tr-none')
-                      : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none'
-                  }`}>
+                  <div className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${isMe
+                    ? (activeChannel === 'coordination' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-blue-600 text-white rounded-tr-none')
+                    : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none'
+                    }`}>
                     {cleanContent}
                   </div>
                 </div>
@@ -339,11 +329,10 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
           <button
             type="submit"
             disabled={!content.trim() || isSending}
-            className={`px-4 py-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-all flex-shrink-0 cursor-pointer ${
-              activeChannel === 'coordination'
-                ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
-                : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
-            }`}
+            className={`px-4 py-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-all flex-shrink-0 cursor-pointer ${activeChannel === 'coordination'
+              ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+              : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+              }`}
           >
             {isSending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

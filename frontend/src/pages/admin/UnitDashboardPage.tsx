@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Users, 
-  UserCheck, 
-  Clock, 
-  FileCheck2, 
-  Briefcase, 
-  AlertCircle, 
-  ChevronRight, 
-  ShieldCheck, 
-  Loader2, 
+import {
+  Users,
+  UserCheck,
+  Clock,
+  FileCheck2,
+  Briefcase,
+  AlertCircle,
+  ChevronRight,
+  ShieldCheck,
+  Loader2,
   RefreshCw,
   Search,
   CheckCircle2
@@ -18,10 +18,10 @@ import { adminApi } from '../../api/adminApi';
 import { useAuthStore } from '../../store/useAuthStore';
 import { AssignMemberModal } from '../../components/admin/AssignMemberModal';
 import { InspectionReportModal } from '../../components/admin/InspectionReportModal';
-import type { 
-  AdminPetitionItem, 
-  DepartmentOfficer, 
-  AdminPetitionDetail 
+import type {
+  AdminPetitionItem,
+  DepartmentOfficer,
+  AdminPetitionDetail
 } from '../../types';
 
 export const UnitDashboardPage: React.FC = () => {
@@ -33,7 +33,7 @@ export const UnitDashboardPage: React.FC = () => {
   const [petitions, setPetitions] = useState<AdminPetitionItem[]>([]);
   const [filterTab, setFilterTab] = useState<'unassigned' | 'pendingApproval' | 'investigating' | 'all'>('unassigned');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
-  
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
@@ -159,9 +159,9 @@ export const UnitDashboardPage: React.FC = () => {
       )}
 
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-blue-800 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-800 via-indigo-900 to-slate-900 rounded-3xl mt-6 p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-white/5 backdrop-blur-3xl transform skew-x-12 translate-x-10 pointer-events-none" />
-        
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/30 text-xs font-medium">
@@ -191,13 +191,12 @@ export const UnitDashboardPage: React.FC = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Đơn cần phân công */}
-        <div 
+        <div
           onClick={() => setFilterTab('unassigned')}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer ${
-            filterTab === 'unassigned'
+          className={`p-5 rounded-2xl border transition-all cursor-pointer ${filterTab === 'unassigned'
               ? 'bg-amber-500/10 border-amber-500/40 shadow-sm'
               : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-sm'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-amber-700 uppercase tracking-wider">Chờ phân công</span>
@@ -212,13 +211,12 @@ export const UnitDashboardPage: React.FC = () => {
         </div>
 
         {/* Chờ duyệt nghiệm thu */}
-        <div 
+        <div
           onClick={() => setFilterTab('pendingApproval')}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer ${
-            filterTab === 'pendingApproval'
+          className={`p-5 rounded-2xl border transition-all cursor-pointer ${filterTab === 'pendingApproval'
               ? 'bg-purple-500/10 border-purple-500/40 shadow-sm'
               : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-sm'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-purple-700 uppercase tracking-wider">Chờ duyệt nghiệm thu</span>
@@ -233,13 +231,12 @@ export const UnitDashboardPage: React.FC = () => {
         </div>
 
         {/* Đang xác minh */}
-        <div 
+        <div
           onClick={() => setFilterTab('investigating')}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer ${
-            filterTab === 'investigating'
+          className={`p-5 rounded-2xl border transition-all cursor-pointer ${filterTab === 'investigating'
               ? 'bg-blue-500/10 border-blue-500/40 shadow-sm'
               : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-sm'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Đang xác minh</span>
@@ -254,13 +251,12 @@ export const UnitDashboardPage: React.FC = () => {
         </div>
 
         {/* Đã hoàn thành */}
-        <div 
+        <div
           onClick={() => setFilterTab('all')}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer ${
-            filterTab === 'all'
+          className={`p-5 rounded-2xl border transition-all cursor-pointer ${filterTab === 'all'
               ? 'bg-emerald-500/10 border-emerald-500/40 shadow-sm'
               : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-sm'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Đã giải quyết</span>
@@ -292,7 +288,7 @@ export const UnitDashboardPage: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {officers.map((officer) => (
-              <div 
+              <div
                 key={officer.id}
                 className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between hover:bg-slate-50 transition-colors"
               >
@@ -314,13 +310,12 @@ export const UnitDashboardPage: React.FC = () => {
                 </div>
 
                 <div className="text-right">
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    officer.workloadLevel === 'Low'
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${officer.workloadLevel === 'Low'
                       ? 'bg-emerald-100 text-emerald-800'
                       : officer.workloadLevel === 'Medium'
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-rose-100 text-rose-800'
-                  }`}>
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}>
                     <Briefcase className="w-3 h-3" />
                     {officer.activeCaseCount} hồ sơ
                   </span>
@@ -339,41 +334,37 @@ export const UnitDashboardPage: React.FC = () => {
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => setFilterTab('unassigned')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                filterTab === 'unassigned'
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${filterTab === 'unassigned'
                   ? 'bg-amber-600 text-white shadow-sm'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
+                }`}
             >
               Chờ phân công ({unassignedCount})
             </button>
             <button
               onClick={() => setFilterTab('pendingApproval')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                filterTab === 'pendingApproval'
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${filterTab === 'pendingApproval'
                   ? 'bg-purple-600 text-white shadow-sm'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
+                }`}
             >
               Chờ duyệt nghiệm thu ({pendingApprovalCount})
             </button>
             <button
               onClick={() => setFilterTab('investigating')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                filterTab === 'investigating'
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${filterTab === 'investigating'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
+                }`}
             >
               Đang xác minh ({investigatingCount})
             </button>
             <button
               onClick={() => setFilterTab('all')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                filterTab === 'all'
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${filterTab === 'all'
                   ? 'bg-slate-800 text-white shadow-sm'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
+                }`}
             >
               Tất cả ({petitions.length})
             </button>
@@ -451,15 +442,14 @@ export const UnitDashboardPage: React.FC = () => {
                         )}
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          isPendingApproval
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${isPendingApproval
                             ? 'bg-purple-100 text-purple-800 border border-purple-200 animate-pulse'
                             : isUnassigned
-                            ? 'bg-amber-100 text-amber-800'
-                            : petition.status === 3
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}>
+                              ? 'bg-amber-100 text-amber-800'
+                              : petition.status === 3
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-emerald-100 text-emerald-800'
+                          }`}>
                           {petition.statusName}
                         </span>
                       </td>

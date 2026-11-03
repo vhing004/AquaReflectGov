@@ -1,28 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  ArrowLeft, 
-  Layers, 
-  FileText, 
-  Printer, 
-  Clock, 
-  User, 
-  Phone, 
-  Building2, 
-  Calendar, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Star, 
-  MessageSquare, 
-  Send, 
-  Download, 
-  Eye, 
-  ExternalLink, 
-  Copy, 
-  Check, 
-  Shield, 
-  Flame, 
+import {
+  ArrowLeft,
+  Layers,
+  FileText,
+  Printer,
+  Clock,
+  User,
+  Phone,
+  Building2,
+  Calendar,
+  AlertTriangle,
+  CheckCircle2,
+  Star,
+  MessageSquare,
+  Send,
+  Download,
+  Eye,
+  ExternalLink,
+  Copy,
+  Check,
+  Shield,
+  Flame,
   AlertCircle,
   FileCheck2,
   Film,
@@ -38,7 +38,9 @@ import {
   RotateCcw,
   ShieldCheck,
   Users,
-  CheckSquare
+  CheckSquare,
+  ChevronDown,
+  SlidersHorizontal
 } from 'lucide-react';
 import { adminApi } from '../api/adminApi';
 import { useAuthStore } from '../store/useAuthStore';
@@ -75,6 +77,19 @@ export const AdminPetitionDetailPage: React.FC = () => {
   const [isInspectionReportOpen, setIsInspectionReportOpen] = useState(false);
   const [inspectionReportMode, setInspectionReportMode] = useState<'submit' | 'review'>('submit');
   const [activeInternalTab, setActiveInternalTab] = useState<'thread' | 'notes'>('thread');
+  const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
+  const moreActionsRef = useRef<HTMLDivElement>(null);
+
+  // Dong dropdown menu thao tac khac khi click ben ngoai
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreActionsRef.current && !moreActionsRef.current.contains(event.target as Node)) {
+        setIsMoreActionsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Quick feedback state
   const [copiedCode, setCopiedCode] = useState(false);
@@ -106,11 +121,20 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return false;
   })();
 
+  // Quyen tiep nhan va dieu phoi phan anh moi (Giai doan 1: status = 1)
+  const canDispatch = (() => {
+    if (!petition || petition.status !== 1 || !user) return false;
+    if (petition.isConflictOfInterest) return false;
+    return user.role === 'SuperAdmin' || user.role === 'Dispatcher';
+  })();
+
   const canResolve = (() => {
     if (!petition || !user) return false;
     if (petition.isConflictOfInterest) return false;
     // Tuần tự: Phải đang ở giai đoạn Thẩm tra (Investigating = 3)
-    if (petition.status !== 3) return false;
+    // Tuan tu theo quy trinh: Chi ban hanh ket luan khi da qua nghiem thu va chua co van ban ket luan chinh thuc
+    const isReadyForResolution = (petition.status === 4 || !!petition.inspectionReportApprovedAt) && !petition.resolution;
+    if (!isReadyForResolution) return false;
     if (user.role === 'SuperAdmin') return true;
     if (user.role === 'Specialist' && user.isUnitLead) {
       return canAccessPetition(user.role, user.departmentId, petition.departmentId);
@@ -160,8 +184,9 @@ export const AdminPetitionDetailPage: React.FC = () => {
   const canAddInspectionNote = (() => {
     if (!petition || !user) return false;
     if (petition.isConflictOfInterest) return false;
-    if (petition.status !== 2 && petition.status !== 3) return false;
-    if (user.role === 'SuperAdmin' || user.role === 'Dispatcher') return true;
+    // Chi cho phep lap bien ban khi dang o giai doan tham tra thuc dia (status = 3)
+    if (petition.status !== 3) return false;
+    if (user.role === 'SuperAdmin') return true;
     if (user.role === 'Specialist') {
       return canAccessPetition(user.role, user.departmentId, petition.departmentId);
     }
@@ -172,7 +197,8 @@ export const AdminPetitionDetailPage: React.FC = () => {
   const canRequestNeedInfo = (() => {
     if (!petition || !user) return false;
     if (petition.isConflictOfInterest) return false;
-    if (petition.status !== 2 && petition.status !== 3) return false;
+    // Cho phep yeu cau bo sung khi tiep nhan (status = 1) hoac dang tham tra (status = 3)
+    if (petition.status !== 1 && petition.status !== 3) return false;
     return canTransition;
   })();
 
@@ -449,119 +475,230 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 <span className="hidden sm:inline whitespace-nowrap">Xem như người dân</span>
               </Link>
 
-              {/* [Task-Unit-Workflow] Nút Phân công Cán bộ nội bộ đơn vị (Tầng 2) */}
-              {canAssignMember && (petition.status === 2 || petition.status === 3) && (
-                <button
-                  onClick={() => setIsAssignMemberOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
-                  title="Trưởng đơn vị cử cán bộ trực tiếp thụ lý vụ việc"
-                >
-                  <Users className="w-3.5 h-3.5 text-white shrink-0" />
-                  <span className="whitespace-nowrap">Phân công cán bộ</span>
-                </button>
+              {/* ============================================================ */}
+              {/* QUY TRÌNH HÀNH ĐỘNG TUẦN TỰ RÕ RÀNG THEO TỪNG BƯỚC */}
+              {/* ============================================================ */}
+
+              {/* === BƯỚC 1: KHI NHẬN PHẢN ÁNH MỚI (status === 1) === */}
+              {canDispatch && (
+                <>
+                  {/* Điều phối phân công đơn vị giải quyết */}
+                  <button
+                    onClick={() => {
+                      setTransitionInitialStatus(2); // Assigned
+                      setIsTransitionOpen(true);
+                    }}
+                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0 animate-pulse"
+                    title="Tiếp nhận phản ánh và điều phối đơn vị có thẩm quyền giải quyết"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                    <span>Điều phối đơn vị</span>
+                  </button>
+
+                  {/* Đối với SuperAdmin: Có thể không cần điều phối mà tự tiếp nhận thẩm tra luôn */}
+                  {user?.role === 'SuperAdmin' && (
+                    <button
+                      onClick={() => {
+                        setTransitionInitialStatus(3); // Investigating trực tiếp
+                        setIsTransitionOpen(true);
+                      }}
+                      className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
+                      title="SuperAdmin trực tiếp tiếp nhận và bắt đầu thẩm tra (không qua điều phối)"
+                    >
+                      <Compass className="w-3.5 h-3.5 text-white shrink-0" />
+                      <span>Tự thụ lý thẩm tra ngay</span>
+                    </button>
+                  )}
+
+                  {/* Xác nhận xử lý sơ bộ: Yêu cầu bổ sung thông tin nếu thiếu căn cứ */}
+                  <button
+                    onClick={() => {
+                      setTransitionInitialStatus(7); // NeedInfo
+                      setIsTransitionOpen(true);
+                    }}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-300/40 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+                    title="Yêu cầu người dân bổ sung thêm hình ảnh, tọa độ hoặc thông tin"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                    <span className="hidden sm:inline">Yêu cầu bổ sung</span>
+                  </button>
+
+                  {/* Xác nhận xử lý sơ bộ: Gộp đơn trùng lặp */}
+                  <button
+                    onClick={() => {
+                      setTransitionInitialStatus(8); // Merged
+                      setIsTransitionOpen(true);
+                    }}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-300/40 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+                    title="Gộp vào hồ sơ phản ánh gốc đã tiếp nhận trước đó do trùng lặp"
+                  >
+                    <GitMerge className="w-3.5 h-3.5 text-purple-300 shrink-0" />
+                    <span className="hidden sm:inline">Gộp đơn</span>
+                  </button>
+
+                  {/* Chuyển cơ quan khác hoặc Từ chối */}
+                  <div className="relative shrink-0" ref={moreActionsRef}>
+                    <button
+                      onClick={() => setIsMoreActionsOpen(!isMoreActionsOpen)}
+                      className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all border border-white/20 cursor-pointer whitespace-nowrap"
+                      title="Chuyển cơ quan ngoài ngành hoặc từ chối thụ lý"
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-sky-200 shrink-0" />
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isMoreActionsOpen ? 'rotate-180' : ''} shrink-0`} />
+                    </button>
+
+                    {isMoreActionsOpen && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 text-slate-800 animate-in fade-in zoom-in-95">
+                        <button
+                          onClick={() => {
+                            setIsMoreActionsOpen(false);
+                            setTransitionInitialStatus(9); // Forwarded
+                            setIsTransitionOpen(true);
+                          }}
+                          className="w-full text-left px-3.5 py-2 text-xs font-semibold hover:bg-cyan-50 text-cyan-900 flex items-center space-x-2 transition-colors cursor-pointer"
+                        >
+                          <CornerUpRight className="w-3.5 h-3.5 text-cyan-600 shrink-0" />
+                          <span>Chuyển cơ quan khác</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsMoreActionsOpen(false);
+                            setTransitionInitialStatus(5); // Rejected
+                            setIsTransitionOpen(true);
+                          }}
+                          className="w-full text-left px-3.5 py-2 text-xs font-semibold hover:bg-rose-50 text-rose-900 flex items-center space-x-2 transition-colors cursor-pointer"
+                        >
+                          <FileX className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>Từ chối thụ lý</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
-              {/* [Task-Unit-Workflow] Nút Cán bộ nộp báo cáo nghiệm thu lên Trưởng đơn vị */}
-              {canSubmitInspectionReport && (
-                <button
-                  onClick={() => {
-                    setInspectionReportMode('submit');
-                    setIsInspectionReportOpen(true);
-                  }}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-white text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
-                  title="Nộp báo cáo nghiệm thu thực địa lên Trưởng đơn vị phê duyệt"
-                >
-                  <ClipboardCheck className="w-3.5 h-3.5 text-white shrink-0" />
-                  <span className="whitespace-nowrap">Nộp báo cáo nghiệm thu</span>
-                </button>
+              {/* === BƯỚC 2: ĐÃ TIẾP NHẬN / ĐIỀU PHỐI (status === 2) === */}
+              {petition.status === 2 && (
+                <>
+                  {/* Bắt đầu thẩm tra */}
+                  {canBeginInvestigation && (
+                    <button
+                      onClick={handleBeginInvestigation}
+                      disabled={isBeginningInvestigation}
+                      className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0 animate-pulse"
+                      title="Chuyển trạng thái sang Đang thẩm tra thực địa (Investigating)"
+                    >
+                      {isBeginningInvestigation ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                      ) : (
+                        <Compass className="w-3.5 h-3.5 shrink-0" />
+                      )}
+                      <span className="whitespace-nowrap">Bắt đầu thẩm tra</span>
+                    </button>
+                  )}
+
+                  {/* Phân công cán bộ nội bộ */}
+                  {canAssignMember && (
+                    <button
+                      onClick={() => setIsAssignMemberOpen(true)}
+                      className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
+                      title="Cử cán bộ chuyên viên trực tiếp thụ lý vụ việc"
+                    >
+                      <Users className="w-3.5 h-3.5 text-white shrink-0" />
+                      <span className="whitespace-nowrap">Phân công cán bộ</span>
+                    </button>
+                  )}
+
+                  {/* Điều phối lại nếu gán nhầm đơn vị */}
+                  {(user?.role === 'SuperAdmin' || user?.role === 'Dispatcher') && (
+                    <button
+                      onClick={() => {
+                        setTransitionInitialStatus(2);
+                        setIsTransitionOpen(true);
+                      }}
+                      className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-sky-100 text-xs font-medium border border-white/20 cursor-pointer whitespace-nowrap shrink-0"
+                      title="Điều chuyển lại đơn vị/phòng ban khác"
+                    >
+                      <Building2 className="w-3.5 h-3.5 text-sky-200 shrink-0" />
+                      <span className="hidden sm:inline">Điều phối lại</span>
+                    </button>
+                  )}
+                </>
               )}
 
-              {/* [Task-Unit-Workflow] Nút Trưởng đơn vị Thẩm định & Duyệt nghiệm thu (status=11) */}
-              {canReviewInspectionReport && (
+              {/* === BƯỚC 3: ĐANG THẨM TRA THỰC ĐỊA (status === 3) === */}
+              {petition.status === 3 && (
+                <>
+                  {canAddInspectionNote && (
+                    <button
+                      onClick={() => setIsInspectionOpen(true)}
+                      className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/30 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+                      title="Ghi chép quan sát, lập biên bản kiểm tra, đính kèm ảnh GPS hiện trường"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-sky-200 shrink-0" />
+                      <span className="whitespace-nowrap">Biên bản thực địa</span>
+                    </button>
+                  )}
+
+                  {canRequestNeedInfo && (
+                    <button
+                      onClick={() => {
+                        setTransitionInitialStatus(7); // NeedInfo
+                        setIsTransitionOpen(true);
+                      }}
+                      className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-300/40 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+                      title="Yêu cầu người dân bổ sung thêm thông tin khi hiện trường thiếu căn cứ xác minh"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                      <span className="hidden sm:inline whitespace-nowrap">Yêu cầu bổ sung</span>
+                    </button>
+                  )}
+
+                  {canSubmitInspectionReport && (
+                    <button
+                      onClick={() => {
+                        setInspectionReportMode('submit');
+                        setIsInspectionReportOpen(true);
+                      }}
+                      className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-white text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0 animate-pulse"
+                      title="Nộp báo cáo nghiệm thu thực địa lên Trưởng đơn vị / SuperAdmin phê duyệt"
+                    >
+                      <ClipboardCheck className="w-3.5 h-3.5 text-white shrink-0" />
+                      <span className="whitespace-nowrap">Nộp báo cáo nghiệm thu</span>
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* === BƯỚC 4: CHỜ THẨM ĐỊNH & DUYỆT NGHIỆM THU (status === 11) === */}
+              {petition.status === 11 && canReviewInspectionReport && (
                 <button
                   onClick={() => {
                     setInspectionReportMode('review');
                     setIsInspectionReportOpen(true);
                   }}
                   className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer animate-pulse whitespace-nowrap shrink-0"
-                  title="Trưởng đơn vị thẩm định và ban hành kết luận giải quyết"
+                  title="Xác nhận báo cáo và duyệt kết quả nghiệm thu thực địa"
                 >
                   <CheckSquare className="w-3.5 h-3.5 text-slate-950 shrink-0" />
-                  <span className="whitespace-nowrap">Thẩm định & Duyệt nghiệm thu</span>
+                  <span className="whitespace-nowrap">Xác nhận báo cáo & Duyệt nghiệm thu</span>
                 </button>
               )}
 
-              {/* [Task 4.1] Nút Bắt đầu thẩm tra thực địa: Assigned (2) -> Investigating (3) */}
-              {canBeginInvestigation && (
-                <button
-                  onClick={handleBeginInvestigation}
-                  disabled={isBeginningInvestigation}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-md cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
-                  title="Chuyển trạng thái sang Đang thẩm tra (Investigating)"
-                >
-                  {isBeginningInvestigation ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-                  ) : (
-                    <Compass className="w-3.5 h-3.5 shrink-0" />
-                  )}
-                  <span className="whitespace-nowrap">Bắt đầu thẩm tra</span>
-                </button>
-              )}
-
-              {/* [Task 4.1] Nút Lập biên bản thực địa & ảnh GPS */}
-              {canAddInspectionNote && (
-                <button
-                  onClick={() => setIsInspectionOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/30 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
-                  title="Ghi chép quan sát, lập biên bản kiểm tra, đính kèm ảnh GPS"
-                >
-                  <Camera className="w-3.5 h-3.5 text-sky-200 shrink-0" />
-                  <span className="whitespace-nowrap">Biên bản thực địa</span>
-                </button>
-              )}
-
-              {/* [Task 4.1] Nút Kích hoạt nhánh NeedInfo từ hiện trường nếu thiếu căn cứ */}
-              {canRequestNeedInfo && (petition.status === 2 || petition.status === 3) && (
-                <button
-                  onClick={() => {
-                    setTransitionInitialStatus(7); // NeedInfo
-                    setIsTransitionOpen(true);
-                  }}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-300/40 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
-                  title="Yêu cầu người dân bổ sung thêm thông tin khi thiếu căn cứ xác minh"
-                >
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                  <span className="hidden sm:inline whitespace-nowrap">Yêu cầu bổ sung</span>
-                </button>
-              )}
-
-              {canTransition && (
-                <button
-                  onClick={() => {
-                    setTransitionInitialStatus(null);
-                    setIsTransitionOpen(true);
-                  }}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white text-[#006194] hover:bg-sky-50 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
-                  title="Chuyển trạng thái hồ sơ theo quy trình"
-                >
-                  <Layers className="w-3.5 h-3.5 text-[#006194] shrink-0" />
-                  <span className="whitespace-nowrap">Luân chuyển trạng thái</span>
-                </button>
-              )}
-
+              {/* === BƯỚC 5: BAN HÀNH KẾT LUẬN GIẢI QUYẾT (Đã nghiệm thu xong nhưng chưa có văn bản kết luận chính thức) === */}
               {canResolve && (
                 <button
                   onClick={() => setIsResolutionOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0"
-                  title="Ban hành kết luận giải quyết chính thức"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold transition-all shadow-md cursor-pointer whitespace-nowrap shrink-0 animate-pulse"
+                  title="Ban hành văn bản kết luận giải quyết chính thức (số hiệu, file ký số/dấu đỏ)"
                 >
                   <FileCheck2 className="w-3.5 h-3.5 text-slate-950 shrink-0" />
                   <span className="whitespace-nowrap">Ban hành kết luận</span>
                 </button>
               )}
 
-              {/* [Task 5.1] Nút Kiểm duyệt đóng đơn & Rework trên Top Bar */}
-              {canReviewResolution && (
+              {/* === BƯỚC 6: ĐÃ GIẢI QUYẾT (status === 4) === */}
+              {petition.status === 4 && canReviewResolution && (
                 <>
                   <button
                     onClick={() => {
@@ -655,13 +792,12 @@ export const AdminPetitionDetailPage: React.FC = () => {
               <React.Fragment key={st.status}>
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
-                      isCurrent
-                        ? 'bg-sky-400 text-slate-950 ring-2 ring-sky-300 font-extrabold scale-110'
-                        : isPassed
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${isCurrent
+                      ? 'bg-sky-400 text-slate-950 ring-2 ring-sky-300 font-extrabold scale-110'
+                      : isPassed
                         ? 'bg-emerald-500 text-white'
                         : 'bg-slate-800 text-slate-400'
-                    }`}
+                      }`}
                   >
                     {isPassed ? <Check className="w-3 h-3 stroke-[3]" /> : idx + 1}
                   </div>
@@ -1254,11 +1390,10 @@ export const AdminPetitionDetailPage: React.FC = () => {
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
-                          className={`w-3 h-3 ${
-                            star <= (petition.feedbackRating || 0)
-                              ? 'text-amber-500 fill-amber-400'
-                              : 'text-slate-200'
-                          }`}
+                          className={`w-3 h-3 ${star <= (petition.feedbackRating || 0)
+                            ? 'text-amber-500 fill-amber-400'
+                            : 'text-slate-200'
+                            }`}
                         />
                       ))}
                     </div>
@@ -1311,11 +1446,10 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveInternalTab('thread')}
-                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-t-xl text-xs font-bold transition-all border-b-2 cursor-pointer ${
-                    activeInternalTab === 'thread'
-                      ? 'border-[#006194] bg-white text-[#006194] shadow-xs'
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
-                  }`}
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-t-xl text-xs font-bold transition-all border-b-2 cursor-pointer ${activeInternalTab === 'thread'
+                    ? 'border-[#006194] bg-white text-[#006194] shadow-xs'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
                 >
                   <MessageSquare className="w-4 h-4 text-[#006194]" />
                   <span>Kênh Trao Đổi Nội Bộ Đơn Vị</span>
@@ -1325,11 +1459,10 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveInternalTab('notes')}
-                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-t-xl text-xs font-bold transition-all border-b-2 cursor-pointer ${
-                    activeInternalTab === 'notes'
-                      ? 'border-[#006194] bg-white text-[#006194] shadow-xs'
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
-                  }`}
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-t-xl text-xs font-bold transition-all border-b-2 cursor-pointer ${activeInternalTab === 'notes'
+                    ? 'border-[#006194] bg-white text-[#006194] shadow-xs'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
                 >
                   <ClipboardCheck className="w-4 h-4 text-indigo-600" />
                   <span>Sổ Tay & Biên Bản Thực Địa</span>
@@ -1378,15 +1511,14 @@ export const AdminPetitionDetailPage: React.FC = () => {
                         petition.comments.map((cmt) => {
                           const isInspectionReport = cmt.content.includes('[📋 Biên bản') || cmt.content.includes('[🔍 Thu thập mẫu') || cmt.content.includes('[🏞️ Quan sát');
                           const hasGps = cmt.content.includes('📍 GPS hiện trường:');
-                          
+
                           return (
                             <div
                               key={cmt.id}
-                              className={`p-3.5 rounded-2xl border space-y-2 transition-all ${
-                                isInspectionReport
-                                  ? 'bg-gradient-to-br from-sky-50/70 to-slate-50 border-sky-200/90 shadow-xs'
-                                  : 'bg-slate-50 rounded-xl border-slate-200/70'
-                              }`}
+                              className={`p-3.5 rounded-2xl border space-y-2 transition-all ${isInspectionReport
+                                ? 'bg-gradient-to-br from-sky-50/70 to-slate-50 border-sky-200/90 shadow-xs'
+                                : 'bg-slate-50 rounded-xl border-slate-200/70'
+                                }`}
                             >
                               <div className="flex items-center justify-between text-[11px]">
                                 <span className="font-bold text-slate-800 flex items-center space-x-1.5">
@@ -1466,13 +1598,12 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 <span>Tiến Độ & Thời Hạn Cam Kết (SLA)</span>
               </div>
 
-              <div className={`p-4 rounded-xl border text-center ${
-                petition.isOverdue 
-                  ? 'bg-rose-50 border-rose-200 text-rose-900' 
-                  : petition.status === 4 || petition.status === 6
+              <div className={`p-4 rounded-xl border text-center ${petition.isOverdue
+                ? 'bg-rose-50 border-rose-200 text-rose-900'
+                : petition.status === 4 || petition.status === 6
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
                   : 'bg-sky-50 border-sky-100 text-sky-900'
-              }`}>
+                }`}>
                 {petition.status === 4 || petition.status === 6 ? (
                   <div className="space-y-1">
                     <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
@@ -1690,10 +1821,10 @@ export const AdminPetitionDetailPage: React.FC = () => {
           petition.conclusionType === 1 || petition.conclusionType === 'Valid' || petition.resolution?.conclusionType === 1
             ? 1
             : petition.conclusionType === 2 || petition.conclusionType === 'PartiallyValid' || petition.resolution?.conclusionType === 2
-            ? 2
-            : petition.conclusionType === 3 || petition.conclusionType === 'InsufficientEvidence' || petition.resolution?.conclusionType === 3
-            ? 3
-            : 1
+              ? 2
+              : petition.conclusionType === 3 || petition.conclusionType === 'InsufficientEvidence' || petition.resolution?.conclusionType === 3
+                ? 3
+                : 1
         }
         initialPublicSummary={petition.publicSummary || petition.resolution?.publicSummary || ''}
       />

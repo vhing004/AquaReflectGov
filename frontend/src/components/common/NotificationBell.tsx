@@ -10,6 +10,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
 import { notificationApi } from '../../api/notificationApi';
 import { signalRService } from '../../api/signalrService';
 import type { NotificationItem } from '../../types/notification';
@@ -20,6 +21,7 @@ interface NotificationBellProps {
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ onNewToast }) => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -97,7 +99,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNewToast }
 
     setIsOpen(false);
 
-    if (item.petitionId) {
+    if (user?.role === 'Citizen') {
+      if (item.trackingCode) {
+        navigate(`/track?code=${encodeURIComponent(item.trackingCode)}`);
+      } else {
+        navigate('/track');
+      }
+    } else if (item.petitionId) {
       navigate(`/admin/petitions/${item.petitionId}`);
     }
   };
