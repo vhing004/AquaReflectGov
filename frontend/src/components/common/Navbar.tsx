@@ -13,7 +13,6 @@ import {
   X, 
   Fish, 
   PhoneCall, 
-  AlertTriangle, 
   Globe, 
   FileText,
   Compass,
@@ -53,20 +52,25 @@ export const Navbar: React.FC = () => {
     navigate('/');
   };
 
-  const handleQuickSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/track?code=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
   const isOfficer = user && (user.role === 'SuperAdmin' || user.role === 'Dispatcher' || user.role === 'Specialist');
   const canViewGis = hasRole(user?.role, PERMISSIONS.GIS_COMMAND_CENTER);
   const canViewUnitDashboard = user?.role === 'SuperAdmin' || (user?.role === 'Specialist' && user?.isUnitLead);
   const isSpecialist = user?.role === 'Specialist';
   const dashboardTitle = isSpecialist ? 'KPI Phòng Ban' : 'Điều Phối & Báo Cáo';
 
-  const navLinks = [
+  const handleQuickSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      if (isOfficer) {
+        navigate(`/admin/petitions?search=${encodeURIComponent(searchQuery.trim())}`);
+      } else {
+        navigate(`/track?code=${encodeURIComponent(searchQuery.trim())}`);
+      }
+    }
+  };
+
+  // Menu riêng biệt cho Người dân
+  const citizenNavLinks = [
     { to: '/', label: 'Trang chủ & Giám sát', icon: Waves },
     { to: '/submit', label: 'Gửi phản ánh', icon: Send },
     { to: '/track', label: 'Tra cứu tiến độ', icon: Search },
@@ -74,6 +78,18 @@ export const Navbar: React.FC = () => {
     { to: '/categories', label: 'Danh mục thủy sản', icon: Fish },
     { to: '/map', label: 'Bản đồ số & Cảnh báo IUU', icon: MapPin },
   ];
+
+  // Menu riêng biệt cho Cán bộ (chỉ các nghiệp vụ hành chính số)
+  const officerNavLinks = [
+    { to: '/admin/petitions', label: 'Hồ Sơ Nghiệp Vụ', icon: FileText },
+    { to: '/admin/dashboard', label: dashboardTitle, icon: Shield },
+    ...(canViewUnitDashboard ? [{ to: '/admin/unit-dashboard', label: 'Điều Phối Đơn Vị', icon: Users }] : []),
+    ...(canViewGis ? [{ to: '/admin/gis-map', label: 'Bản Đồ GIS Giám Sát', icon: Compass }] : []),
+    ...(user?.role === 'SuperAdmin' ? [{ to: '/admin/users', label: 'Quản Lý Người Dùng', icon: Users }] : []),
+  ];
+
+  // Nếu là cán bộ: chỉ hiển thị menu cán bộ, ẩn hoàn toàn menu người dân
+  const navLinks = isOfficer ? officerNavLinks : citizenNavLinks;
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-200">
@@ -103,8 +119,8 @@ export const Navbar: React.FC = () => {
       {/* 2. MAIN HEADER (Logo, Quick Search, IUU Alert & User Profile) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5">
         <div className="flex justify-between items-center gap-4">
-          {/* Brand Logo */}
-          <Link to="/" className="flex items-center space-x-3 shrink-0 group">
+          {/* Brand Logo - Cán bộ click sẽ về /admin/petitions, Người dân về / */}
+          <Link to={isOfficer ? "/admin/petitions" : "/"} className="flex items-center space-x-3 shrink-0 group">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#006194] to-[#0284c7] flex items-center justify-center text-white shadow-md shadow-sky-600/20 group-hover:scale-105 transition-transform">
               <Waves className="w-6 h-6" />
             </div>
@@ -118,7 +134,7 @@ export const Navbar: React.FC = () => {
                 </span>
               </div>
               <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 leading-none mt-0.5">
-                AquaReflect <span className="text-[#0284c7] font-semibold text-sm">Gov</span>
+                AquaReflect <span className="text-[#0284c7] font-semibold text-sm">{isOfficer ? 'Admin' : 'Gov'}</span>
               </h1>
             </div>
           </Link>
@@ -131,28 +147,22 @@ export const Navbar: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tra cứu mã hồ sơ (#TS-...), số hiệu tàu cá..."
+                placeholder={isOfficer ? "Tìm kiếm mã hồ sơ (#TS-...), số hiệu tàu cá..." : "Tra cứu mã hồ sơ (#TS-...), số hiệu tàu cá..."}
                 className="w-full bg-transparent border-none outline-none text-xs text-slate-800 placeholder:text-slate-400"
               />
               <button
                 type="submit"
                 className="ml-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#006194] hover:bg-[#0284c7] text-white transition-colors shrink-0"
               >
-                Tra cứu
+                {isOfficer ? "Tìm kiếm" : "Tra cứu"}
               </button>
             </div>
           </form>
 
           {/* Alert & User Actions */}
           <div className="flex items-center space-x-3">
-            {/* IUU Warning Badge (Live Status) */}
-            <div className="hidden lg:flex items-center space-x-1.5 bg-rose-50 text-rose-800 border border-rose-200 px-3 py-1 rounded-full text-xs font-semibold animate-pulse">
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-              <span>Cảnh báo VMS: 03 tàu mất kết nối</span>
-            </div>
-
-            {/* Notification Bell Real-time cho Cán bộ */}
-            {isAuthenticated && isOfficer && (
+            {/* Chuông thông báo thời gian thực cho Cán bộ & Người dân */}
+            {isAuthenticated && (
               <NotificationBell />
             )}
 
@@ -225,6 +235,17 @@ export const Navbar: React.FC = () => {
                       </>
                     )}
 
+                    {!isOfficer && (
+                      <Link
+                        to="/track"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-sky-900 hover:bg-sky-50"
+                      >
+                        <Search className="w-4 h-4 text-[#006194]" />
+                        <span>Hồ Sơ Phản Ánh Của Tôi</span>
+                      </Link>
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left border-t border-slate-100 mt-1"
@@ -264,7 +285,7 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. SUB-NAVIGATION BAR (Thanh menu tác vụ theo mẫu Stitch) */}
+      {/* 3. SUB-NAVIGATION BAR */}
       <nav className="hidden md:block bg-slate-50 border-t border-slate-200/80 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex items-center space-x-1 py-1.5 overflow-x-auto">
           {navLinks.map((link) => {
@@ -287,55 +308,9 @@ export const Navbar: React.FC = () => {
           })}
 
           {isOfficer && (
-            <div className="flex items-center space-x-1.5 ml-auto shrink-0">
-              <Link
-                to="/admin/petitions"
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                  location.pathname === '/admin/petitions'
-                    ? 'bg-[#006194] text-white shadow-xs'
-                    : 'text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200'
-                }`}
-              >
-                <FileText className={`w-3.5 h-3.5 ${location.pathname === '/admin/petitions' ? 'text-white' : 'text-[#006194]'}`} />
-                <span>Hồ Sơ Nghiệp Vụ</span>
-              </Link>
-              <Link
-                to="/admin/dashboard"
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                  location.pathname === '/admin/dashboard'
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200'
-                }`}
-              >
-                <Shield className={`w-3.5 h-3.5 ${location.pathname === '/admin/dashboard' ? 'text-white' : 'text-amber-500'}`} />
-                <span>{dashboardTitle}</span>
-              </Link>
-              {canViewUnitDashboard && (
-                <Link
-                  to="/admin/unit-dashboard"
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                    location.pathname === '/admin/unit-dashboard'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200'
-                  }`}
-                >
-                  <Users className={`w-3.5 h-3.5 ${location.pathname === '/admin/unit-dashboard' ? 'text-white' : 'text-indigo-600'}`} />
-                  <span>Điều Phối Đơn Vị</span>
-                </Link>
-              )}
-              {canViewGis && (
-                <Link
-                  to="/admin/gis-map"
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                    location.pathname === '/admin/gis-map'
-                      ? 'bg-[#006194] text-white shadow-xs'
-                      : 'text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
-                  }`}
-                >
-                  <Compass className={`w-3.5 h-3.5 ${location.pathname === '/admin/gis-map' ? 'text-white' : 'text-emerald-600'}`} />
-                  <span>Bản Đồ GIS</span>
-                </Link>
-              )}
+            <div className="flex items-center space-x-2 ml-auto shrink-0 text-[11px] font-semibold text-sky-800 bg-sky-50 px-3 py-1 rounded-lg border border-sky-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Cổng Cán Bộ Nghiệp Vụ</span>
             </div>
           )}
         </div>
@@ -361,47 +336,6 @@ export const Navbar: React.FC = () => {
               </Link>
             );
           })}
-
-          {isOfficer && (
-            <div className="pt-2 border-t border-slate-100 space-y-1">
-              <Link
-                to="/admin/petitions"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-sky-900 bg-sky-50"
-              >
-                <FileText className="w-4 h-4 text-[#006194]" />
-                <span>Quản Lý Hồ Sơ Nghiệp Vụ</span>
-              </Link>
-              <Link
-                to="/admin/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-amber-800 bg-amber-50"
-              >
-                <Shield className="w-4 h-4 text-amber-600" />
-                <span>{dashboardTitle}</span>
-              </Link>
-              {canViewUnitDashboard && (
-                <Link
-                  to="/admin/unit-dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-indigo-900 bg-indigo-50"
-                >
-                  <Users className="w-4 h-4 text-indigo-600" />
-                  <span>Điều Phối Đơn Vị</span>
-                </Link>
-              )}
-              {canViewGis && (
-                <Link
-                  to="/admin/gis-map"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-emerald-900 bg-emerald-50"
-                >
-                  <Compass className="w-4 h-4 text-emerald-600" />
-                  <span>Bản Đồ GIS Giám Sát</span>
-                </Link>
-              )}
-            </div>
-          )}
         </div>
       )}
     </header>

@@ -2,7 +2,7 @@
 
 > **Dự án**: AquaReflect - Nền tảng số đa kênh tiếp nhận, điều phối và xử lý phản ánh kiến nghị ngành Thủy sản (Dịch bệnh thủy sản, ô nhiễm nguồn nước ao nuôi, vi phạm khai thác hải sản IUU, giống/thức ăn kém chất lượng, thủ tục hành chính nghề cá).
 > **Kiến trúc**: .NET 9 Web API (Clean Architecture) + React 19 + TypeScript + Tailwind CSS v4 + PostgreSQL/PostGIS.
-> **Cập nhật lần cuối**: 23/10/2026
+> **Cập nhật lần cuối**: 03/11/2026
 
 ---
 
@@ -43,6 +43,12 @@
 | **Tính năng**| TASK-TAB-RESOLVED-AND-AUTH-FEEDBACK | Thêm Tab Navbar "Hồ sơ đã xử lý" (/resolved) công khai & Phân quyền Đánh giá CSAT yêu cầu Đăng nhập tài khoản | `PLAN-20261027` | ✅ Hoàn thành |
 | **Tính năng**| TASK-PUBLIC-COMMENTS-ON-RESOLVED-PETITIONS | Bình luận & Ý kiến cộng đồng trên các hồ sơ đã xử lý công khai (Tài khoản khác vẫn bình luận được) | `PLAN-20261027` | ✅ Hoàn thành |
 | **Giao diện**| TASK-REALTIME-STATS-HOMEPAGE | Hiển thị thông số thực tế của web trên Realtime Stats / KPI Cards Trang Chủ từ CSDL | `PLAN-20261027` | ✅ Hoàn thành |
+| **Sửa lỗi**  | TASK-FIX-ADMIN-MINIMAP-LEAFLET | Thay iframe OpenStreetMap bị chặn sang Leaflet native (TileLayer CARTO Voyager + Pin SVG) trong MiniMapViewer | `PLAN-20261028` | ✅ Hoàn thành |
+| **Bảo mật**  | TASK-SATELLITE-MINIMAP-AND-OFFICER-CITIZEN-ISOLATION | Bản đồ Vệ tinh Esri cho hiện trường & Phân tách tuyệt đối quyền truy cập Cán bộ - Người dân | `PLAN-20261028` | ✅ Hoàn thành |
+| **Tài liệu** | TASK-APPLICATION-LAYER-GUIDE | Biên soạn tài liệu chi tiết tầng Application (Kiến trúc, CQRS, Pipeline, chi tiết từng file) | `docs/explain/APPLICATION_LAYER_GUIDE.md` | ✅ Hoàn thành |
+| **Tài liệu** | TASK-DOMAIN-LAYER-GUIDE | Biên soạn tài liệu chi tiết tầng Domain (Kiến trúc DDD, Entities, Enums, Exceptions, ERD) | `docs/explain/DOMAIN_LAYER_GUIDE.md` | ✅ Hoàn thành |
+| **Sửa lỗi**  | TASK-FIX-INSPECTION-NOTE-CONCURRENCY | Khắc phục lỗi DbUpdateConcurrencyException khi lập biên bản thực địa & nộp tệp đính kèm | `PLAN-20261101` | ✅ Hoàn thành |
+| **Quy trình**| TASK-SEQUENTIAL-SUPERADMIN-WORKFLOW | Hiển thị tuần tự các chức năng xử lý phản ánh theo vòng đời hồ sơ cho SuperAdmin | `PLAN-20261103` | ✅ Hoàn thành |
 
 ---
 
@@ -392,20 +398,84 @@ Quy trình quản lý theo mô hình Đơn vị chuyên môn xử lý phản án
 
 ---
 
-### TASK-RESOLVED-PETITIONS-VERTICAL-CARDS: Hiển Thị Thẻ Dạng Dọc (Vertical Cards) Cho 3 Hồ Sơ Tốt Nhất *(26/10/2026 – PLAN-20261026)*
+### TASK-20261030-NATIONWIDE-PROVINCES-EXPANSION: Mở Rộng Tiếp Nhận Phản Ánh Toàn Quốc 34 Tỉnh/Thành Phố Sau Sáp Nhập & Định Vị 1 Chạm Tự Động Render Vị Trí Cụ Thể *(30/10/2026 – PLAN-20261030-01)*
 
-- [X] **1. Nâng cấp Thẻ dạng dọc (`variant="standard"` trong `ResolvedPetitionCard.tsx`)**:
-  - Thiết kế hoàn chỉnh thẻ dọc với ảnh thumbnail tỉ lệ 16:10 ở trên, đính kèm mã hồ sơ `#TS-...`, ngày ban hành và huy hiệu *"Đã kết luận"*.
-  - Nội dung phía dưới gồm: chuyên mục, tiêu đề font sans đậm, địa bàn & phòng ban thụ lý, hộp trích dẫn kết luận & số quyết định, đánh giá sao CSAT từ công dân, thời gian giải quyết SLA và nút *"Xem chi tiết"*.
-  - Khóa chiều cao `h-full flex flex-col justify-between` giúp các thẻ dọc trong cùng hàng luôn cao bằng nhau tăm tắp.
-- [X] **2. Tối ưu bố cục hiển thị Top 3 hồ sơ trên `HomePage.tsx`**:
-  - Tự động lọc hiển thị 3 hồ sơ có đánh giá CSAT 5 sao cao nhất từ người dân và thời gian giải quyết mới nhất (`slice(0, 3)`).
-  - Lưới 3 cột chuẩn mực trên desktop (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`), thoáng đãng và sang trọng.
-- [X] **3. Kiểm thử**:
-  - Frontend Build: `tsc -b && vite build` hoàn thành trong 1.53s, **0 lỗi TypeScript**.
-  - Backend Unit Tests: **50/50 test cases PASSED**.
+- [X] **1. Master Data 34 Đơn vị Hành chính Cấp Tỉnh Sau Sáp Nhập**:
+  - `frontend/src/data/maritimeData.ts`: Khai báo struct `PostMergerProvinceItem`, bổ sung đầy đủ danh mục 34 Tỉnh/Thành phố trực thuộc Trung ương sau sáp nhập:
+    - 6 Thành phố trực thuộc Trung ương: Hà Nội, TP.HCM *(hợp nhất TP.HCM, Bình Dương, Bà Rịa - Vũng Tàu)*, Đà Nẵng *(hợp nhất TP.Đà Nẵng, Quảng Nam)*, Hải Phòng *(hợp nhất TP.Hải Phòng, Hải Dương)*, Cần Thơ *(hợp nhất Cần Thơ, Sóc Trăng, Hậu Giang)*, Huế.
+    - 13 Tỉnh miền Bắc & ĐBSH: Tuyên Quang *(+Hà Giang)*, Lào Cai *(+Yên Bái)*, Thái Nguyên *(+Bắc Kạn)*, Phú Thọ *(+Vĩnh Phúc, Hòa Bình)*, Bắc Ninh *(+Bắc Giang)*, Hưng Yên *(+Thái Bình)*, Ninh Bình *(+Hà Nam, Nam Định)*, Quảng Ninh, Lạng Sơn, Cao Bằng, Lai Châu, Điện Biên, Sơn La.
+    - 9 Tỉnh miền Trung & Tây Nguyên: Thanh Hóa, Nghệ An, Hà Tĩnh, Quảng Trị *(+Quảng Bình)*, Quảng Ngãi *(+Kon Tum)*, Gia Lai *(+Bình Định)*, Khánh Hòa *(+Ninh Thuận)*, Lâm Đồng *(+Đắk Nông, Bình Thuận)*, Đắk Lắk *(+Phú Yên)*.
+    - 6 Tỉnh miền Nam: Đồng Nai *(+Bình Phước)*, Tây Ninh *(+Long An)*, Đồng Tháp *(+Tiền Giang)*, Vĩnh Long *(+Bến Tre, Trà Vinh)*, An Giang *(+Kiên Giang)*, Cà Mau *(+Bạc Liêu)*.
+  - Viết hàm `resolvePostMergerProvince`: Ánh xạ tự động từ các tên tỉnh cũ hoặc biến thể (aliases) sang đúng Tỉnh/Thành phố sau sáp nhập.
+  - `backend/src/AquaReflect.Infrastructure/Data/ApplicationDbContextSeed.cs`: Seed đầy đủ 34 đơn vị hành chính sau sáp nhập vào bảng `AdministrativeUnits`.
+- [X] **2. Tính Năng "Định Vị GPS 1 Chạm Tự Render Vị Trí Cụ Thể"**:
+  - `frontend/src/pages/SubmitPetitionPage.tsx`: Người dân chạm 1 lần vào nút *"⚡ Định vị 1 chạm (Tự render vị trí)"*, hệ thống tự động:
+    - Lấy tọa độ GPS độ chính xác cao từ thiết bị.
+    - Gọi API Reverse-Geocode đa tầng (BigDataCloud + OpenStreetMap).
+    - Tự động nhận diện Tỉnh mới sau sáp nhập từ tên tỉnh cũ.
+    - Tự động điền đầy đủ cả 4 cấp địa chỉ: Tỉnh/TP, Quận/Huyện, Phường/Xã, Địa chỉ chi tiết (thôn/xóm/đường/số nhà/khu vực thực địa).
+    - Render Card thông báo xanh ngọc (`emerald-50`) phản hồi ngay lập tức cho công dân vị trí cụ thể đã được điền.
+- [X] **3. Xóa Bỏ Giới Hạn & Cảnh Báo Từ Chối Vùng Nội Địa**:
+  - Gỡ bỏ hoàn toàn cảnh báo từ chối tiếp nhận đối với các khu vực nội địa. Mọi địa bàn trên toàn bộ lãnh thổ Việt Nam đều hợp lệ để gửi phản ánh.
+  - Chỉ cảnh báo khi tọa độ nằm hoàn toàn ngoài lãnh thổ/hải phận Việt Nam.
+  - Gỡ bỏ validation chặn gửi ở `step === 2`.
+- [X] **4. Tối Ưu Giao Diện Dropdown Phân Nhóm 4 Vùng Miền**:
+  - Tạo hàm `renderProvinceOptions()` phân nhóm `<optgroup>` đẹp mắt theo 4 vùng miền cho toàn bộ các dropdown chọn tỉnh trên form gửi phản ánh.
+  - Đồng bộ văn bản phạm vi toàn quốc trên `HomePage.tsx` và `TrackPetitionPage.tsx`.
+- [X] **5. Kiểm Thử & Nghiệm Thu**:
+  - Frontend Build: `tsc -b && vite build` hoàn thành trong 1.99s, **0 lỗi TypeScript**.
+  - Backend Build: `dotnet build backend/AquaReflect.sln` thành công, **0 lỗi C#**.
+  - Test case mapping alias: 12/12 ca thử nghiệm (Bình Dương, Vũng Tàu, Quảng Nam, Kiên Giang, Bạc Liêu, Hòa Bình, Đắk Nông, Yên Bái...) đều map chính xác 100% sang tỉnh mới.
+
+---
+
+### TASK-20261030-GIS-DASHBOARD-FILTER-34-PROVINCES: Tích Hợp Bộ Lọc Đa Tiêu Chí Theo Vùng Miền & 34 Tỉnh Sau Sáp Nhập Trên Bản Đồ GIS & Dashboard KPI *(30/10/2026 – PLAN-20261030-02)*
+
+- [X] **1. Master Data Tọa Độ Trung Tâm 34 Tỉnh & 4 Vùng Miền**:
+  - `frontend/src/data/maritimeData.ts`: Cấu hình tọa độ `centerCoords: { lat, lng, zoom }` cho trọn bộ 34 Tỉnh/Thành phố sau sáp nhập và 4 Vùng miền địa lý (`VIETNAM_REGIONS`), phục vụ hiệu ứng lướt bay bản đồ mượt mà (`flyToLocation`).
+- [X] **2. Nâng Cấp Bộ Lọc & Điều Hành Trên Bản Đồ Số GIS**:
+  - `frontend/src/components/gis/GisFilterPanel.tsx`:
+    - Thêm bộ chọn **Vùng Miền** (Toàn quốc, 6 TP trực thuộc TW, Miền Bắc & ĐBSH, Miền Trung & Tây Nguyên, Miền Nam).
+    - Thêm bộ chọn **34 Tỉnh/Thành phố sau sáp nhập** nhóm theo `<optgroup>` 4 phân vùng.
+  - `frontend/src/pages/AdminGisMapPage.tsx`:
+    - Tự động lướt bản đồ (`flyToLocation`) trực tiếp đến địa bàn Tỉnh/Vùng ngay khi cán bộ chọn lọc.
+    - Cập nhật số điểm hiển thị, Heatmap lớp nhiệt và danh sách thống kê không gian theo địa bàn lọc.
+    - Đổi tiêu đề: *"Bản Đồ Không Gian Phản Ánh Toàn Quốc (34 Tỉnh/Thành Phố Sau Sáp Nhập)"*.
+- [X] **3. Tích Hợp Lọc Địa Bàn & Widget Giám Sát Vùng Miền Trên Dashboard KPI**:
+  - `frontend/src/pages/DashboardPage.tsx`:
+    - Thêm bộ lọc Vùng miền và Tỉnh/thành phố sau sáp nhập vào thanh công cụ Executive Toolbar.
+    - Bổ sung Section Widget 7: **"Phân Bố & Giám Sát Địa Bàn 34 Tỉnh/Thành Phố Sau Sáp Nhập"** gồm 4 Card phân vùng lớn với số lượng ĐVHC và danh sách các địa phương trọng điểm, hỗ trợ 1 chạm để lọc hoặc mở Bản Đồ Số GIS.
+- [X] **4. Kiểm Thử**:
+  - Frontend Build: `tsc -b && vite build` hoàn thành trong 1.78s, **0 lỗi TypeScript**.
+  - Backend Build: `dotnet build backend/AquaReflect.sln` hoàn thành, **0 lỗi C#**.
 
 
 
 
+
+
+
+
+---
+
+### TASK-20261103-SUPERADMIN-USER-MANAGEMENT: Quan ly Nguoi Dung Toan Dien cho SuperAdmin & Xem Ho So Can Bo Thu Ly *(03/11/2026, PLAN-20261103-superadmin-user-management.md)*
+
+- [X] **Backend – Application Layer**:
+  - `GetUserListQuery.cs`: Lay danh sach nguoi dung co phan trang, loc theo keyword/role/dept/isActive.
+  - `GetUserPetitionsQuery.cs`: Lay ho so theo can bo, loc resolved/active/all (da fix PriorityLevel.Medium -> khong co, chi Normal/High/Urgent).
+  - `CreateUserCommand.cs`: Tao tai khoan moi (hash password voi HMACSHA512).
+  - `UpdateUserCommand.cs`: Cap nhat thong tin, doi mat khau tuy chon.
+  - `ToggleUserActiveCommand.cs`: Khoa/mo khoa tai khoan.
+  - `UsersController.cs`: [Authorize(Roles = "SuperAdmin")], 5 endpoints RESTful.
+  - Backend Application layer build: **0 loi**.
+- [X] **Frontend**:
+  - `src/types/index.ts`: Bo sung UserListItem, UserPetitionItem, CreateUserRequest, UpdateUserRequest.
+  - `src/api/usersApi.ts`: API client cho 5 endpoints.
+  - `src/components/admin/OfficerPetitionsDrawer.tsx`: Drawer truot tu phai, 2 tab (da xu ly / dang xu ly), phan trang, rating CSAT.
+  - `src/components/admin/UserFormModal.tsx`: Modal tao/sua nguoi dung, show/hide password, validate, chon phong ban khi la Specialist.
+  - `src/pages/admin/AdminUsersPage.tsx`: Trang quan ly nguoi dung, bang voi filter 4 chieu, thong ke, lock/unlock, click Specialist mo Drawer.
+  - `src/components/common/Navbar.tsx`: Them menu "Quan Ly Nguoi Dung" chi hien cho SuperAdmin.
+  - `src/App.tsx`: Them route /admin/users (ProtectedRoute roles=['SuperAdmin']).
+  - Frontend build: **2673 modules, 0 loi TypeScript, exit 0**.
+- [X] **Ket qua kiem thu**: `npm --prefix frontend run build` pass.
 

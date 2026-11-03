@@ -537,3 +537,63 @@ export interface InspectionNoteResult {
 
 
 
+
+// =============================================================================
+// USER MANAGEMENT TYPES (SuperAdmin)
+// =============================================================================
+
+export interface UserListItem {
+  id: string;
+  username: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  role: 'SuperAdmin' | 'Dispatcher' | 'Specialist' | 'Citizen';
+  roleName: string;
+  departmentId?: string;
+  departmentName?: string;
+  isUnitLead: boolean;
+  isActive: boolean;
+  activeCaseCount: number;
+  resolvedCaseCount: number;
+  createdAt: string;
+  lastLoginAt?: string;
+}
+
+export interface UserPetitionItem {
+  id: string;
+  trackingCode: string;
+  title: string;
+  categoryName: string;
+  status: number;
+  statusName: string;
+  priorityLevel: number;
+  priorityName: string;
+  addressText: string;
+  createdAt: string;
+  resolvedAt?: string;
+  feedbackRating?: number;
+  feedbackComment?: string;
+  isOverdue: boolean;
+  resolutionSummary?: string;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  role: number; // UserRole: SuperAdmin=1, Dispatcher=2, Specialist=3, Citizen=4
+  departmentId?: string;
+  isUnitLead: boolean;
+}
+
+export interface UpdateUserRequest {
+  fullName: string;
+  phoneNumber?: string;
+  role: number;
+  departmentId?: string;
+  isUnitLead: boolean;
+  newPassword?: string;
+}
