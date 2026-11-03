@@ -27,6 +27,8 @@ export const AdminGisMapPage: React.FC = () => {
   const [radiusCenter, setRadiusCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState<number>(15);
   const [filters, setFilters] = useState<GisFilterParams>({});
+  const [selectedProvinceId, setSelectedProvinceId] = useState<number | undefined>(undefined);
+  const [selectedRegionId, setSelectedRegionId] = useState<string>('ALL');
   const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<GeoJsonFeature | null>(null);
 
@@ -100,6 +102,38 @@ export const AdminGisMapPage: React.FC = () => {
     });
   }, []);
 
+  const handleSelectProvince = useCallback((provId?: number, centerCoords?: { lat: number; lng: number; zoom: number }) => {
+    setSelectedProvinceId(provId);
+    setFilters((prev) => ({
+      ...prev,
+      administrativeUnitId: provId,
+    }));
+    if (centerCoords) {
+      setFlyToLocation({
+        lat: centerCoords.lat,
+        lng: centerCoords.lng,
+        zoom: centerCoords.zoom,
+      });
+    }
+  }, []);
+
+  const handleSelectRegion = useCallback((regionId?: string, centerCoords?: { lat: number; lng: number; zoom: number }) => {
+    setSelectedRegionId(regionId || 'ALL');
+    setSelectedProvinceId(undefined);
+    setFilters((prev) => {
+      const copy = { ...prev };
+      delete copy.administrativeUnitId;
+      return copy;
+    });
+    if (centerCoords) {
+      setFlyToLocation({
+        lat: centerCoords.lat,
+        lng: centerCoords.lng,
+        zoom: centerCoords.zoom,
+      });
+    }
+  }, []);
+
   const handleRefreshAll = () => {
     refetchGeoJson();
     refetchSummary();
@@ -107,9 +141,12 @@ export const AdminGisMapPage: React.FC = () => {
 
   const handleResetFilters = () => {
     setFilters({});
+    setSelectedProvinceId(undefined);
+    setSelectedRegionId('ALL');
     setRadiusMode(false);
     setRadiusCenter(null);
     setShowHeatmap(false);
+    setFlyToLocation({ lat: 16.047079, lng: 108.206230, zoom: 6 });
   };
 
   const totalPoints = geoJsonData?.totalCount ?? 0;
@@ -129,12 +166,12 @@ export const AdminGisMapPage: React.FC = () => {
           <div>
             <div className="flex items-center space-x-2">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#006194] bg-sky-50 px-2 py-0.5 rounded">
-                Trung Tâm Chỉ Huy & Giám Sát GIS
+                Trung Tâm Chỉ Huy & Giám Sát GIS Toàn Quốc
               </span>
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             </div>
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-              Bản Đồ Không Gian Phản Ánh Thủy Sản Tỉnh Cà Mau
+              Bản Đồ Không Gian Phản Ánh Toàn Quốc (34 Tỉnh/Thành Phố Sau Sáp Nhập)
             </h1>
           </div>
         </div>
@@ -171,12 +208,16 @@ export const AdminGisMapPage: React.FC = () => {
         onToggleRadiusMode={() => {
           setRadiusMode(!radiusMode);
           if (!radiusMode && !radiusCenter) {
-            // Đặt tâm mặc định gần trung tâm Cà Mau nếu chưa có
-            setRadiusCenter({ lat: 9.176, lng: 105.150 });
+            // Đặt tâm mặc định gần trung tâm Đà Nẵng / Quảng Ngãi
+            setRadiusCenter({ lat: 15.880, lng: 108.338 });
           }
         }}
         onResetFilters={handleResetFilters}
         totalPoints={totalPoints}
+        selectedProvinceId={selectedProvinceId}
+        onSelectProvince={handleSelectProvince}
+        selectedRegionId={selectedRegionId}
+        onSelectRegion={handleSelectRegion}
       />
 
       {/* Main Content Layout: 9 Cols Map, 3 Cols Summary Sidebar */}

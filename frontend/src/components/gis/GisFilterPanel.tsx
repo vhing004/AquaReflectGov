@@ -5,9 +5,15 @@ import {
   Compass, 
   AlertTriangle, 
   RotateCcw,
-  Satellite
+  Satellite,
+  MapPin,
+  Globe
 } from 'lucide-react';
 import type { GisFilterParams } from '../../types/gis';
+import { 
+  POST_MERGER_PROVINCES_34, 
+  VIETNAM_REGIONS 
+} from '../../data/maritimeData';
 
 export type BaseMapType = 'streets' | 'satellite' | 'positron';
 
@@ -22,6 +28,10 @@ interface GisFilterPanelProps {
   onToggleRadiusMode: () => void;
   onResetFilters: () => void;
   totalPoints: number;
+  selectedProvinceId?: number;
+  onSelectProvince?: (provId?: number, centerCoords?: { lat: number; lng: number; zoom: number }) => void;
+  selectedRegionId?: string;
+  onSelectRegion?: (regionId?: string, centerCoords?: { lat: number; lng: number; zoom: number }) => void;
 }
 
 export const GisFilterPanel: React.FC<GisFilterPanelProps> = ({
@@ -35,7 +45,40 @@ export const GisFilterPanel: React.FC<GisFilterPanelProps> = ({
   onToggleRadiusMode,
   onResetFilters,
   totalPoints,
+  selectedProvinceId,
+  onSelectProvince,
+  selectedRegionId = 'ALL',
+  onSelectRegion,
 }) => {
+  // Lọc danh sách tỉnh theo vùng miền đã chọn (nếu có)
+  const filteredProvinces = selectedRegionId && selectedRegionId !== 'ALL'
+    ? POST_MERGER_PROVINCES_34.filter((p) => {
+        if (selectedRegionId === 'CENTRAL_CITIES') return p.region === 'Thành phố Trực thuộc Trung ương';
+        if (selectedRegionId === 'NORTH') return p.region === 'Miền Bắc và Trung du, ĐBSH';
+        if (selectedRegionId === 'CENTRAL') return p.region === 'Miền Trung và Tây Nguyên';
+        if (selectedRegionId === 'SOUTH') return p.region === 'Miền Nam';
+        return true;
+      })
+    : POST_MERGER_PROVINCES_34;
+
+  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const regId = e.target.value;
+    const regObj = VIETNAM_REGIONS.find((r) => r.id === regId);
+    if (onSelectRegion) {
+      onSelectRegion(regId, regObj?.centerCoords);
+    }
+  };
+
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value ? Number(e.target.value) : undefined;
+    const provObj = POST_MERGER_PROVINCES_34.find((p) => p.id === val);
+    if (onSelectProvince) {
+      onSelectProvince(val, provObj?.centerCoords);
+    } else {
+      onFilterChange({ ...filters, administrativeUnitId: val });
+    }
+  };
+
   return (
     <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-lg p-3 sm:p-4 space-y-3 text-xs">
       {/* Top Row: Base Map Switcher & Heatmap / Radius Toggles */}
@@ -97,6 +140,52 @@ export const GisFilterPanel: React.FC<GisFilterPanelProps> = ({
             <Compass className={`w-3.5 h-3.5 ${radiusMode ? 'text-sky-600' : 'text-slate-400'}`} />
             <span>Quét Bán Kính</span>
           </button>
+        </div>
+      </div>
+
+      {/* Địa Bàn Hành Chính Sau Sáp Nhập & Vùng Miền (34 Tỉnh/Thành) */}
+      <div className="flex flex-wrap items-center gap-2 pt-0.5 border-b border-slate-100 pb-2.5">
+        {/* Bộ lọc Vùng Miền */}
+        <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl">
+          <Globe className="w-3.5 h-3.5 text-[#006194]" />
+          <span className="text-[11px] font-bold text-slate-600 shrink-0">Vùng:</span>
+          <select
+            value={selectedRegionId}
+            onChange={handleRegionChange}
+            className="bg-transparent text-slate-800 font-bold text-xs focus:outline-none cursor-pointer"
+          >
+            {VIETNAM_REGIONS.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Bộ lọc 34 Tỉnh/Thành Phố Sau Sáp Nhập */}
+        <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl flex-1 min-w-[240px]">
+          <MapPin className="w-3.5 h-3.5 text-rose-500" />
+          <span className="text-[11px] font-bold text-slate-600 shrink-0">Tỉnh/TP:</span>
+          <select
+            value={selectedProvinceId || ''}
+            onChange={handleProvinceChange}
+            className="bg-transparent text-slate-800 font-bold text-xs focus:outline-none w-full cursor-pointer"
+          >
+            <option value="">-- Toàn bộ địa bàn (Bay đến tỉnh để lọc) --</option>
+            {['Thành phố Trực thuộc Trung ương', 'Miền Bắc và Trung du, ĐBSH', 'Miền Trung và Tây Nguyên', 'Miền Nam'].map((reg) => {
+              const inGroup = filteredProvinces.filter((p) => p.region === reg);
+              if (inGroup.length === 0) return null;
+              return (
+                <optgroup key={reg} label={reg} className="font-bold text-slate-900">
+                  {inGroup.map((prov) => (
+                    <option key={prov.id} value={prov.id} className="font-normal text-slate-700">
+                      {prov.name} {prov.note ? `(${prov.note})` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
+          </select>
         </div>
       </div>
 
