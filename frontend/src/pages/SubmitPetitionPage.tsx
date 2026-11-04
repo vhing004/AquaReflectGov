@@ -4,6 +4,7 @@ import { masterDataApi } from '../api/masterDataApi';
 import { petitionApi } from '../api/petitionApi';
 import { PetitionReceiptModal } from '../components/petition/PetitionReceiptModal';
 import { AnonymousPinModal } from '../components/petition/AnonymousPinModal';
+import { DraftRecoveryModal, type DraftPreviewInfo } from '../components/petition/DraftRecoveryModal';
 import { TurnstileWidget } from '../components/common/TurnstileWidget';
 import type { Category, AdministrativeUnit, CreatePetitionResult, PetitionTrackingDetail } from '../types';
 import { 
@@ -50,6 +51,37 @@ import {
 } from '../data/maritimeData';
 
 export type LocationType = 'LAND_COASTAL' | 'FISHING_PORT' | 'OFFSHORE_SEA';
+
+export interface PetitionDraftData {
+  categoryId: string;
+  title: string;
+  administrativeUnitId?: number;
+  location: string;
+  gpsCoordinates: string;
+  description: string;
+  isAnonymous: boolean;
+  // Địa bàn thông minh 3 chế độ
+  locationType: LocationType;
+  districtName: string;
+  wardName: string;
+  detailAddress: string;
+  selectedPortId: string;
+  customPortName: string;
+  portPosition: string;
+  seaZoneId: string;
+  fishingGroundId: string;
+  distanceNauticalMiles: string;
+  oceanDirection: string;
+  // Thông tin người dân
+  citizenName: string;
+  citizenPhone: string;
+  citizenEmail: string;
+  citizenAddress: string;
+  // Trạng thái wizard & view mode
+  formMode: 'wizard' | 'all';
+  currentStep: number;
+  savedAt: string;
+}
 
 const LOCAL_STORAGE_DRAFT_KEY = 'aquareflect_petition_draft';
 
@@ -195,10 +227,19 @@ export const SubmitPetitionPage: React.FC = () => {
   const [filePreviews, setFilePreviews] = useState<{ name: string; url?: string; type: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Draft state
+  // Draft state & Modal "Tiếp tục bản nháp?" (AF-01)
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [draftPreview, setDraftPreview] = useState<DraftPreviewInfo | null>(null);
+  const [rawSavedDraft, setRawSavedDraft] = useState<PetitionDraftData | null>(null);
   const [draftSavedTime, setDraftSavedTime] = useState<string | null>(null);
   const [draftToastMessage, setDraftToastMessage] = useState<string | null>(null);
+
+  // Refs quản lý Auto-save chống ghi đè khi đang duyệt bản nháp
+  const isRestoringOrDiscardingRef = useRef(false);
+  const isInitialMountRef = useRef(true);
+  const hasCheckedDraftRef = useRef(false);
+  const latestFormDataRef = useRef<PetitionDraftData | null>(null);
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -221,21 +262,48 @@ export const SubmitPetitionPage: React.FC = () => {
   const [trackedDetail, setTrackedDetail] = useState<PetitionTrackingDetail | null>(null);
   const [isTrackLoading, setIsTrackLoading] = useState(false);
 
-  // Check draft on component mount
+  // Check draft on component mount (AF-01: Tự động phát hiện và mở Modal "Tiếp tục bản nháp?")
   useEffect(() => {
+    if (hasCheckedDraftRef.current) return;
+    hasCheckedDraftRef.current = true;
+
     try {
       const savedDraftRaw = localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
       if (savedDraftRaw) {
-        const parsed = JSON.parse(savedDraftRaw);
-        if (parsed && (parsed.title || parsed.description || parsed.location)) {
+        const parsed: PetitionDraftData = JSON.parse(savedDraftRaw);
+        const hasContent = Boolean(
+          (parsed.title && parsed.title.trim()) ||
+          (parsed.description && parsed.description.trim()) ||
+          (parsed.detailAddress && parsed.detailAddress.trim()) ||
+          (parsed.customPortName && parsed.customPortName.trim()) ||
+          (parsed.portPosition && parsed.portPosition.trim()) ||
+          (parsed.citizenPhone && parsed.citizenPhone.trim())
+        );
+
+        if (hasContent) {
+          setRawSavedDraft(parsed);
           setHasSavedDraft(true);
-          if (parsed.savedAt) {
-            setDraftSavedTime(new Date(parsed.savedAt).toLocaleString('vi-VN'));
-          }
+          const formattedSavedAt = parsed.savedAt ? new Date(parsed.savedAt).toLocaleString('vi-VN') : null;
+          setDraftSavedTime(formattedSavedAt);
+
+          const matchedCat = DEFAULT_PETITION_CATEGORIES.find((c) => c.id === parsed.categoryId || c.code === parsed.categoryId);
+          const catName = matchedCat ? matchedCat.name : parsed.categoryId;
+
+          setDraftPreview({
+            title: parsed.title || '(Chưa nhập tiêu đề)',
+            categoryName: catName,
+            savedAt: formattedSavedAt || undefined,
+            currentStep: parsed.currentStep || 1,
+            location: parsed.location || undefined,
+          });
+
+          // Tạm dừng auto-save để chờ người dân quyết định khôi phục hoặc bỏ qua
+          isRestoringOrDiscardingRef.current = true;
+          setShowDraftModal(true);
         }
       }
-    } catch {
-      // Ignore parse errors
+    } catch (e) {
+      console.warn('Lỗi đọc dữ liệu nháp từ localStorage:', e);
     }
   }, []);
 
@@ -682,26 +750,132 @@ export const SubmitPetitionPage: React.FC = () => {
 
 
 
-  // Draft helpers
+  // =========================================================================
+  // DRAFT LOGIC THEO QUY CHUẨN AF-01 (TỰ ĐỘNG LƯU NHÁP & KHÔI PHỤC)
+  // =========================================================================
+
+  // AF-01: Lấy snapshot toàn bộ dữ liệu biểu mẫu bao gồm cả smart location 3 chế độ
+  const getDraftDataSnapshot = useCallback((): PetitionDraftData => {
+    return {
+      categoryId,
+      title,
+      description,
+      isAnonymous,
+      locationType,
+      administrativeUnitId,
+      location,
+      gpsCoordinates,
+      districtName,
+      wardName,
+      detailAddress,
+      selectedPortId,
+      customPortName,
+      portPosition,
+      seaZoneId,
+      fishingGroundId,
+      distanceNauticalMiles,
+      oceanDirection,
+      citizenName,
+      citizenPhone,
+      citizenEmail,
+      citizenAddress,
+      formMode,
+      currentStep,
+      savedAt: new Date().toISOString(),
+    };
+  }, [
+    categoryId,
+    title,
+    description,
+    isAnonymous,
+    locationType,
+    administrativeUnitId,
+    location,
+    gpsCoordinates,
+    districtName,
+    wardName,
+    detailAddress,
+    selectedPortId,
+    customPortName,
+    portPosition,
+    seaZoneId,
+    fishingGroundId,
+    distanceNauticalMiles,
+    oceanDirection,
+    citizenName,
+    citizenPhone,
+    citizenEmail,
+    citizenAddress,
+    formMode,
+    currentStep,
+  ]);
+
+  // Cập nhật ref dữ liệu mới nhất cho sự kiện beforeunload
+  useEffect(() => {
+    latestFormDataRef.current = getDraftDataSnapshot();
+  }, [getDraftDataSnapshot]);
+
+  // AF-01: Lưu bản nháp vào localStorage nếu có dữ liệu thực tế do người dân nhập
+  const saveDraftToStorage = useCallback((data: PetitionDraftData) => {
+    if (isRestoringOrDiscardingRef.current) return;
+
+    const hasMeaningfulContent = Boolean(
+      (data.title && data.title.trim()) ||
+      (data.description && data.description.trim()) ||
+      (data.detailAddress && data.detailAddress.trim()) ||
+      (data.customPortName && data.customPortName.trim()) ||
+      (data.portPosition && data.portPosition.trim()) ||
+      (data.distanceNauticalMiles && data.distanceNauticalMiles.trim()) ||
+      (!user && data.citizenPhone && data.citizenPhone.trim())
+    );
+
+    if (!hasMeaningfulContent) return;
+
+    try {
+      localStorage.setItem(LOCAL_STORAGE_DRAFT_KEY, JSON.stringify(data));
+      setDraftSavedTime(new Date().toLocaleTimeString('vi-VN'));
+    } catch (e) {
+      console.warn('Không thể tự động lưu nháp vào localStorage:', e);
+    }
+  }, [user]);
+
+  // AF-01: Tự động lưu nháp sau 800ms khi người dân gõ biểu mẫu (Debounce)
+  useEffect(() => {
+    if (isRestoringOrDiscardingRef.current) return;
+
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      saveDraftToStorage(getDraftDataSnapshot());
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [getDraftDataSnapshot, saveDraftToStorage]);
+
+  // AF-01: Bắt sự kiện beforeunload khi đóng tab / F5 để lưu dữ liệu tức thì
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (latestFormDataRef.current && !isRestoringOrDiscardingRef.current) {
+        saveDraftToStorage(latestFormDataRef.current);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [saveDraftToStorage]);
+
+  // Nút Lưu nháp thủ công
   const handleSaveDraft = () => {
     try {
-      const draftData = {
-        categoryId,
-        title,
-        administrativeUnitId,
-        location,
-        gpsCoordinates,
-        description,
-        isAnonymous,
-        citizenName,
-        citizenPhone,
-        citizenEmail,
-        citizenAddress,
-        savedAt: new Date().toISOString(),
-      };
+      const draftData = getDraftDataSnapshot();
       localStorage.setItem(LOCAL_STORAGE_DRAFT_KEY, JSON.stringify(draftData));
       setHasSavedDraft(true);
-      setDraftSavedTime(new Date().toLocaleString('vi-VN'));
+      setDraftSavedTime(new Date().toLocaleTimeString('vi-VN'));
       setDraftToastMessage('Đã lưu bản nháp vào thiết bị an toàn!');
       setTimeout(() => setDraftToastMessage(null), 3000);
     } catch {
@@ -710,36 +884,77 @@ export const SubmitPetitionPage: React.FC = () => {
     }
   };
 
+  // AF-01: Khôi phục toàn bộ dữ liệu từ bản nháp (kể cả smart location 3 chế độ)
   const handleRestoreDraft = () => {
     try {
-      const savedDraftRaw = localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
-      if (!savedDraftRaw) return;
-      const d = JSON.parse(savedDraftRaw);
+      const d: PetitionDraftData | null =
+        rawSavedDraft ||
+        (localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY)
+          ? JSON.parse(localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY)!)
+          : null);
+      if (!d) return;
+
       if (d.categoryId) setCategoryId(d.categoryId);
       if (d.title) setTitle(d.title);
+      if (d.description) setDescription(d.description);
+      if (typeof d.isAnonymous === 'boolean') setIsAnonymous(d.isAnonymous);
+
+      // Địa bàn thông minh 3 chế độ
+      if (d.locationType) setLocationType(d.locationType);
       if (d.administrativeUnitId) setAdministrativeUnitId(d.administrativeUnitId);
       if (d.location) setLocation(d.location);
       if (d.gpsCoordinates) setGpsCoordinates(d.gpsCoordinates);
-      if (d.description) setDescription(d.description);
-      if (typeof d.isAnonymous === 'boolean') setIsAnonymous(d.isAnonymous);
+
+      if (d.districtName !== undefined) setDistrictName(d.districtName);
+      if (d.wardName !== undefined) setWardName(d.wardName);
+      if (d.detailAddress !== undefined) setDetailAddress(d.detailAddress);
+
+      if (d.selectedPortId) setSelectedPortId(d.selectedPortId);
+      if (d.customPortName !== undefined) setCustomPortName(d.customPortName);
+      if (d.portPosition !== undefined) setPortPosition(d.portPosition);
+
+      if (d.seaZoneId) setSeaZoneId(d.seaZoneId);
+      if (d.fishingGroundId) setFishingGroundId(d.fishingGroundId);
+      if (d.distanceNauticalMiles !== undefined) setDistanceNauticalMiles(d.distanceNauticalMiles);
+      if (d.oceanDirection) setOceanDirection(d.oceanDirection);
+
+      // Thông tin người dân (nếu chưa đăng nhập)
       if (d.citizenName && !user) setCitizenName(d.citizenName);
       if (d.citizenPhone && !user) setCitizenPhone(d.citizenPhone);
       if (d.citizenEmail && !user) setCitizenEmail(d.citizenEmail);
       if (d.citizenAddress) setCitizenAddress(d.citizenAddress);
 
-      setDraftToastMessage('Đã khôi phục thành công bản nháp trước đó!');
+      // Trạng thái wizard & view mode
+      if (d.formMode) setFormMode(d.formMode);
+      if (d.currentStep) setCurrentStep(d.currentStep);
+
+      setShowDraftModal(false);
       setHasSavedDraft(false);
-      setTimeout(() => setDraftToastMessage(null), 3000);
+      setDraftToastMessage('Đã khôi phục thành công bản nháp trước đó!');
+      setTimeout(() => setDraftToastMessage(null), 3500);
     } catch {
       setDraftToastMessage('Lỗi khôi phục bản nháp.');
       setTimeout(() => setDraftToastMessage(null), 3000);
+    } finally {
+      setTimeout(() => {
+        isRestoringOrDiscardingRef.current = false;
+      }, 500);
     }
   };
 
+  // AF-01: Hủy bỏ bản nháp và xóa khỏi localStorage
   const handleDiscardDraft = () => {
     localStorage.removeItem(LOCAL_STORAGE_DRAFT_KEY);
+    setShowDraftModal(false);
     setHasSavedDraft(false);
+    setRawSavedDraft(null);
+    setDraftPreview(null);
     setDraftSavedTime(null);
+    setDraftToastMessage('Đã xóa bản nháp cũ.');
+    setTimeout(() => setDraftToastMessage(null), 3000);
+    setTimeout(() => {
+      isRestoringOrDiscardingRef.current = false;
+    }, 500);
   };
 
   // Handle file selections
@@ -986,9 +1201,13 @@ export const SubmitPetitionPage: React.FC = () => {
           setShowReceiptModal(true);
         }
 
-        // Clear local storage draft
+        // Clear local storage draft and prevent further auto-save of submitted draft
+        isRestoringOrDiscardingRef.current = true;
         localStorage.removeItem(LOCAL_STORAGE_DRAFT_KEY);
         setHasSavedDraft(false);
+        setRawSavedDraft(null);
+        setDraftPreview(null);
+        setDraftSavedTime(null);
 
         // Reset form inputs for next petition
         setTitle('');
@@ -996,6 +1215,10 @@ export const SubmitPetitionPage: React.FC = () => {
         setSelectedFiles([]);
         setFilePreviews([]);
         setCurrentStep(1);
+
+        setTimeout(() => {
+          isRestoringOrDiscardingRef.current = false;
+        }, 500);
       } else {
         setSubmitError(response.message || 'Không thể gửi phản ánh. Vui lòng kiểm tra lại.');
       }
@@ -1029,24 +1252,24 @@ export const SubmitPetitionPage: React.FC = () => {
         </div>
       </div>
 
-      {/* DRAFT RESTORE BANNER */}
-      {hasSavedDraft && (
+      {/* DRAFT RESTORE BANNER (Hiển thị nếu chưa khôi phục hoặc sau khi tạm đóng modal) */}
+      {hasSavedDraft && !showDraftModal && (
         <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in">
           <div className="flex items-center space-x-2.5">
             <Save className="w-4 h-4 text-amber-600 shrink-0" />
             <div>
-              <span className="font-bold">Phát hiện bản nháp chưa gửi</span>
+              <span className="font-bold">Phát hiện bản nháp chưa gửi — Bạn có muốn tiếp tục bản nháp?</span>
               {draftSavedTime && <span className="text-amber-700 ml-1">({draftSavedTime})</span>}
-              <p className="text-[11px] text-amber-700">Dữ liệu được lưu trong trình duyệt phòng trường hợp mất sóng biển.</p>
+              <p className="text-[11px] text-amber-700">Dữ liệu được hệ thống tự động lưu trên trình duyệt của bạn phòng trường hợp gián đoạn.</p>
             </div>
           </div>
           <div className="flex items-center space-x-2 shrink-0">
             <button
               type="button"
               onClick={handleRestoreDraft}
-              className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold transition-colors shadow-xs"
+              className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold transition-colors shadow-xs"
             >
-              Khôi phục dữ liệu
+              Tiếp tục bản nháp
             </button>
             <button
               type="button"
@@ -2077,25 +2300,33 @@ export const SubmitPetitionPage: React.FC = () => {
             <div className="pt-2 border-t border-slate-100">
               {formMode === 'wizard' ? (
                 <div className="flex items-center justify-between gap-3">
-                  {currentStep > 1 ? (
-                    <button
-                      type="button"
-                      onClick={handlePrevStep}
-                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition-colors flex items-center space-x-1.5"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Quay lại</span>
-                    </button>
-                  ) : (
+                  <div className="flex items-center space-x-2">
+                    {currentStep > 1 && (
+                      <button
+                        type="button"
+                        onClick={handlePrevStep}
+                        className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition-colors flex items-center space-x-1.5"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Quay lại</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleSaveDraft}
-                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition-colors flex items-center space-x-1.5"
+                      title="Hệ thống cũng tự động lưu nháp liên tục vào thiết bị"
+                      className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-colors flex items-center space-x-1.5"
                     >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>Lưu nháp</span>
+                      <Save className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="hidden sm:inline">Lưu nháp</span>
                     </button>
-                  )}
+                    {draftSavedTime && (
+                      <span className="hidden md:inline-flex items-center space-x-1 text-[11px] text-emerald-700 font-medium bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/60">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>Đã lưu {draftSavedTime}</span>
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center space-x-2">
                     {currentStep < 4 ? (
@@ -2148,14 +2379,22 @@ export const SubmitPetitionPage: React.FC = () => {
                       </>
                     )}
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveDraft}
-                    className="w-full sm:w-auto py-3 px-5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition-colors flex items-center justify-center space-x-1.5"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>Lưu nháp</span>
-                  </button>
+                  <div className="w-full sm:w-auto flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveDraft}
+                      className="w-full sm:w-auto py-3 px-5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition-colors flex items-center justify-center space-x-1.5"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>Lưu nháp</span>
+                    </button>
+                    {draftSavedTime && (
+                      <span className="hidden md:inline-flex items-center space-x-1 text-[11px] text-emerald-700 font-medium bg-emerald-50 px-2.5 py-2 rounded-lg border border-emerald-200/60 shrink-0">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>Đã lưu {draftSavedTime}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -2339,6 +2578,16 @@ export const SubmitPetitionPage: React.FC = () => {
           </div>
         </section>
       </div>
+
+      {/* ================================================================ */}
+      {/* MODAL HỎI "TIẾP TỤC BẢN NHÁP?" THEO QUY CHUẨN AF-01               */}
+      {/* ================================================================ */}
+      <DraftRecoveryModal
+        isOpen={showDraftModal}
+        draftInfo={draftPreview}
+        onRestore={handleRestoreDraft}
+        onDiscard={handleDiscardDraft}
+      />
 
       {/* ================================================================ */}
       {/* MODAL PIN BẢO MẬT VÔ DANH — Hiển thị TRƯỚC biên nhận               */}

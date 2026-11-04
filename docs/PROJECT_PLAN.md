@@ -49,6 +49,7 @@
 | **Tài liệu** | TASK-DOMAIN-LAYER-GUIDE | Biên soạn tài liệu chi tiết tầng Domain (Kiến trúc DDD, Entities, Enums, Exceptions, ERD) | `docs/explain/DOMAIN_LAYER_GUIDE.md` | ✅ Hoàn thành |
 | **Sửa lỗi**  | TASK-FIX-INSPECTION-NOTE-CONCURRENCY | Khắc phục lỗi DbUpdateConcurrencyException khi lập biên bản thực địa & nộp tệp đính kèm | `PLAN-20261101` | ✅ Hoàn thành |
 | **Quy trình**| TASK-SEQUENTIAL-SUPERADMIN-WORKFLOW | Hiển thị tuần tự các chức năng xử lý phản ánh theo vòng đời hồ sơ cho SuperAdmin | `PLAN-20261103` | ✅ Hoàn thành |
+| **Tính năng**| TASK-AF-01-AUTO-SAVE-DRAFT | Lưu nháp tự động (Debounce + BeforeUnload) & Modal hỏi "Tiếp tục bản nháp?" khi vào /submit | `PLAN-20261104` | ✅ Hoàn thành |
 
 ---
 
