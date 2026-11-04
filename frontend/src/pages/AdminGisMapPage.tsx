@@ -235,6 +235,7 @@ export const AdminGisMapPage: React.FC = () => {
             onMapClickForRadius={handleMapClickForRadius}
             onSelectFeature={setSelectedFeature}
             flyToLocation={flyToLocation}
+            isAdmin={true}
           />
 
           {/* Floating Radius Tool Widget */}

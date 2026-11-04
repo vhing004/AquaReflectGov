@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as L from 'leaflet';
 import 'leaflet.heat';
 import type { GeoJsonFeatureCollection, GeoJsonFeature } from '../../types/gis';
@@ -15,6 +16,7 @@ interface GisLeafletMapProps {
   onMapClickForRadius?: (coords: { lat: number; lng: number }) => void;
   onSelectFeature?: (feature: GeoJsonFeature) => void;
   flyToLocation?: { lat: number; lng: number; zoom?: number } | null;
+  isAdmin?: boolean;
 }
 
 // Cấu hình các lớp bản đồ nền TileLayer
@@ -113,7 +115,9 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
   onMapClickForRadius,
   onSelectFeature,
   flyToLocation,
+  isAdmin = false,
 }) => {
+  const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const currentTileLayerRef = useRef<L.TileLayer | null>(null);
@@ -333,7 +337,7 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
         const isResolved = props.status === 4 || props.status === 'Resolved' || props.statusName?.toLowerCase().includes('đã giải quyết') || props.statusName?.toLowerCase().includes('đã xử lý');
 
         // Tạo HTML Popup hiển thị đầy đủ thông tin chuẩn Chính quyền số
-        const privacyBadge = props.isCoordinatesObfuscated ? `
+        const privacyBadge = (!isAdmin && props.isCoordinatesObfuscated) ? `
           <div style="
             display: flex;
             align-items: center;
@@ -352,7 +356,7 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
           </div>
         ` : '';
 
-        const legalFooter = props.legalDisclaimer ? `
+        const legalFooter = (!isAdmin && props.legalDisclaimer) ? `
           <div style="
             margin-top: 8px;
             padding-top: 6px;
@@ -365,6 +369,14 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
             ⚠️ ${props.legalDisclaimer}
           </div>
         ` : '';
+
+        const detailUrl = isAdmin
+          ? `/admin/petitions/${encodeURIComponent(props.id)}`
+          : `/track?code=${encodeURIComponent(props.trackingCode)}`;
+
+        const actionBtnText = isAdmin
+          ? 'Xem chi tiết phản ánh &rarr;'
+          : 'Tra cứu tiến độ &rarr;';
 
         const popupContent = `
           <div style="width: 290px; font-family: inherit; font-size: 12px; color: #1e293b;">
@@ -417,7 +429,8 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
               <!-- View Details Action Button -->
               <div style="margin-top: 10px; text-align: right;">
                 <a 
-                  href="/track?code=${encodeURIComponent(props.trackingCode)}" 
+                  href="${detailUrl}"
+                  data-petition-link="true" 
                   style="
                     display: inline-block;
                     padding: 6px 12px;
@@ -432,7 +445,7 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
                   onmouseover="this.style.background='#0284c7'"
                   onmouseout="this.style.background='#006194'"
                 >
-                  Tra cứu tiến độ &rarr;
+                  ${actionBtnText}
                 </a>
               </div>
 
@@ -462,7 +475,7 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
     }
 
     geoJsonLayerRef.current = layer;
-  }, [geoJsonData, onSelectFeature]);
+  }, [geoJsonData, onSelectFeature, isAdmin]);
 
   // 6. Lớp Bản đồ nhiệt (Heatmap Layer Toggle)
   useEffect(() => {
@@ -502,6 +515,32 @@ export const GisLeafletMap: React.FC<GisLeafletMapProps> = ({
       duration: 1.2,
     });
   }, [flyToLocation]);
+
+    // 8. Bắt sự kiện click trên liên kết Popup để điều hướng SPA mượt mà qua useNavigate
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container) return;
+
+    const handleContainerClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('a[data-petition-link="true"]');
+      if (target) {
+        // Nếu người dùng nhấn Ctrl / Cmd hoặc chuột giữa: mở tab mới tự nhiên theo trình duyệt
+        if (e.ctrlKey || e.metaKey || e.button === 1) {
+          return;
+        }
+        const href = target.getAttribute('href');
+        if (href && href.startsWith('/')) {
+          e.preventDefault();
+          navigate(href);
+        }
+      }
+    };
+
+    container.addEventListener('click', handleContainerClick);
+    return () => {
+      container.removeEventListener('click', handleContainerClick);
+    };
+  }, [navigate]);
 
   return (
     <div className="relative w-full h-full min-h-[500px] rounded-3xl overflow-hidden shadow-xl border border-slate-200 isolate z-0">

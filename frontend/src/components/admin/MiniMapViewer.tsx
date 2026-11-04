@@ -134,7 +134,7 @@ export const MiniMapViewer: React.FC<MiniMapViewerProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const googleMapsUrl = hasCoords 
+  const googleMapsUrl = hasCoords
     ? `https://www.google.com/maps?q=${latitude},${longitude}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressText)}`;
 
@@ -219,13 +219,13 @@ export const MiniMapViewer: React.FC<MiniMapViewerProps> = ({
           />
 
           {/* Huy hiệu hiển thị chế độ ảnh vệ tinh */}
-          <div className="absolute top-2 right-2 z-[1000] flex items-center space-x-1.5 bg-black/65 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-lg text-[11px] font-bold text-white">
+          <div className="absolute top-2 right-2 z-[10] flex items-center space-x-1.5 bg-black/65 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-lg text-[11px] font-bold text-white">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>Ảnh Vệ Tinh Trực Giao</span>
           </div>
 
           {/* Nút chỉ đường Google Maps */}
-          <div className="absolute bottom-2 right-2 z-[1000] flex items-center space-x-2">
+          <div className="absolute bottom-2 right-2 z-[10] flex items-center space-x-2">
             <a
               href={googleMapsUrl}
               target="_blank"
