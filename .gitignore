@@ -26,7 +26,7 @@ dist/
 dist-ssr/
 *.local
 
-## Environment Files (Tất cả file môi trường kể cả example)
+## Environment Files
 .env
 .env.*
 *.env
@@ -47,10 +47,15 @@ __pycache__/
 *.drawio
 !frontend/public/images/**
 
-## Agent Rules, Documents & Plans (Tất cả thư mục docs)
+## Agent Rules, Documents & Plans (Chặn tuyệt đối toàn bộ thư mục docs và tài liệu nội bộ)
 .agents/
+.agents/**
 docs/
+docs/**
+/docs/
+/docs/**
 PROJECT_PLAN.md
+**/PROJECT_PLAN.md
 *.md
 !README.md
 
