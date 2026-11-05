@@ -53,7 +53,7 @@ import { ReviewResolutionModal } from '../components/admin/ReviewResolutionModal
 import { AssignMemberModal } from '../components/admin/AssignMemberModal';
 import { InspectionReportModal } from '../components/admin/InspectionReportModal';
 import { InternalThreadPanel } from '../components/admin/InternalThreadPanel';
-import type { AdminPetitionItem } from '../types';
+import type { AdminPetitionItem, PetitionAttachment } from '../types';
 import { canAccessPetition } from '../utils/permissions';
 
 export const AdminPetitionDetailPage: React.FC = () => {
@@ -78,7 +78,54 @@ export const AdminPetitionDetailPage: React.FC = () => {
   const [inspectionReportMode, setInspectionReportMode] = useState<'submit' | 'review'>('submit');
   const [activeInternalTab, setActiveInternalTab] = useState<'thread' | 'notes'>('thread');
   const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
+  const [attachmentFilter, setAttachmentFilter] = useState<'all' | 'citizen' | 'inspection' | 'resolution'>('all');
   const moreActionsRef = useRef<HTMLDivElement>(null);
+
+  // Helper phân tích nội dung biên bản và trích xuất các tệp đính kèm
+  const parseCommentContent = (
+    content: string,
+    allAttachments: PetitionAttachment[] = [],
+    isInspectionReport: boolean = false
+  ) => {
+    const fileRegex = /📎\s*\[(.*?)\]\((.*?)\)/g;
+    const files: Array<{
+      name: string;
+      url: string;
+      isImage: boolean;
+      isVideo: boolean;
+      isPdf: boolean;
+    }> = [];
+    let match;
+    while ((match = fileRegex.exec(content)) !== null) {
+      const name = match[1];
+      const url = match[2];
+      const ext = url.split('.').pop()?.toLowerCase() || '';
+      const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
+      const isVideo = ['mp4', 'mov', 'webm', 'avi'].includes(ext);
+      const isPdf = ext === 'pdf';
+      files.push({ name, url, isImage, isVideo, isPdf });
+    }
+
+    // Tương thích ngược: Nếu comment là biên bản thực địa nhưng chưa có tag 📎 trong text,
+    // đối chiếu với danh sách attachments dạng inspection trong hồ sơ
+    if (files.length === 0 && isInspectionReport && allAttachments.length > 0) {
+      const inspectionAtts = allAttachments.filter((a: PetitionAttachment) => a.fileUrl?.includes('/inspection/'));
+      inspectionAtts.forEach((att: PetitionAttachment) => {
+        const ext = att.fileName.split('.').pop()?.toLowerCase() || '';
+        files.push({
+          name: att.originalFileName || att.fileName,
+          url: att.fileUrl,
+          isImage: att.fileType?.toLowerCase().includes('image') || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext),
+          isVideo: att.fileType?.toLowerCase().includes('video') || ['mp4', 'mov', 'webm', 'avi'].includes(ext),
+          isPdf: ext === 'pdf',
+        });
+      });
+    }
+
+    const cleanContent = content.replace(/📎\s*\[(.*?)\]\((.*?)\)/g, '').trim();
+
+    return { cleanContent, files };
+  };
 
   // Dong dropdown menu thao tac khac khi click ben ngoai
   useEffect(() => {
@@ -1014,63 +1061,192 @@ export const AdminPetitionDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* B. Album Minh chứng Thực địa (Ảnh / Video / PDF) */}
+            {/* B. Album Minh chứng Thực địa (Ảnh / Video / PDF Biên bản) */}
             <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700">
                     <ImageIcon className="w-4 h-4" />
                   </div>
                   <div>
                     <h2 className="text-sm font-bold text-slate-900">
-                      Minh Chứng Hiện Trường ({petition.attachments.length})
+                      Minh Chứng Hiện Trường & Biên Bản ({petition.attachments.length})
                     </h2>
                     <p className="text-[11px] text-slate-500">
-                      Hình ảnh, video quay tại tọa độ hoặc tệp tài liệu do người dân cung cấp
+                      Ảnh/video người dân cung cấp, ảnh khảo sát GPS và tệp PDF biên bản thực địa
                     </p>
                   </div>
                 </div>
+
+                {/* Bộ lọc loại tệp */}
+                {petition.attachments.length > 0 && (
+                  (() => {
+                    const inspectionCount = petition.attachments.filter((a) => a.fileUrl?.includes('/inspection/')).length;
+                    const resolutionCount = petition.attachments.filter((a) => a.fileUrl?.includes('/resolutions/')).length;
+                    const citizenCount = petition.attachments.length - inspectionCount - resolutionCount;
+
+                    if (inspectionCount === 0 && resolutionCount === 0) return null;
+
+                    return (
+                      <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => setAttachmentFilter('all')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            attachmentFilter === 'all'
+                              ? 'bg-slate-900 text-white shadow-xs'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                          }`}
+                        >
+                          Tất cả ({petition.attachments.length})
+                        </button>
+                        {citizenCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setAttachmentFilter('citizen')}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              attachmentFilter === 'citizen'
+                                ? 'bg-[#006194] text-white shadow-xs'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                            }`}
+                          >
+                            Người dân ({citizenCount})
+                          </button>
+                        )}
+                        {inspectionCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setAttachmentFilter('inspection')}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              attachmentFilter === 'inspection'
+                                ? 'bg-sky-600 text-white shadow-xs'
+                                : 'bg-sky-50 hover:bg-sky-100 text-sky-700'
+                            }`}
+                          >
+                            Biên bản thực địa ({inspectionCount})
+                          </button>
+                        )}
+                        {resolutionCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setAttachmentFilter('resolution')}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              attachmentFilter === 'resolution'
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
+                            }`}
+                          >
+                            Kết luận ({resolutionCount})
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()
+                )}
               </div>
 
               {petition.attachments.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {petition.attachments.map((att, idx) => {
-                    const isVid = att.fileType?.toLowerCase().includes('video') || /\.(mp4|mov|webm)$/i.test(att.fileName);
+                (() => {
+                  const filteredList = petition.attachments.filter((att) => {
+                    if (attachmentFilter === 'citizen') {
+                      return !att.fileUrl?.includes('/inspection/') && !att.fileUrl?.includes('/resolutions/');
+                    }
+                    if (attachmentFilter === 'inspection') {
+                      return att.fileUrl?.includes('/inspection/');
+                    }
+                    if (attachmentFilter === 'resolution') {
+                      return att.fileUrl?.includes('/resolutions/');
+                    }
+                    return true;
+                  });
+
+                  if (filteredList.length === 0) {
                     return (
-                      <div
-                        key={att.id || idx}
-                        onClick={() => {
-                          setLightboxIndex(idx);
-                          setIsLightboxOpen(true);
-                        }}
-                        className="group relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer aspect-square shadow-xs hover:shadow-md transition-all"
-                      >
-                        {isVid ? (
-                          <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white p-2">
-                            <Film className="w-8 h-8 text-amber-400 mb-1 group-hover:scale-110 transition-transform" />
-                            <span className="text-[10px] text-slate-300 font-medium truncate w-full text-center">
-                              Video Clip
-                            </span>
-                          </div>
-                        ) : (
-                          <img
-                            src={att.fileUrl}
-                            alt={att.fileName}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2 justify-between">
-                          <span className="text-[10px] text-white truncate max-w-[90px] font-medium">
-                            {att.originalFileName || att.fileName}
-                          </span>
-                          <span className="p-1 rounded-md bg-white/30 text-white">
-                            <Eye className="w-3 h-3" />
-                          </span>
-                        </div>
+                      <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                        <p className="text-xs text-slate-500 font-medium">Không có tệp trong danh mục đã chọn.</p>
                       </div>
                     );
-                  })}
-                </div>
+                  }
+
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {filteredList.map((att) => {
+                        const originalIdx = petition.attachments.findIndex((a) => a.id === att.id);
+                        const isVid = att.fileType?.toLowerCase().includes('video') || /\.(mp4|mov|webm)$/i.test(att.fileName);
+                        const isDoc = att.fileType?.toLowerCase().includes('document') || /\.(pdf|doc|docx|xls|xlsx|txt)$/i.test(att.fileName);
+                        const isInspection = att.fileUrl?.includes('/inspection/');
+                        const isResolution = att.fileUrl?.includes('/resolutions/');
+                        const isPdf = att.fileName.toLowerCase().endsWith('.pdf');
+
+                        return (
+                          <div
+                            key={att.id || originalIdx}
+                            onClick={() => {
+                              setLightboxIndex(originalIdx !== -1 ? originalIdx : 0);
+                              setIsLightboxOpen(true);
+                            }}
+                            className="group relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer aspect-square shadow-xs hover:shadow-md transition-all flex flex-col"
+                          >
+                            {/* Nguồn gốc tệp Badge */}
+                            <div className="absolute top-2 left-2 z-10 pointer-events-none">
+                              {isInspection ? (
+                                <span className="px-1.5 py-0.5 rounded-md bg-sky-600/90 text-white text-[9px] font-extrabold shadow-xs">
+                                  Biên bản
+                                </span>
+                              ) : isResolution ? (
+                                <span className="px-1.5 py-0.5 rounded-md bg-emerald-600/90 text-white text-[9px] font-extrabold shadow-xs">
+                                  Kết luận
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded-md bg-slate-800/80 text-white text-[9px] font-extrabold shadow-xs">
+                                  Người dân
+                                </span>
+                              )}
+                            </div>
+
+                            {isVid ? (
+                              <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white p-2">
+                                <Film className="w-8 h-8 text-amber-400 mb-1 group-hover:scale-110 transition-transform" />
+                                <span className="text-[10px] text-slate-300 font-medium truncate w-full text-center">
+                                  Video Clip
+                                </span>
+                              </div>
+                            ) : isDoc ? (
+                              <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center p-3 text-center border border-slate-200/60 group-hover:bg-slate-100 transition-colors">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${
+                                  isPdf ? 'bg-rose-100 text-rose-600' : 'bg-sky-100 text-sky-700'
+                                }`}>
+                                  <FileText className="w-5 h-5" />
+                                </div>
+                                <span className="text-[11px] font-bold text-slate-800 truncate max-w-full px-1">
+                                  {att.originalFileName || att.fileName}
+                                </span>
+                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded mt-1 bg-white border border-slate-200 text-slate-600">
+                                  {isPdf ? 'Văn bản PDF' : 'Tài liệu'}
+                                </span>
+                              </div>
+                            ) : (
+                              <img
+                                src={att.fileUrl}
+                                alt={att.fileName}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            )}
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2 justify-between">
+                              <span className="text-[10px] text-white truncate max-w-[90px] font-medium">
+                                {att.originalFileName || att.fileName}
+                              </span>
+                              <span className="p-1 rounded-md bg-white/30 text-white">
+                                <Eye className="w-3 h-3" />
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()
               ) : (
                 <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                   <ImageIcon className="w-8 h-8 text-slate-300 mx-auto mb-1" />
@@ -1511,11 +1687,12 @@ export const AdminPetitionDetailPage: React.FC = () => {
                         petition.comments.map((cmt) => {
                           const isInspectionReport = cmt.content.includes('[📋 Biên bản') || cmt.content.includes('[🔍 Thu thập mẫu') || cmt.content.includes('[🏞️ Quan sát');
                           const hasGps = cmt.content.includes('📍 GPS hiện trường:');
+                          const { cleanContent, files: cmtFiles } = parseCommentContent(cmt.content, petition.attachments, isInspectionReport);
 
                           return (
                             <div
                               key={cmt.id}
-                              className={`p-3.5 rounded-2xl border space-y-2 transition-all ${isInspectionReport
+                              className={`p-3.5 rounded-2xl border space-y-2.5 transition-all ${isInspectionReport
                                 ? 'bg-gradient-to-br from-sky-50/70 to-slate-50 border-sky-200/90 shadow-xs'
                                 : 'bg-slate-50 rounded-xl border-slate-200/70'
                                 }`}
@@ -1540,8 +1717,101 @@ export const AdminPetitionDetailPage: React.FC = () => {
                               </div>
 
                               <div className="text-xs text-slate-700 leading-relaxed font-medium whitespace-pre-line">
-                                {cmt.content}
+                                {cleanContent}
                               </div>
+
+                              {/* Danh sách hình ảnh & tệp PDF biên bản đính kèm */}
+                              {cmtFiles.length > 0 && (
+                                <div className="pt-2 border-t border-slate-200/60 space-y-2">
+                                  <div className="text-[11px] font-bold text-slate-700 flex items-center space-x-1.5">
+                                    <FileText className="w-3.5 h-3.5 text-[#006194]" />
+                                    <span>Tệp ảnh & Biên bản đính kèm ({cmtFiles.length}):</span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {cmtFiles.map((file, fIdx) => {
+                                      const matchedIdx = petition.attachments.findIndex(
+                                        (a) => a.fileUrl === file.url || a.originalFileName === file.name
+                                      );
+
+                                      if (file.isImage) {
+                                        return (
+                                          <div
+                                            key={fIdx}
+                                            onClick={() => {
+                                              if (matchedIdx !== -1) {
+                                                setLightboxIndex(matchedIdx);
+                                                setIsLightboxOpen(true);
+                                              } else {
+                                                window.open(file.url, '_blank');
+                                              }
+                                            }}
+                                            className="group relative flex items-center space-x-2.5 p-2 rounded-xl bg-white border border-sky-100 hover:border-sky-300 hover:shadow-xs transition-all cursor-pointer"
+                                            title="Bấm để xem ảnh phóng to"
+                                          >
+                                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
+                                              <img
+                                                src={file.url}
+                                                alt={file.name}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                              />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-xs font-semibold text-slate-800 truncate">{file.name}</p>
+                                              <p className="text-[10px] text-sky-600 font-medium flex items-center space-x-1">
+                                                <Eye className="w-3 h-3" />
+                                                <span>Xem ảnh hiện trường</span>
+                                              </p>
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+
+                                      return (
+                                        <div
+                                          key={fIdx}
+                                          className="flex items-center justify-between p-2 rounded-xl bg-white border border-rose-100 shadow-xs hover:border-rose-300 transition-all"
+                                        >
+                                          <div className="flex items-center space-x-2 min-w-0 pr-2">
+                                            <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
+                                              <FileText className="w-4 h-4" />
+                                            </div>
+                                            <div className="truncate">
+                                              <p className="text-xs font-bold text-slate-800 truncate" title={file.name}>
+                                                {file.name}
+                                              </p>
+                                              <span className="inline-block px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-rose-100 text-rose-700">
+                                                {file.isPdf ? 'PDF Biên bản' : 'Tài liệu'}
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center space-x-1 shrink-0">
+                                            <a
+                                              href={file.url}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="px-2.5 py-1.5 rounded-lg bg-[#006194] hover:bg-[#004d77] text-white text-[11px] font-bold flex items-center space-x-1 transition-colors shadow-xs"
+                                              title="Xem toàn văn biên bản"
+                                            >
+                                              <Eye className="w-3.5 h-3.5" />
+                                              <span>Xem</span>
+                                            </a>
+                                            <a
+                                              href={file.url}
+                                              download={file.name}
+                                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+                                              title="Tải về máy"
+                                            >
+                                              <Download className="w-3.5 h-3.5" />
+                                            </a>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
 
                               {hasGps && (
                                 <div className="pt-1 flex items-center space-x-1.5 text-[11px] font-bold text-sky-800">

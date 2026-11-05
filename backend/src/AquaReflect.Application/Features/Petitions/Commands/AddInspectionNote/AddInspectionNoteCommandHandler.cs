@@ -146,6 +146,10 @@ public class AddInspectionNoteCommandHandler : IRequestHandler<AddInspectionNote
                     FileSize = attachment.FileSize
                 });
             }
+
+            // Ghi nhận liên kết các tệp đính kèm vào nội dung biên bản
+            var attachmentsText = string.Join("\n", newAttachmentDtos.Select(a => $"📎 [{a.OriginalFileName}]({a.FileUrl})"));
+            comment.Content = $"{fullContent}\n\n{attachmentsText}";
         }
 
         // 9. Cập nhật thời gian chỉnh sửa hồ sơ
