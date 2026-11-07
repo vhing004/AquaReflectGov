@@ -11,10 +11,12 @@ namespace AquaReflect.Application.Features.Petitions.Queries.TrackPetitionByCode
 public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCodeQuery, PetitionTrackingDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public TrackPetitionByCodeQueryHandler(IApplicationDbContext context)
+    public TrackPetitionByCodeQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<PetitionTrackingDto> Handle(TrackPetitionByCodeQuery request, CancellationToken cancellationToken)
@@ -164,6 +166,61 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
             result.FeedbackAt = petition.Feedback.FeedbackAt;
         }
 
+        // Xác định xem người dùng hiện tại có phải là chủ sở hữu (người gửi) của phản ánh hay không
+        bool isOwner = false;
+        if (_currentUser.IsAuthenticated && _currentUser.UserId.HasValue)
+        {
+            var currentUserIdStr = _currentUser.UserId.Value.ToString();
+            var currentUsername = _currentUser.Username;
+            
+            var userEntity = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == _currentUser.UserId.Value, cancellationToken);
+
+            var currentEmail = _currentUser.Email ?? userEntity?.Email;
+            var currentPhone = userEntity?.PhoneNumber;
+
+            // 1. So khớp UserId, Username hoặc FullName với CreatedBy
+            if (!string.IsNullOrWhiteSpace(petition.CreatedBy) &&
+                (petition.CreatedBy.Equals(currentUserIdStr, StringComparison.OrdinalIgnoreCase) ||
+                 (!string.IsNullOrWhiteSpace(currentUsername) && petition.CreatedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase)) ||
+                 (!string.IsNullOrWhiteSpace(userEntity?.FullName) && petition.CreatedBy.Equals(userEntity.FullName, StringComparison.OrdinalIgnoreCase))))
+            {
+                isOwner = true;
+            }
+            // 2. So khớp họ tên người gửi phản ánh với FullName hoặc Username
+            else if (!string.IsNullOrWhiteSpace(petition.CitizenName) &&
+                     ((!string.IsNullOrWhiteSpace(userEntity?.FullName) && petition.CitizenName.Trim().Equals(userEntity.FullName.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                      (!string.IsNullOrWhiteSpace(currentUsername) && petition.CitizenName.Trim().Equals(currentUsername.Trim(), StringComparison.OrdinalIgnoreCase))))
+            {
+                isOwner = true;
+            }
+            // 3. So khớp số điện thoại người gửi phản ánh
+            else if (!string.IsNullOrWhiteSpace(petition.CitizenPhone) && !string.IsNullOrWhiteSpace(currentPhone))
+            {
+                var cleanPhone1 = petition.CitizenPhone.Trim().Replace(" ", "").Replace(".", "").Replace("-", "");
+                var cleanPhone2 = currentPhone.Trim().Replace(" ", "").Replace(".", "").Replace("-", "");
+                if (cleanPhone1.Length >= 9 && cleanPhone2.Length >= 9 && (cleanPhone1.EndsWith(cleanPhone2) || cleanPhone2.EndsWith(cleanPhone1)))
+                {
+                    isOwner = true;
+                }
+            }
+            // 4. So khớp email người gửi phản ánh
+            else if (!string.IsNullOrWhiteSpace(petition.CitizenEmail) && !string.IsNullOrWhiteSpace(currentEmail) &&
+                     petition.CitizenEmail.Trim().Equals(currentEmail.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                isOwner = true;
+            }
+
+            // Cán bộ nội bộ không bao giờ được xem là chủ sở hữu đơn người dân
+            if (_currentUser.Role.HasValue && (_currentUser.Role.Value == UserRole.Dispatcher || _currentUser.Role.Value == UserRole.Specialist || _currentUser.Role.Value == UserRole.SuperAdmin))
+            {
+                isOwner = false;
+            }
+        }
+
+        result.IsOwner = isOwner;
+
         // Bình luận & Ý kiến thảo luận công khai của nhân dân
         result.PublicComments = petition.Comments
             .Where(c => !c.IsInternal && !c.IsDeleted)
@@ -176,6 +233,7 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
                 CreatedAt = c.CreatedAt,
                 IsAuthorOfPetition = (!string.IsNullOrWhiteSpace(petition.CitizenName) && c.AuthorName.Trim().Equals(petition.CitizenName.Trim(), StringComparison.OrdinalIgnoreCase))
                     || (!string.IsNullOrWhiteSpace(petition.CreatedBy) && c.AuthorUser != null && !string.IsNullOrWhiteSpace(c.AuthorUser.Username) && petition.CreatedBy.Equals(c.AuthorUser.Username, StringComparison.OrdinalIgnoreCase))
+                    || (!string.IsNullOrWhiteSpace(petition.CreatedBy) && c.AuthorUserId.HasValue && petition.CreatedBy.Equals(c.AuthorUserId.Value.ToString(), StringComparison.OrdinalIgnoreCase))
             })
             .ToList();
 
@@ -195,16 +253,23 @@ public class TrackPetitionByCodeQueryHandler : IRequestHandler<TrackPetitionByCo
         };
 
         // Cho phép mở lại khi:
-        // 1. Điểm CSAT <= 2
-        // 2. Chưa từng mở lại thành công (ReopenCount == 0)
-        // 3. Chưa gửi yêu cầu hoặc đang ở trạng thái None
-        // 4. Trong vòng 14 ngày sau khi Closed (hoặc Resolved nếu chưa Closed)
+        // 1. Phải là chủ hồ sơ (isOwner == true)
+        // 2. Điểm CSAT <= 2
+        // 3. Chưa từng mở lại thành công (ReopenCount == 0)
+        // 4. Chưa gửi yêu cầu hoặc đang ở trạng thái None
+        // 5. Trong vòng 14 ngày sau khi Closed (hoặc Resolved nếu chưa Closed)
         var referenceCloseDate = petition.ClosedAt ?? petition.ResolvedAt;
         var isWithin14Days = referenceCloseDate.HasValue && (now - referenceCloseDate.Value).TotalDays <= 14;
 
-        result.CanReopen = (result.CsatScore.HasValue && result.CsatScore.Value <= 2)
+        result.CanReopen = isOwner
+            && (result.CsatScore.HasValue && result.CsatScore.Value <= 2)
             && petition.ReopenCount == 0
             && petition.ReopenStatus == ReopenStatus.None
+            && isWithin14Days;
+
+        result.CanSubmitFeedback = isOwner
+            && (petition.Status == PetitionStatus.Resolved || petition.Status == PetitionStatus.Closed)
+            && petition.Feedback == null
             && isWithin14Days;
 
         return result;

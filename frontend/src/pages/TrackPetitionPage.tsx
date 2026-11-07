@@ -112,6 +112,23 @@ export const TrackPetitionPage: React.FC = () => {
   const [showReopenModal, setShowReopenModal] = useState(false);
   const [reopenSuccessMessage, setReopenSuccessMessage] = useState<string | null>(null);
 
+  // Xác định xem người dùng hiện tại có phải là chủ sở hữu phản ánh hay không
+  const isOwner = Boolean(
+    trackingDetail?.isOwner ||
+    (isAuthenticated && user && (user.role === 'Citizen' || (user as any).roleId === 4) && (
+      // Khớp số điện thoại
+      (trackingDetail?.citizenPhoneMasked && user.phoneNumber &&
+        user.phoneNumber.replace(/\D/g, '').length >= 4 &&
+        trackingDetail.citizenPhoneMasked.replace(/\D/g, '').length >= 3 &&
+        user.phoneNumber.replace(/\D/g, '').endsWith(trackingDetail.citizenPhoneMasked.replace(/\D/g, ''))) ||
+      // Khớp họ tên
+      (trackingDetail?.citizenNameMasked && user.fullName &&
+        (user.fullName.trim().toLowerCase() === trackingDetail.citizenNameMasked.trim().toLowerCase() ||
+         (trackingDetail.citizenNameMasked.replace(/\*/g, '').trim().length >= 2 &&
+          user.fullName.trim().toLowerCase().includes(trackingDetail.citizenNameMasked.replace(/\*/g, '').trim().toLowerCase()))))
+    ))
+  );
+
   // Load recent searches on mount
   useEffect(() => {
     try {
@@ -294,6 +311,10 @@ export const TrackPetitionPage: React.FC = () => {
     if (!trackingDetail) return;
     if (!isAuthenticated || !user) {
       setFeedbackError('Vui lòng đăng nhập tài khoản công dân để gửi đánh giá chất lượng phục vụ.');
+      return;
+    }
+    if (!isOwner) {
+      setFeedbackError('Chỉ tài khoản công dân đã gửi phản ánh này mới có quyền đánh giá chất lượng phục vụ.');
       return;
     }
     if (feedbackRatingInput < 1) {
@@ -1150,7 +1171,8 @@ export const TrackPetitionPage: React.FC = () => {
               )}
 
               {/* KHỐI ĐÁNH GIÁ MỨC ĐỘ HÀI LÒNG CỦA CÔNG DÂN (Task 2.5) */}
-              {(trackingDetail.status === 4 || trackingDetail.status === 6) && (
+              {(trackingDetail.status === 4 || trackingDetail.status === 6) &&
+               (Boolean(trackingDetail.hasFeedback || feedbackSubmitted) || isOwner) && (
                 <div className="rounded-2xl border border-sky-200 overflow-hidden shadow-xs">
                   {/* Header */}
                   <div className="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-[#006194] to-sky-500">
@@ -1274,38 +1296,8 @@ export const TrackPetitionPage: React.FC = () => {
                           </div>
                         )}
                       </div>
-                    ) : !isAuthenticated || !user ? (
-                      /* --- YÊU CẦU ĐĂNG NHẬP ĐỂ ĐÁNH GIÁ (Khách vãng lai chỉ được xem) --- */
-                      <div className="bg-sky-50/70 border border-sky-200/80 rounded-2xl p-4 sm:p-5 text-center space-y-3">
-                        <div className="w-10 h-10 rounded-full bg-[#006194]/10 text-[#006194] flex items-center justify-center mx-auto">
-                          <LogIn className="w-5 h-5" />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs sm:text-sm font-bold text-slate-800">
-                            Yêu Cầu Đăng Nhập Để Gửi Đánh Giá
-                          </h4>
-                          <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
-                            Để bảo đảm tính xác thực, minh bạch và xây dựng môi trường phản ánh văn minh, hệ thống chỉ tiếp nhận đánh giá chất lượng phục vụ từ tài khoản công dân đã xác thực.
-                          </p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
-                          <Link
-                            to={`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-                            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-xl bg-[#006194] hover:bg-[#0284c7] text-white font-semibold text-xs shadow-sm transition-all"
-                          >
-                            <LogIn className="w-3.5 h-3.5" />
-                            <span>Đăng nhập để đánh giá</span>
-                          </Link>
-                          <Link
-                            to={`/register?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-                            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs transition-all"
-                          >
-                            <span>Tạo tài khoản mới</span>
-                          </Link>
-                        </div>
-                      </div>
-                    ) : (
-                      /* --- FORM ĐÁNH GIÁ --- */
+                    ) : isOwner ? (
+                      /* --- FORM ĐÁNH GIÁ (CHỈ HIỂN THỊ KHI ĐĂNG NHẬP ĐÚNG TÀI KHOẢN CHÍNH CHỦ) --- */
                       <div className="space-y-4">
                         <p className="text-slate-600">
                           Hồ sơ phản ánh của bạn đã được giải quyết. Bạn có hài lòng với chất lượng phục vụ?
@@ -1393,7 +1385,7 @@ export const TrackPetitionPage: React.FC = () => {
                           Đánh giá được bảo mật và chỉ dùng để cải thiện chất lượng phục vụ nội bộ
                         </p>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               )}

@@ -197,6 +197,8 @@ export interface PetitionTrackingDetail {
   feedbackRating?: number;
   feedbackComment?: string;
   feedbackAt?: string;
+  isOwner?: boolean;
+  canSubmitFeedback?: boolean;
   publicComments?: PublicComment[];
 }
 

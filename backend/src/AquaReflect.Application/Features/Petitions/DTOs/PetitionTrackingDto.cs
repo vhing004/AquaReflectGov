@@ -58,6 +58,8 @@ public class PetitionTrackingDto
     public int? FeedbackRating { get; set; }
     public string? FeedbackComment { get; set; }
     public DateTime? FeedbackAt { get; set; }
+    public bool IsOwner { get; set; }
+    public bool CanSubmitFeedback { get; set; }
 
     // Bình luận & Ý kiến thảo luận công khai của nhân dân
     public List<PublicCommentDto> PublicComments { get; set; } = new();

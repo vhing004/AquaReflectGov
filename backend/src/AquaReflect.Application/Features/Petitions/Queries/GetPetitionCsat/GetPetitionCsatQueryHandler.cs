@@ -10,10 +10,12 @@ namespace AquaReflect.Application.Features.Petitions.Queries.GetPetitionCsat;
 public class GetPetitionCsatQueryHandler : IRequestHandler<GetPetitionCsatQuery, CsatDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetPetitionCsatQueryHandler(IApplicationDbContext context)
+    public GetPetitionCsatQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<CsatDto> Handle(GetPetitionCsatQuery request, CancellationToken cancellationToken)
@@ -50,9 +52,59 @@ public class GetPetitionCsatQueryHandler : IRequestHandler<GetPetitionCsatQuery,
         var score = petition.CsatScore ?? petition.Feedback?.Rating;
         var hasFeedback = petition.Feedback != null;
 
-        var canFeedback = isResolvedOrClosed && !hasFeedback && isWithin14Days;
+        // Xác định quyền chính chủ
+        bool isOwner = false;
+        if (_currentUser.IsAuthenticated && _currentUser.UserId.HasValue)
+        {
+            var currentUserIdStr = _currentUser.UserId.Value.ToString();
+            var currentUsername = _currentUser.Username;
 
-        var canReopen = (score.HasValue && score.Value <= 2)
+            var userEntity = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == _currentUser.UserId.Value, cancellationToken);
+
+            var currentEmail = _currentUser.Email ?? userEntity?.Email;
+            var currentPhone = userEntity?.PhoneNumber;
+
+            if (!string.IsNullOrWhiteSpace(petition.CreatedBy) &&
+                (petition.CreatedBy.Equals(currentUserIdStr, StringComparison.OrdinalIgnoreCase) ||
+                 (!string.IsNullOrWhiteSpace(currentUsername) && petition.CreatedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase)) ||
+                 (!string.IsNullOrWhiteSpace(userEntity?.FullName) && petition.CreatedBy.Equals(userEntity.FullName, StringComparison.OrdinalIgnoreCase))))
+            {
+                isOwner = true;
+            }
+            else if (!string.IsNullOrWhiteSpace(petition.CitizenName) &&
+                     ((!string.IsNullOrWhiteSpace(userEntity?.FullName) && petition.CitizenName.Trim().Equals(userEntity.FullName.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                      (!string.IsNullOrWhiteSpace(currentUsername) && petition.CitizenName.Trim().Equals(currentUsername.Trim(), StringComparison.OrdinalIgnoreCase))))
+            {
+                isOwner = true;
+            }
+            else if (!string.IsNullOrWhiteSpace(petition.CitizenPhone) && !string.IsNullOrWhiteSpace(currentPhone))
+            {
+                var cleanPhone1 = petition.CitizenPhone.Trim().Replace(" ", "").Replace(".", "").Replace("-", "");
+                var cleanPhone2 = currentPhone.Trim().Replace(" ", "").Replace(".", "").Replace("-", "");
+                if (cleanPhone1.Length >= 9 && cleanPhone2.Length >= 9 && (cleanPhone1.EndsWith(cleanPhone2) || cleanPhone2.EndsWith(cleanPhone1)))
+                {
+                    isOwner = true;
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(petition.CitizenEmail) && !string.IsNullOrWhiteSpace(currentEmail) &&
+                     petition.CitizenEmail.Trim().Equals(currentEmail.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                isOwner = true;
+            }
+
+            if (_currentUser.Role.HasValue && 
+                (_currentUser.Role.Value == UserRole.Dispatcher || _currentUser.Role.Value == UserRole.Specialist || _currentUser.Role.Value == UserRole.SuperAdmin))
+            {
+                isOwner = false;
+            }
+        }
+
+        var canFeedback = isOwner && isResolvedOrClosed && !hasFeedback && isWithin14Days;
+
+        var canReopen = isOwner
+            && (score.HasValue && score.Value <= 2)
             && petition.ReopenCount == 0
             && petition.ReopenStatus == ReopenStatus.None
             && isWithin14Days;
