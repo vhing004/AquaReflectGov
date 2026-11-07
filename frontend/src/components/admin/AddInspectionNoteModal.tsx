@@ -1,18 +1,19 @@
+// 	Modal thêm ghi chú/biên bản kiểm tra thực địa vào hồ sơ
 import React, { useState, useRef } from 'react';
-import { 
-  X, 
-  MapPin, 
-  Upload, 
-  CheckCircle2, 
-  AlertCircle, 
-  Loader2, 
-  Compass, 
-  FileCheck, 
-  FlaskConical, 
-  FileText, 
-  Trash2, 
-  Eye, 
-  Film, 
+import {
+  X,
+  MapPin,
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Compass,
+  FileCheck,
+  FlaskConical,
+  FileText,
+  Trash2,
+  Eye,
+  Film,
   Camera,
   Navigation
 } from 'lucide-react';
@@ -253,9 +254,8 @@ export const AddInspectionNoteModal: React.FC<AddInspectionNoteModalProps> = ({
                     key={item.id}
                     type="button"
                     onClick={() => setNoteType(item.id)}
-                    className={`text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-start space-x-3 ${
-                      isSelected ? item.activeColor : item.color
-                    }`}
+                    className={`text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-start space-x-3 ${isSelected ? item.activeColor : item.color
+                      }`}
                   >
                     <div className="p-2 rounded-xl bg-white/80 shrink-0 shadow-xs">
                       <Icon className="w-4 h-4" />

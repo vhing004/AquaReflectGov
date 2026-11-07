@@ -1,3 +1,4 @@
+// Modal tạo/sửa tài khoản Admin / Điều phối viên / Công dân
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, User, Mail, Phone, Lock, Building2, Shield, Eye, EyeOff } from 'lucide-react';

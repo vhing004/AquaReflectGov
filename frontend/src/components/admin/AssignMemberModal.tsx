@@ -1,11 +1,12 @@
+// Modal phân công cán bộ xử lý hồ sơ kiến nghị
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  UserCheck, 
-  Users, 
-  Briefcase, 
-  Sparkles, 
-  AlertCircle, 
+import {
+  X,
+  UserCheck,
+  Users,
+  Briefcase,
+  Sparkles,
+  AlertCircle,
   Loader2,
   CheckCircle2
 } from 'lucide-react';
@@ -121,7 +122,7 @@ export const AssignMemberModal: React.FC<AssignMemberModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div 
+      <div
         className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
@@ -184,11 +185,10 @@ export const AssignMemberModal: React.FC<AssignMemberModalProps> = ({
                     <div
                       key={officer.id}
                       onClick={() => setSelectedUserId(officer.id)}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                        isSelected 
-                          ? 'border-blue-600 bg-blue-50/70 shadow-sm' 
+                      className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${isSelected
+                          ? 'border-blue-600 bg-blue-50/70 shadow-sm'
                           : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-full ${getAvatarBg(officer.fullName)} text-white flex items-center justify-center font-bold text-xs shadow-sm`}>
@@ -223,20 +223,18 @@ export const AssignMemberModal: React.FC<AssignMemberModalProps> = ({
 
                       <div className="flex items-center gap-3">
                         <div className="text-right">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            officer.workloadLevel === 'Low'
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${officer.workloadLevel === 'Low'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : officer.workloadLevel === 'Medium'
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
-                          }`}>
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : 'bg-rose-50 text-rose-700 border border-rose-200'
+                            }`}>
                             <Briefcase className="w-3 h-3" />
                             {officer.activeCaseCount} đơn đang xử lý
                           </span>
                         </div>
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                          isSelected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white'
-                        }`}>
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white'
+                          }`}>
                           {isSelected && <CheckCircle2 className="w-4 h-4" />}
                         </div>
                       </div>

@@ -1,3 +1,4 @@
+// Modal chuyển trạng thái hồ sơ (Admin / Điều phối viên)
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../../api/adminApi';
@@ -324,31 +325,28 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
                 <React.Fragment key={step.status}>
                   <div className="flex flex-col items-center text-center">
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
-                        isCurrent
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${isCurrent
                           ? 'bg-sky-400 text-slate-950 ring-2 ring-sky-300 scale-110 font-black'
                           : isSelected
-                          ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 font-bold'
-                          : isPassed
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-700 text-slate-400'
-                      }`}
+                            ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 font-bold'
+                            : isPassed
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-slate-700 text-slate-400'
+                        }`}
                     >
                       {isPassed ? <Check className="w-3 h-3 stroke-[3]" /> : idx + 1}
                     </div>
                     <span
-                      className={`mt-1 text-[10px] font-medium leading-tight ${
-                        isCurrent ? 'text-sky-300 font-bold' : isSelected ? 'text-amber-300 font-bold' : isPassed ? 'text-emerald-400' : 'text-slate-400'
-                      }`}
+                      className={`mt-1 text-[10px] font-medium leading-tight ${isCurrent ? 'text-sky-300 font-bold' : isSelected ? 'text-amber-300 font-bold' : isPassed ? 'text-emerald-400' : 'text-slate-400'
+                        }`}
                     >
                       {step.title}
                     </span>
                   </div>
                   {idx < WORKFLOW_STEPS.length - 1 && (
                     <div
-                      className={`flex-1 h-0.5 mx-1.5 transition-colors ${
-                        petition.status > step.status && petition.status !== 5 ? 'bg-emerald-500' : 'bg-slate-700'
-                      }`}
+                      className={`flex-1 h-0.5 mx-1.5 transition-colors ${petition.status > step.status && petition.status !== 5 ? 'bg-emerald-500' : 'bg-slate-700'
+                        }`}
                     />
                   )}
                 </React.Fragment>
@@ -541,11 +539,10 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
                       key={days}
                       type="button"
                       onClick={() => setNeedInfoDays(days)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                        needInfoDays === days
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${needInfoDays === days
                           ? 'bg-amber-600 text-white shadow-xs'
                           : 'bg-white text-amber-900 border border-amber-200 hover:bg-amber-100'
-                      }`}
+                        }`}
                     >
                       {days} ngày
                     </button>
@@ -645,11 +642,10 @@ export const TransitionStatusModal: React.FC<TransitionStatusModalProps> = ({
               }
               rows={2}
               required={selectedStatus === 5}
-              className={`w-full p-2.5 text-xs rounded-xl border focus:outline-none focus:ring-2 transition-all ${
-                selectedStatus === 5
+              className={`w-full p-2.5 text-xs rounded-xl border focus:outline-none focus:ring-2 transition-all ${selectedStatus === 5
                   ? 'border-rose-200 focus:ring-rose-200 bg-rose-50/30'
                   : 'border-slate-200 focus:ring-sky-100 bg-slate-50/50 focus:bg-white'
-              }`}
+                }`}
             ></textarea>
           </div>
 

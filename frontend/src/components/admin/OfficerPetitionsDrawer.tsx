@@ -1,3 +1,4 @@
+// Drawer panel xem danh sách hồ sơ đang được phân công cho một cán bộ cụ thể - AdminUserPage
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -31,7 +32,7 @@ const StatusBadge: React.FC<{ statusName: string; status: number }> = ({ statusN
 
 // Stars danh gia CSAT
 const RatingStars: React.FC<{ rating?: number }> = ({ rating }) => {
-  if (!rating) return <span className="text-xs text-slate-400">Chua danh gia</span>;
+  if (!rating) return <span className="text-xs text-slate-400">Chưa đánh giá</span>;
   return (
     <span className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((s) => (
@@ -62,7 +63,7 @@ const PetitionCard: React.FC<{ item: UserPetitionItem }> = ({ item }) => {
           </span>
           {item.isOverdue && (
             <span className="flex items-center gap-0.5 text-xs text-red-600 font-medium">
-              <AlertTriangle className="w-3 h-3" /> Qua han
+              <AlertTriangle className="w-3 h-3" /> Quá hạn
             </span>
           )}
         </div>
@@ -83,11 +84,10 @@ const PetitionCard: React.FC<{ item: UserPetitionItem }> = ({ item }) => {
         <span className="text-xs text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
           {item.categoryName}
         </span>
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-          item.priorityLevel === 3 ? 'text-red-700 bg-red-50 border border-red-200'
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.priorityLevel === 3 ? 'text-red-700 bg-red-50 border border-red-200'
           : item.priorityLevel === 2 ? 'text-orange-700 bg-orange-50 border border-orange-200'
-          : 'text-slate-600 bg-slate-50 border border-slate-200'
-        }`}>
+            : 'text-slate-600 bg-slate-50 border border-slate-200'
+          }`}>
           {item.priorityName}
         </span>
       </div>
@@ -185,17 +185,17 @@ export const OfficerPetitionsDrawer: React.FC<OfficerPetitionsDrawerProps> = ({
         <div className="bg-white border-b border-slate-200 px-6 py-3 flex gap-6 shrink-0">
           <div className="text-center">
             <div className="text-lg font-bold text-[#006194]">{user?.resolvedCaseCount ?? 0}</div>
-            <div className="text-xs text-slate-500">Da xu ly</div>
+            <div className="text-xs text-slate-500">Đã xử lý</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-amber-600">{user?.activeCaseCount ?? 0}</div>
-            <div className="text-xs text-slate-500">Dang xu ly</div>
+            <div className="text-xs text-slate-500">Đang xử lý</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-slate-700">
               {user ? (user.resolvedCaseCount + user.activeCaseCount) : 0}
             </div>
-            <div className="text-xs text-slate-500">Tong so</div>
+            <div className="text-xs text-slate-500">Tổng số</div>
           </div>
         </div>
 
@@ -203,17 +203,16 @@ export const OfficerPetitionsDrawer: React.FC<OfficerPetitionsDrawerProps> = ({
         <div className="bg-white border-b border-slate-200 px-6 shrink-0">
           <div className="flex gap-0">
             {([
-              { key: 'resolved', label: 'Ho so da xu ly' },
-              { key: 'active', label: 'Ho so dang xu ly' },
+              { key: 'resolved', label: 'Hồ sơ đã xử lý' },
+              { key: 'active', label: 'Hồ sơ đang xử lý' },
             ] as const).map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.key
-                    ? 'border-[#006194] text-[#006194]'
-                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
+                  ? 'border-[#006194] text-[#006194]'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
               >
                 {tab.label}
               </button>
@@ -236,7 +235,7 @@ export const OfficerPetitionsDrawer: React.FC<OfficerPetitionsDrawerProps> = ({
           ) : petitions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
               <FileText className="w-12 h-12 mb-3 opacity-30" />
-              <p className="font-medium">Chua co ho so nao</p>
+              <p className="font-medium">Chưa có hồ sơ nào</p>
               <p className="text-sm mt-1">
                 {activeTab === 'resolved' ? 'Can bo nay chua xu ly ho so nao' : 'Khong co ho so dang xu ly'}
               </p>
@@ -244,7 +243,7 @@ export const OfficerPetitionsDrawer: React.FC<OfficerPetitionsDrawerProps> = ({
           ) : (
             <>
               <p className="text-xs text-slate-500 font-medium">
-                Tim thay {totalCount} ho so
+                Tìm thấy {totalCount} hồ sơ
               </p>
               {petitions.map((item) => (
                 <PetitionCard key={item.id} item={item} />

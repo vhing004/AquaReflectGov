@@ -4,7 +4,6 @@
 ![.NET 9](https://img.shields.io/badge/.NET_9.0-API-512BD4?style=for-the-badge&logo=dotnet)
 ![React 19](https://img.shields.io/badge/React_19-TypeScript-61DAFB?style=for-the-badge&logo=react)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PostGIS-4169E1?style=for-the-badge&logo=postgresql)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker)
 
 **AquaReflect** là hệ thống thông tin chính quyền số đa kênh phục vụ tiếp nhận, phân loại, điều phối và xử lý phản ánh kiến nghị trong lĩnh vực **Thủy sản & Ngư nghiệp** (dịch bệnh thủy sản, ô nhiễm môi trường nước ao nuôi, vi phạm ranh giới biển/IUU, vật tư thức ăn/con giống kém chất lượng, thủ tục hành chính nghề cá).
 
@@ -13,6 +12,7 @@
 ## 🚀 Công Nghệ Sử Dụng (Tech Stack)
 
 ### 🔹 Backend (.NET 9 Web API)
+
 - **Kiến trúc**: Clean Architecture (Domain, Application, Infrastructure, API).
 - **Core Framework**: .NET 9, C# 13, MediatR (CQRS Pattern), FluentValidation.
 - **Database & GIS**: EF Core 9, PostgreSQL 16 + PostGIS 3.4 (Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite, SRID 4326).
@@ -21,6 +21,7 @@
 - **Bảo mật**: ASP.NET Core Rate Limiting, Cloudflare Turnstile Verification, HtmlSanitizer (Anti-XSS), JWT & Refresh Token Auth.
 
 ### 🔹 Frontend (React 19 + TypeScript)
+
 - **Framework & Build tool**: React 19, TypeScript 5, Vite, Tailwind CSS v4.
 - **State & Data Fetching**: Zustand (Auth store), TanStack React Query v5.
 - **Bản đồ GIS**: Leaflet.js, React-Leaflet, Leaflet.heat (Bản đồ nhiệt cảnh báo điểm nóng).
@@ -28,6 +29,7 @@
 - **UI Components**: Lucide Icons, Modern Glassmorphism & Responsive Layout.
 
 ### 🔹 Hạ Tầng & Triển Khai (DevOps)
+
 - **Containerization**: Docker Multi-stage Builds (`backend/Dockerfile`, `frontend/Dockerfile`).
 - **Orchestration**: Docker Compose (`docker-compose.yml`) điều phối PostgreSQL PostGIS, .NET API & Nginx Reverse Proxy.
 
@@ -36,6 +38,7 @@
 ## 🎯 Các Tính Năng Nổi Bật
 
 ### 👥 Phía Người Dân / Ngư Dân (Public Portal)
+
 1. **Gửi Phản ánh Đa phương tiện Wizard 4 bước**:
    - Định vị GPS tự động hoặc chọn trên bản đồ không gian.
    - Upload nhiều ảnh/video minh chứng hiện trường.
@@ -52,6 +55,7 @@
 ---
 
 ### 🏛️ Phía Cán Bộ / Quản Trị Viên (Admin Portal `/admin`)
+
 1. **Ma trận Luân chuyển Trạng thái (Workflow State Machine 6 bước)**:
    - Quyền hạn nghiêm ngặt theo vai trò: `SuperAdmin`, `Dispatcher` (Điều phối), `Specialist` (Chuyên viên thụ lý), `Citizen`.
    - Audit Trail tự động ghi lại lịch sử thao tác của từng cán bộ.
@@ -72,33 +76,18 @@
 
 ## ⚡ Hướng Dẫn Chạy Nhanh Trong 5 Phút (Quick Start)
 
-### Cách 1: Chạy bằng Docker Compose (Khuyên dùng)
-
-#### Bước 1: Khởi tạo biến môi trường
-```bash
-cp .env.example .env
-```
-
-#### Bước 2: Khởi chạy toàn bộ hệ thống bằng Docker Compose
-```bash
-docker compose up -d --build
-```
-
-#### Bước 3: Truy cập hệ thống
-- 🌐 **Cổng Công dân & Quản trị**: `http://localhost`
-- ⚙️ **Backend API Swagger Docs**: `http://localhost:8080/swagger`
-
----
-
-### Cách 2: Chạy Môi Trường Local Development
+### Chạy Môi Trường Local Development
 
 #### Yêu cầu hệ thống:
+
 - .NET 9 SDK
 - Node.js 22 LTS
 - PostgreSQL 16 tích hợp Extension PostGIS 3.4
 
 #### 1. Khởi tạo CSDL PostgreSQL / PostGIS
+
 Tạo Database tên `AquaReflectDb` và kích hoạt extension:
+
 ```sql
 CREATE DATABASE "AquaReflectDb";
 \c "AquaReflectDb";
@@ -106,30 +95,34 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 ```
 
 #### 2. Khởi chạy Backend (.NET API)
+
 ```bash
 cd backend/src/AquaReflect.Api
 dotnet run
 ```
-*Lưu ý: Hệ thống sẽ tự động seed dữ liệu mẫu (Roles, Departments, Categories, Admin Accounts) khi khởi chạy lần đầu.*
+
+_Lưu ý: Hệ thống sẽ tự động seed dữ liệu mẫu (Roles, Departments, Categories, Admin Accounts) khi khởi chạy lần đầu._
 
 #### 3. Khởi chạy Frontend (React Vite)
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
 Truy cập Frontend tại: `http://localhost:5173`
 
 ---
 
 ## 🔐 Tài Khoản Cán Bộ Dùng Thử (Seeded Accounts)
 
-| Vai trò | Tên đăng nhập | Mật khẩu | Phạm vi quyền hạn |
-|---|---|---|---|
-| **SuperAdmin** | `admin` | `Admin@123456` | Toàn quyền quản trị hệ thống, quản lý tài khoản & danh mục |
-| **Dispatcher** | `dispatcher` | `Dispatcher@123456` | Tiếp nhận đơn mới, phân công về cơ quan chuyên môn |
-| **Specialist** | `specialist1` | `Specialist@123456` | Cán bộ Chi cục Thủy sản: Thụ lý & Ban hành kết luận |
-| **Specialist** | `specialist2` | `Specialist@123456` | Cán bộ Chi cục Kiểm ngư: Thụ lý & Ban hành kết luận |
+| Vai trò        | Tên đăng nhập | Mật khẩu            | Phạm vi quyền hạn                                          |
+| -------------- | ------------- | ------------------- | ---------------------------------------------------------- |
+| **SuperAdmin** | `admin`       | `Admin@123456`      | Toàn quyền quản trị hệ thống, quản lý tài khoản & danh mục |
+| **Dispatcher** | `dispatcher`  | `Dispatcher@123456` | Tiếp nhận đơn mới, phân công về cơ quan chuyên môn         |
+| **Specialist** | `specialist1` | `Specialist@123456` | Cán bộ Chi cục Thủy sản: Thụ lý & Ban hành kết luận        |
+| **Specialist** | `specialist2` | `Specialist@123456` | Cán bộ Chi cục Kiểm ngư: Thụ lý & Ban hành kết luận        |
 
 ---
 
@@ -176,6 +169,7 @@ AquaReflect/
 ---
 
 ## 🛡️ Cam Kết Bảo Mật & An Toàn Dữ Liệu
+
 - Hệ thống không lưu trữ hay đẩy các file bí mật (`.env`, JWT secret keys, DB passwords) lên hệ thống quản lý phiên bản Git.
 - Mọi dữ liệu đầu vào đều qua bộ lọc `HtmlSanitizer` và `InputSanitizer` chống tấn công XSS/SQL Injection.
 

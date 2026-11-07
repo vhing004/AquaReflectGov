@@ -25,11 +25,10 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => (
     {[1, 2, 3, 4, 5].map((i) => (
       <Star
         key={i}
-        className={`w-3.5 h-3.5 ${
-          i <= rating
+        className={`w-3.5 h-3.5 ${i <= rating
             ? 'text-amber-400 fill-amber-400'
             : 'text-slate-300'
-        }`}
+          }`}
       />
     ))}
   </div>
@@ -66,9 +65,9 @@ const getCategoryBadge = (code: string, name: string) => {
   );
 };
 
-export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({ 
-  petition, 
-  variant = 'standard' 
+export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({
+  petition,
+  variant = 'standard'
 }) => {
   // Tính thời gian xử lý
   const formatProcessingTime = () => {
@@ -98,10 +97,10 @@ export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({
   // Ngày giải quyết theo chuẩn phong cách bản tin báo chí
   const resolvedDate = petition.resolvedAt
     ? new Date(petition.resolvedAt).toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      })
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
     : 'Gần đây';
 
   // ==========================================
@@ -207,9 +206,8 @@ export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({
                 <span>Thời gian giải quyết: <strong>{formatProcessingTime()}</strong></span>
               </div>
               {formatSlaMargin() && (
-                <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
-                  petition.isAheadOfSla ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
-                }`}>
+                <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${petition.isAheadOfSla ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
+                  }`}>
                   {formatSlaMargin()}
                 </span>
               )}
@@ -349,9 +347,8 @@ export const ResolvedPetitionCard: React.FC<ResolvedPetitionCardProps> = ({
 
               {/* SLA Margin */}
               {formatSlaMargin() && (
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                  petition.isAheadOfSla ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
-                }`}>
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${petition.isAheadOfSla ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
+                  }`}>
                   {formatSlaMargin()}
                 </span>
               )}

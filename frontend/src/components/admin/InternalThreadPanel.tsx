@@ -1,3 +1,4 @@
+// Panel luồng trao đổi nội bộ giữa các cán bộ trong một hồ sơ (chat nội bộ)
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Send,
@@ -291,7 +292,7 @@ export const InternalThreadPanel: React.FC<InternalThreadPanelProps> = ({
                     </span>
                   </div>
 
-                  <div className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${isMe
+                  <div className={`p-3 max-w-lg rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${isMe
                     ? (activeChannel === 'coordination' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-blue-600 text-white rounded-tr-none')
                     : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none'
                     }`}>

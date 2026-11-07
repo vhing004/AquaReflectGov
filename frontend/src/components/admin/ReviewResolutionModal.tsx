@@ -1,3 +1,4 @@
+// Modal phê duyệt/yêu cầu xử lý lại kết quả giải quyết chính thức (lãnh đạo phòng)
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -105,16 +106,15 @@ export const ReviewResolutionModal: React.FC<ReviewResolutionModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div 
+      <div
         className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className={`p-5 sm:p-6 text-white transition-colors duration-300 ${
-          mode === 'close' 
-            ? 'bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800' 
+        <div className={`p-5 sm:p-6 text-white transition-colors duration-300 ${mode === 'close'
+            ? 'bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800'
             : 'bg-gradient-to-r from-amber-700 via-orange-700 to-amber-800'
-        }`}>
+          }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2.5 rounded-2xl bg-white/15 backdrop-blur-xs shadow-inner">
@@ -150,11 +150,10 @@ export const ReviewResolutionModal: React.FC<ReviewResolutionModalProps> = ({
                 setMode('close');
                 setErrorMessage(null);
               }}
-              className={`flex items-center justify-center space-x-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                mode === 'close'
+              className={`flex items-center justify-center space-x-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${mode === 'close'
                   ? 'bg-white text-emerald-900 shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
-              }`}
+                }`}
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               <span>Phê duyệt đóng đơn</span>
@@ -165,11 +164,10 @@ export const ReviewResolutionModal: React.FC<ReviewResolutionModalProps> = ({
                 setMode('rework');
                 setErrorMessage(null);
               }}
-              className={`flex items-center justify-center space-x-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                mode === 'rework'
+              className={`flex items-center justify-center space-x-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${mode === 'rework'
                   ? 'bg-white text-amber-900 shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
-              }`}
+                }`}
             >
               <RotateCcw className="w-4 h-4 text-amber-600" />
               <span>Yêu cầu xử lý lại</span>
@@ -289,11 +287,10 @@ export const ReviewResolutionModal: React.FC<ReviewResolutionModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || (mode === 'rework' && reworkReason.trim().length < 10)}
-              className={`px-5 py-2.5 rounded-xl text-xs font-extrabold text-white flex items-center space-x-2 transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                mode === 'close'
+              className={`px-5 py-2.5 rounded-xl text-xs font-extrabold text-white flex items-center space-x-2 transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${mode === 'close'
                   ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
                   : 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/20'
-              }`}
+                }`}
             >
               {isSubmitting ? (
                 <>

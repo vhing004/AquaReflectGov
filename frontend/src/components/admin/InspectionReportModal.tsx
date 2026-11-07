@@ -1,13 +1,14 @@
+// Modal tạo và duyệt báo cáo nghiệm thu
 import React, { useState } from 'react';
-import { 
-  X, 
-  FileText, 
-  CheckCircle2, 
-  RotateCcw, 
-  AlertCircle, 
-  Loader2, 
-  Send, 
-  Clock, 
+import {
+  X,
+  FileText,
+  CheckCircle2,
+  RotateCcw,
+  AlertCircle,
+  Loader2,
+  Send,
+  Clock,
   ShieldCheck,
   Award
 } from 'lucide-react';
@@ -31,7 +32,7 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
 }) => {
   // Form fields cho nộp báo cáo (submit mode)
   const [reportContent, setReportContent] = useState<string>('');
-  
+
   // Form fields cho duyệt kết luận (review mode)
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
   const [resolutionSummary, setResolutionSummary] = useState<string>(
@@ -127,17 +128,16 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div 
+      <div
         className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className={`px-6 py-5 text-white flex items-center justify-between ${
-          mode === 'submit'
-            ? 'bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-900'
-            : 'bg-gradient-to-r from-emerald-700 via-teal-700 to-teal-900'
-        }`}>
+        <div className={`px-6 py-5 text-white flex items-center justify-between ${mode === 'submit'
+          ? 'bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-900'
+          : 'bg-gradient-to-r from-emerald-700 via-teal-700 to-teal-900'
+          }`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
               {mode === 'submit' ? (
@@ -178,7 +178,7 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
                 <Clock className="w-4 h-4 text-blue-600" /> Quy trình nghiệm thu nội bộ:
               </div>
               <p>
-                Sau khi gửi báo cáo, hồ sơ sẽ chuyển sang trạng thái <strong>Chờ duyệt nghiệm thu (PendingApproval)</strong>. 
+                Sau khi gửi báo cáo, hồ sơ sẽ chuyển sang trạng thái <strong>Chờ duyệt nghiệm thu (PendingApproval)</strong>.
                 Trưởng đơn vị sẽ nhận được thông báo để đọc, thẩm định và xác nhận ban hành kết luận chính thức.
               </p>
             </div>
@@ -259,15 +259,13 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setReviewAction('approve')}
-                  className={`p-3 rounded-xl border flex items-center gap-3 transition-all text-left ${
-                    reviewAction === 'approve'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm'
-                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
+                  className={`p-3 rounded-xl border flex items-center gap-3 transition-all text-left ${reviewAction === 'approve'
+                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    reviewAction === 'approve' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${reviewAction === 'approve' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}>
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
@@ -279,15 +277,13 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setReviewAction('reject')}
-                  className={`p-3 rounded-xl border flex items-center gap-3 transition-all text-left ${
-                    reviewAction === 'reject'
-                      ? 'border-amber-600 bg-amber-50 text-amber-900 shadow-sm'
-                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
+                  className={`p-3 rounded-xl border flex items-center gap-3 transition-all text-left ${reviewAction === 'reject'
+                    ? 'border-amber-600 bg-amber-50 text-amber-900 shadow-sm'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    reviewAction === 'reject' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-500'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${reviewAction === 'reject' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}>
                     <RotateCcw className="w-5 h-5" />
                   </div>
                   <div>
@@ -358,11 +354,10 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all ${
-                  reviewAction === 'approve'
-                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
-                    : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
-                }`}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all ${reviewAction === 'approve'
+                  ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                  : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
+                  }`}
               >
                 {isSubmitting ? (
                   <>

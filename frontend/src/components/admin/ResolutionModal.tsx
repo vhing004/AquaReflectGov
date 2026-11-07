@@ -1,17 +1,18 @@
+// Modal nhập kết quả giải quyết chính thức (kết luận, số văn bản, đính kèm)
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  X, 
-  FileText, 
-  Upload, 
-  CheckCircle2, 
-  AlertCircle, 
-  Loader2, 
-  ShieldCheck, 
-  AlertTriangle, 
-  XCircle, 
-  Camera, 
-  Trash2, 
-  Film, 
+import {
+  X,
+  FileText,
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ShieldCheck,
+  AlertTriangle,
+  XCircle,
+  Camera,
+  Trash2,
+  Film,
   Sparkles,
   Layers
 } from 'lucide-react';
@@ -44,16 +45,16 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
   const [conclusionText, setConclusionText] = useState(initialConclusionText);
   const [conclusionType, setConclusionType] = useState<number>(initialConclusionType);
   const [publicSummary, setPublicSummary] = useState(initialPublicSummary);
-  
+
   // Tệp văn bản chính thức (có dấu đỏ / ký số)
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
+
   // Tệp ảnh/video/tài liệu minh chứng hoàn trả hiện trạng / biên bản xử phạt
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
+
   const evidenceInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -204,7 +205,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-extrabold tracking-tight">
-                Ban Hành Kết Luận & Quyết Định Giải Quyết (Task 4.2)
+                Ban Hành Kết Luận & Quyết Định Giải Quyết
               </h2>
               <p className="text-xs text-sky-100">
                 Hồ sơ: <strong className="font-mono font-bold text-white">{trackingCode}</strong>
@@ -243,9 +244,8 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
                     key={t.id}
                     type="button"
                     onClick={() => setConclusionType(t.id)}
-                    className={`text-left p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
-                      isSelected ? t.activeColor : t.color
-                    }`}
+                    className={`text-left p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 ${isSelected ? t.activeColor : t.color
+                      }`}
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="p-1.5 rounded-xl bg-white/80 shadow-xs">
