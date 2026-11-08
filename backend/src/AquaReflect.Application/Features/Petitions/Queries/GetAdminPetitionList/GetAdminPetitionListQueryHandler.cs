@@ -89,10 +89,16 @@ public class GetAdminPetitionListQueryHandler
             query = query.Where(p => p.CategoryId == request.CategoryId.Value);
 
         if (request.DateFrom.HasValue)
-            query = query.Where(p => p.CreatedAt >= request.DateFrom.Value);
+        {
+            var fromUtc = DateTime.SpecifyKind(request.DateFrom.Value.Date, DateTimeKind.Utc);
+            query = query.Where(p => p.CreatedAt >= fromUtc);
+        }
 
         if (request.DateTo.HasValue)
-            query = query.Where(p => p.CreatedAt <= request.DateTo.Value.AddDays(1).AddSeconds(-1));
+        {
+            var toUtc = DateTime.SpecifyKind(request.DateTo.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            query = query.Where(p => p.CreatedAt <= toUtc);
+        }
 
         var now = DateTime.UtcNow;
 
