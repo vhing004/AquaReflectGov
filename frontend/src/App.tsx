@@ -18,10 +18,10 @@ import { CategoryDetailPage } from './pages/CategoryDetailPage';
 import { SubmitPetitionPage } from './pages/SubmitPetitionPage';
 import { TrackPetitionPage } from './pages/TrackPetitionPage';
 import { MapPage } from './pages/MapPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { AdminPetitionsPage } from './pages/AdminPetitionsPage';
-import { AdminPetitionDetailPage } from './pages/AdminPetitionDetailPage';
-import { AdminGisMapPage } from './pages/AdminGisMapPage';
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminPetitionsPage } from './pages/admin/AdminPetitionsPage';
+import { AdminPetitionDetailPage } from './pages/admin/AdminPetitionDetailPage';
+import { AdminGisMapPage } from './pages/admin/AdminGisMapPage';
 import { UnitDashboardPage } from './pages/admin/UnitDashboardPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { PublicResolvedPetitionsPage } from './pages/PublicResolvedPetitionsPage';
@@ -121,7 +121,7 @@ export const App: React.FC = () => {
                 path="/admin/dashboard"
                 element={
                   <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher', 'Specialist']}>
-                    <DashboardPage />
+                    <AdminDashboardPage />
                   </ProtectedRoute>
                 }
               />

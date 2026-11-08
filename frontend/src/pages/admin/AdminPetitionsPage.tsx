@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore';
-import { adminApi } from '../api/adminApi';
-import { masterDataApi } from '../api/masterDataApi';
-import type { AdminPetitionFilterParams, AdminPetitionItem } from '../types';
+import { useAuthStore } from '../../store/useAuthStore';
+import { adminApi } from '../../api/adminApi';
+import { masterDataApi } from '../../api/masterDataApi';
+import type { AdminPetitionFilterParams, AdminPetitionItem } from '../../types';
 import {
   Search,
   Filter,
@@ -41,9 +41,9 @@ import {
   FileX,
   PhoneCall,
 } from 'lucide-react';
-import { TransitionStatusModal } from '../components/admin/TransitionStatusModal';
-import { KanbanBoard } from '../components/admin/KanbanBoard';
-import { CreateOnBehalfModal } from '../components/CreateOnBehalfModal';
+import { TransitionStatusModal } from '../../components/admin/TransitionStatusModal';
+import { KanbanBoard } from '../../components/admin/KanbanBoard';
+import { CreateOnBehalfModal } from '../../components/CreateOnBehalfModal';
 
 export const AdminPetitionsPage: React.FC = () => {
   const { user } = useAuthStore();

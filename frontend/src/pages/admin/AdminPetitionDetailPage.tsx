@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -42,26 +42,26 @@ import {
   ChevronDown,
   SlidersHorizontal
 } from 'lucide-react';
-import { adminApi } from '../api/adminApi';
-import { useAuthStore } from '../store/useAuthStore';
-import { TransitionStatusModal } from '../components/admin/TransitionStatusModal';
-import { ResolutionModal } from '../components/admin/ResolutionModal';
-import { MediaLightbox } from '../components/admin/MediaLightbox';
-import { MiniMapViewer } from '../components/admin/MiniMapViewer';
-import { AddInspectionNoteModal } from '../components/admin/AddInspectionNoteModal';
-import { ReviewResolutionModal } from '../components/admin/ReviewResolutionModal';
-import { AssignMemberModal } from '../components/admin/AssignMemberModal';
-import { InspectionReportModal } from '../components/admin/InspectionReportModal';
-import { InternalThreadPanel } from '../components/admin/InternalThreadPanel';
-import type { AdminPetitionItem, PetitionAttachment } from '../types';
-import { canAccessPetition } from '../utils/permissions';
+import { adminApi } from '../../api/adminApi';
+import { useAuthStore } from '../../store/useAuthStore';
+import { TransitionStatusModal } from '../../components/admin/TransitionStatusModal';
+import { ResolutionModal } from '../../components/admin/ResolutionModal';
+import { MediaLightbox } from '../../components/admin/MediaLightbox';
+import { MiniMapViewer } from '../../components/admin/MiniMapViewer';
+import { AddInspectionNoteModal } from '../../components/admin/AddInspectionNoteModal';
+import { ReviewResolutionModal } from '../../components/admin/ReviewResolutionModal';
+import { AssignMemberModal } from '../../components/admin/AssignMemberModal';
+import { InspectionReportModal } from '../../components/admin/InspectionReportModal';
+import { InternalThreadPanel } from '../../components/admin/InternalThreadPanel';
+import type { AdminPetitionItem, PetitionAttachment } from '../../types';
+import { canAccessPetition } from '../../utils/permissions';
 
 export const AdminPetitionDetailPage: React.FC = () => {
   const { user } = useAuthStore();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Modals & Lightbox states
+  // --- 1. Khai báo các trạng thái điều khiển Modal & Hộp thoại phóng to ảnh/video (Lightbox) ---
   const [isTransitionOpen, setIsTransitionOpen] = useState(false);
   const [transitionInitialStatus, setTransitionInitialStatus] = useState<number | null>(null);
   const [isResolutionOpen, setIsResolutionOpen] = useState(false);
@@ -72,7 +72,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-  // Unit Team Workflow states (Phân công thành viên & Báo cáo nghiệm thu)
+  // --- 2. Trạng thái Quy trình làm việc nội bộ đơn vị (Unit Team Workflow: Phân công chuyên viên & Nghiệm thu thực địa) ---
   const [isAssignMemberOpen, setIsAssignMemberOpen] = useState(false);
   const [isInspectionReportOpen, setIsInspectionReportOpen] = useState(false);
   const [inspectionReportMode, setInspectionReportMode] = useState<'submit' | 'review'>('submit');
@@ -81,7 +81,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
   const [attachmentFilter, setAttachmentFilter] = useState<'all' | 'citizen' | 'inspection' | 'resolution'>('all');
   const moreActionsRef = useRef<HTMLDivElement>(null);
 
-  // Helper phân tích nội dung biên bản và trích xuất các tệp đính kèm
+  // Hàm tiện ích: Phân tích nội dung biên bản và trích xuất danh sách tệp đính kèm (ảnh/video/PDF)
   const parseCommentContent = (
     content: string,
     allAttachments: PetitionAttachment[] = [],
@@ -106,8 +106,8 @@ export const AdminPetitionDetailPage: React.FC = () => {
       files.push({ name, url, isImage, isVideo, isPdf });
     }
 
-    // Tương thích ngược: Nếu comment là biên bản thực địa nhưng chưa có tag 📎 trong text,
-    // đối chiếu với danh sách attachments dạng inspection trong hồ sơ
+    // Tương thích ngược: Nếu bình luận là biên bản thực địa nhưng chưa gắn tag 📎 trong văn bản,
+    // đối chiếu với danh sách attachments dạng inspection có sẵn trong hồ sơ
     if (files.length === 0 && isInspectionReport && allAttachments.length > 0) {
       const inspectionAtts = allAttachments.filter((a: PetitionAttachment) => a.fileUrl?.includes('/inspection/'));
       inspectionAtts.forEach((att: PetitionAttachment) => {
@@ -127,7 +127,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return { cleanContent, files };
   };
 
-  // Dong dropdown menu thao tac khac khi click ben ngoai
+  // Đóng menu thả xuống các thao tác phụ khi người dùng nhấp chuột ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (moreActionsRef.current && !moreActionsRef.current.contains(event.target as Node)) {
@@ -138,13 +138,13 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Quick feedback state
+  // Trạng thái phản hồi nhanh & thông báo Toast
   const [copiedCode, setCopiedCode] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Fetch Petition Detail
+  // Truy vấn lấy dữ liệu chi tiết hồ sơ phản ánh từ API
   const { data: response, isLoading, error, refetch } = useQuery({
     queryKey: ['admin-petition-detail', id],
     queryFn: () => adminApi.getPetitionDetail(id!),
@@ -153,33 +153,34 @@ export const AdminPetitionDetailPage: React.FC = () => {
 
   const petition = response?.data;
 
-  // Tính toán quyền hạn theo State Machine và Vai trò
-  // [Yêu cầu 4] Tính năng Luân chuyển trạng thái chỉ dành cho cán bộ tiếp nhận (điều phối / admin)
+  // --- 3. MA TRẬN PHÂN QUYỀN HÀNH ĐỘNG THEO VAI TRÒ & VÒNG ĐỜI HỒ SƠ (RBAC & State Machine) ---
+
+  // [Quy định 4] Quyền luân chuyển trạng thái tự do: Chỉ dành riêng cho Cán bộ tiếp nhận (Dispatcher / SuperAdmin)
   const canTransition = (() => {
     if (!petition || petition.status === 6 || !user) return false;
-    // Chống xung đột lợi ích: Cán bộ không được thao tác trên đơn của chính mình
+    // Chống xung đột lợi ích: Cán bộ không được quyền xử lý/thao tác trên đơn do chính bản thân nộp
     if (petition.isConflictOfInterest) return false;
 
     if (user.role === 'SuperAdmin') return true;
     if (user.role === 'Dispatcher') {
       return petition.status >= 1 && petition.status <= 5;
     }
-    // Cán bộ chuyên môn (Specialist) không có thẩm quyền luân chuyển trạng thái tự do, ẩn đi
+    // Cán bộ chuyên môn (Specialist) không có thẩm quyền luân chuyển trạng thái tự do, ẩn tính năng này
     return false;
   })();
 
-  // Quyen tiep nhan va dieu phoi phan anh moi (Giai doan 1: status = 1)
+  // Quyền tiếp nhận và điều phối phản ánh mới nộp (Giai đoạn 1: Trạng thái Tiếp nhận status = 1)
   const canDispatch = (() => {
     if (!petition || petition.status !== 1 || !user) return false;
     if (petition.isConflictOfInterest) return false;
     return user.role === 'SuperAdmin' || user.role === 'Dispatcher';
   })();
 
+  // Quyền ban hành kết luận chính thức: Yêu cầu đã nghiệm thu xong và chưa có kết luận
   const canResolve = (() => {
     if (!petition || !user) return false;
     if (petition.isConflictOfInterest) return false;
-    // Tuần tự: Phải đang ở giai đoạn Thẩm tra (Investigating = 3)
-    // Tuan tu theo quy trinh: Chi ban hanh ket luan khi da qua nghiem thu va chua co van ban ket luan chinh thuc
+    // Tuần tự theo quy trình: Chỉ ban hành kết luận khi đã qua nghiệm thu thực địa và chưa có văn bản chính thức
     const isReadyForResolution = (petition.status === 4 || !!petition.inspectionReportApprovedAt) && !petition.resolution;
     if (!isReadyForResolution) return false;
     if (user.role === 'SuperAdmin') return true;
@@ -189,6 +190,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return false;
   })();
 
+  // Quyền phân công lại phòng ban (điều phối lại đơn vị phụ trách)
   const canReassign = (() => {
     if (!petition || petition.status === 6 || !user) return false;
     if (petition.isConflictOfInterest) return false;
@@ -199,7 +201,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return false;
   })();
 
-  // [Yêu cầu 3] Nút Bắt đầu thẩm tra: chỉ xuất hiện ở nhân viên xử lý khi trưởng đơn vị điều phối cho nhân viên của mình
+  // [Quy định 3] Nút Bắt đầu thẩm tra hiện trường: Chỉ xuất hiện khi chuyên viên được Trưởng đơn vị phân công trực tiếp
   const canBeginInvestigation = (() => {
     if (!petition || petition.status !== 2 || !user) return false;
     if (petition.isConflictOfInterest) return false;
@@ -207,13 +209,13 @@ export const AdminPetitionDetailPage: React.FC = () => {
     if (user.role === 'Specialist') {
       const isSameDept = canAccessPetition(user.role, user.departmentId, petition.departmentId);
       if (!isSameDept) return false;
-      // Chỉ xuất hiện khi đã được phân công nhân viên và người đăng nhập chính là nhân viên đó
+      // Chỉ xuất hiện khi hồ sơ đã được gán chuyên viên xử lý và người đăng nhập chính là chuyên viên đó
       return !!petition.assignedUserId && petition.assignedUserId === user.id;
     }
     return false;
   })();
 
-  // [Yêu cầu 2] Quyền ban hành/chỉnh sửa văn bản kết luận: chỉ Trưởng đơn vị phụ trách hoặc SuperAdmin
+  // [Quy định 2] Quyền ban hành / chỉnh sửa văn bản kết luận: Chỉ dành cho Trưởng đơn vị phụ trách hoặc SuperAdmin
   const canManageResolution = (() => {
     if (!petition || !user) return false;
     if (petition.isConflictOfInterest) return false;
@@ -224,14 +226,14 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return false;
   })();
 
-  // [Yêu cầu 2] Điều kiện hiển thị khối Văn bản kết luận: chỉ khi đã nghiệm thu xong hoặc đã có kết luận
+  // [Quy định 2] Điều kiện hiển thị khối Văn bản kết luận: Chỉ hiển thị khi đã nghiệm thu xong hoặc đã có kết luận
   const isInspectionCompleted = !!petition?.inspectionReportApprovedAt || petition?.status === 5 || petition?.status === 6 || !!petition?.resolution;
 
-  // [Task 4.1] Quyền lập biên bản / ghi chú thực địa kèm ảnh GPS
+  // [Nghiệp vụ 4.1] Quyền lập biên bản / ghi chú kiểm tra thực địa kèm ảnh chụp có GPS
   const canAddInspectionNote = (() => {
     if (!petition || !user) return false;
     if (petition.isConflictOfInterest) return false;
-    // Chi cho phep lap bien ban khi dang o giai doan tham tra thuc dia (status = 3)
+    // Chỉ cho phép lập biên bản khi hồ sơ đang trong giai đoạn Thẩm tra thực địa (status = 3)
     if (petition.status !== 3) return false;
     if (user.role === 'SuperAdmin') return true;
     if (user.role === 'Specialist') {
@@ -240,23 +242,23 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return false;
   })();
 
-  // [Task 4.1] Kích hoạt nhánh NeedInfo từ hiện trường nếu thiếu căn cứ xác minh
+  // [Nghiệp vụ 4.1] Quyền yêu cầu công dân bổ sung thông tin từ hiện trường nếu thiếu căn cứ xác minh
   const canRequestNeedInfo = (() => {
     if (!petition || !user) return false;
     if (petition.isConflictOfInterest) return false;
-    // Cho phep yeu cau bo sung khi tiep nhan (status = 1) hoac dang tham tra (status = 3)
+    // Cho phép yêu cầu bổ sung khi đang tiếp nhận (status = 1) hoặc đang thẩm tra hiện trường (status = 3)
     if (petition.status !== 1 && petition.status !== 3) return false;
     return canTransition;
   })();
 
-  // [Task 5.1] Quyền kiểm duyệt kết quả giải quyết (Phê duyệt đóng đơn hoặc Yêu cầu xử lý lại)
+  // [Nghiệp vụ 5.1] Quyền hậu kiểm kết quả giải quyết (Phê duyệt đóng đơn hoặc Yêu cầu xử lý lại)
   const canReviewResolution = (() => {
     if (!petition || petition.status !== 4 || !user) return false;
     if (petition.isConflictOfInterest) return false;
     return user.role === 'SuperAdmin' || user.role === 'Dispatcher';
   })();
 
-  // [Task-Unit-Workflow] Quyền phân công thành viên nội bộ đơn vị (Tầng 2)
+  // [Nghiệp vụ Đơn vị] Quyền phân công thành viên nội bộ đơn vị (Phân công cấp 2: Trưởng phòng cử Chuyên viên)
   const canAssignMember = (() => {
     if (!petition || petition.status === 6 || !user) return false;
     if (petition.isConflictOfInterest) return false;
@@ -267,7 +269,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return false;
   })();
 
-  // [Task-Unit-Workflow] Quyền nộp báo cáo nghiệm thu thực địa (Chuyên viên đang thẩm tra status=3)
+  // [Nghiệp vụ Đơn vị] Quyền nộp báo cáo nghiệm thu thực địa (Dành cho Chuyên viên đang thẩm tra, status = 3)
   const canSubmitInspectionReport = (() => {
     if (!petition || petition.status !== 3 || !user) return false;
     if (petition.isConflictOfInterest) return false;
@@ -278,7 +280,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return false;
   })();
 
-  // [Task-Unit-Workflow] Quyền thẩm định & duyệt báo cáo nghiệm thu (Chỉ Trưởng đơn vị status=11)
+  // [Nghiệp vụ Đơn vị] Quyền thẩm định & phê duyệt báo cáo nghiệm thu (Chỉ dành cho Trưởng đơn vị, status = 11)
   const canReviewInspectionReport = (() => {
     if (!petition || petition.status !== 11 || !user) return false;
     if (petition.isConflictOfInterest) return false;
@@ -289,11 +291,13 @@ export const AdminPetitionDetailPage: React.FC = () => {
     return false;
   })();
 
+  // Hiển thị thông báo Toast nhanh trong 3 giây
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Xử lý sự kiện Chuyên viên bấm Bắt đầu thẩm tra thực địa
   const handleBeginInvestigation = async () => {
     if (!petition || isBeginningInvestigation) return;
     try {
@@ -309,6 +313,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     }
   };
 
+  // Sao chép mã tra cứu hồ sơ vào bộ nhớ tạm
   const copyTrackingCode = () => {
     if (!petition) return;
     navigator.clipboard.writeText(petition.trackingCode);
@@ -316,6 +321,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  // Xử lý gửi bình luận / ghi chú nghiệp vụ nội bộ
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim() || !id) return;
@@ -365,7 +371,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     );
   }
 
-  // Convert to AdminPetitionItem format for TransitionStatusModal
+  // Chuyển đổi dữ liệu hồ sơ sang định dạng AdminPetitionItem để truyền vào TransitionStatusModal
   const modalPetitionItem: AdminPetitionItem = {
     id: petition.id,
     trackingCode: petition.trackingCode,
@@ -393,7 +399,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
     feedbackRating: petition.feedbackRating,
   };
 
-  // Status Badge Helper
+  // --- 4. HÀM TIỆN ÍCH HIỂN THỊ HUY HIỆU TRẠNG THÁI (Status Badge Helper) ---
   const getStatusBadge = (status: number, name: string) => {
     switch (status) {
       case 1:
@@ -479,7 +485,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50/80 pb-20">
-      {/* Toast notification */}
+      {/* Khung thông báo phản hồi nhanh Toast nổi ở góc trên bên phải */}
       {toastMessage && (
         <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-semibold animate-in slide-in-from-top-3">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -487,10 +493,10 @@ export const AdminPetitionDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* 1. TOP CONTROL BAR */}
+      {/* --- PHÂN KHU 1: THANH ĐIỀU KHIỂN & QUY TRÌNH HÀNH ĐỘNG TUẦN TỰ (TOP CONTROL BAR) --- */}
       <div className="bg-gradient-to-r from-[#004d77] via-[#006194] to-[#0284c7] text-white py-5 px-4 sm:px-6 lg:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto space-y-3">
-          {/* Breadcrumb & Back */}
+          {/* Nút quay lại danh sách & Các thao tác tiện ích in ấn / xem trước */}
           <div className="flex items-center justify-between">
             <Link
               to="/admin/petitions"
@@ -510,7 +516,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                 <span className="hidden sm:inline whitespace-nowrap">In hồ sơ</span>
               </button>
 
-              {/* Nút Xem như người dân (petition.previewPublic) */}
+              {/* Nút Xem như người dân (Xem trước giao diện công khai chỉ đọc) */}
               <Link
                 to={`/tracking?code=${petition.trackingCode}&preview=true`}
                 target="_blank"
@@ -775,7 +781,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Dossier Title and Main Badges */}
+          {/* Khối hiển thị Tiêu đề hồ sơ, Mã tra cứu và các Huy hiệu nhận diện mức độ ưu tiên */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pt-1">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -814,7 +820,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* WORKFLOW STEPPER BAR */}
+      {/* --- PHÂN KHU 2: THANH TIẾN TRÌNH VÒNG ĐỜI HỒ SƠ (WORKFLOW STEPPER BAR 6 BƯỚC) --- */}
       <div className="bg-slate-900 border-b border-slate-800 text-white py-3 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex items-center justify-between text-xs">
           {[
@@ -864,9 +870,9 @@ export const AdminPetitionDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. MAIN BODY: 2-COLUMN DOSSIER LAYOUT */}
+      {/* --- PHÂN KHU 3: BỐ CỤC CHÍNH 2 CỘT (MAIN BODY: 2-COLUMN DOSSIER LAYOUT) --- */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        {/* Banner cảnh báo xung đột lợi ích (Mục 6.15 & Kịch bản 25) */}
+        {/* Khung cảnh báo xung đột lợi ích: Tự động vô hiệu hóa quyền thao tác nếu cán bộ là người gửi đơn */}
         {petition.isConflictOfInterest && (
           <div className="mb-6 bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 flex items-start space-x-3 text-rose-900 shadow-sm animate-pulse">
             <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
@@ -883,10 +889,10 @@ export const AdminPetitionDetailPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          {/* LEFT / MAIN DOSSIER COLUMN (7/12) */}
+          {/* CỘT TRÁI (8/12): NỘI DUNG VỤ VIỆC, MINH CHỨNG, BÁO CÁO NGHIỆM THU & KẾT LUẬN */}
           <div className="lg:col-span-8 space-y-6">
 
-            {/* EXCEPTION BANNERS */}
+            {/* CÁC KHUNG THÔNG BÁO TRẠNG THÁI ĐẶC BIỆT (EXCEPTION BANNERS) */}
             {petition.status === 11 && (
               <div className="bg-violet-50 border-l-4 border-violet-500 p-4 rounded-2xl shadow-xs flex items-start space-x-3 text-xs text-violet-950 animate-in fade-in">
                 <ClipboardCheck className="w-5 h-5 text-violet-600 shrink-0 mt-0.5 animate-pulse" />
@@ -987,7 +993,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* [Task 5.1] Banner Hồ sơ đã đóng (Closed) */}
+            {/* Khung thông báo: Hồ sơ đã được thẩm định và đóng lưu trữ (Closed) */}
             {petition.status === 6 && (
               <div className="bg-slate-100 border-l-4 border-slate-600 p-4 rounded-2xl shadow-xs flex items-start space-x-3 text-xs text-slate-800 animate-in fade-in">
                 <CheckCircle2 className="w-5 h-5 text-slate-600 shrink-0 mt-0.5" />
@@ -1008,7 +1014,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* [Task 5.1] Banner Cảnh báo Rework nếu hồ sơ đã từng bị yêu cầu xử lý lại */}
+            {/* Khung thông báo: Cảnh báo yêu cầu xử lý lại (Rework) nếu chất lượng kết luận chưa đạt */}
             {petition.reworkCount !== undefined && petition.reworkCount > 0 && (
               <div className="bg-amber-50/90 border-l-4 border-amber-500 p-4 rounded-2xl shadow-xs flex items-start space-x-3 text-xs text-amber-950 animate-in fade-in">
                 <RotateCcw className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -1030,7 +1036,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* A. Nội dung phản ánh chi tiết */}
+            {/* MỤC A: NỘI DUNG CHI TIẾT CỦA PHẢN ÁNH KIẾN NGHỊ */}
             <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center space-x-2">
@@ -1061,7 +1067,14 @@ export const AdminPetitionDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* B. Album Minh chứng Thực địa (Ảnh / Video / PDF Biên bản) */}
+            {/* =========================================================================
+             * B. ALBUM MINH CHỨNG THỰC ĐỊA & TỆP ĐÍNH KÈM
+             * - Lưu trữ và phân loại các tệp media, văn bản biên bản từ 3 nguồn:
+             *   1) Công dân tải lên lúc nộp phản ánh ban đầu
+             *   2) Cán bộ tải lên khi lập biên bản khảo sát hiện trường (/inspection/)
+             *   3) Trưởng đơn vị tải lên khi ban hành văn bản kết luận (/resolutions/)
+             * - Hỗ trợ xem trực tiếp Video clip, tệp PDF văn bản và phóng to ảnh qua Lightbox
+             * ========================================================================= */}
             <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
                 <div className="flex items-center space-x-2">
@@ -1078,7 +1091,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Bộ lọc loại tệp */}
+                {/* Thanh bộ lọc nguồn gốc tệp đính kèm (Tất cả / Người dân / Biên bản / Kết luận) */}
                 {petition.attachments.length > 0 && (
                   (() => {
                     const inspectionCount = petition.attachments.filter((a) => a.fileUrl?.includes('/inspection/')).length;
@@ -1187,7 +1200,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                             }}
                             className="group relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer aspect-square shadow-xs hover:shadow-md transition-all flex flex-col"
                           >
-                            {/* Nguồn gốc tệp Badge */}
+                            {/* Huy hiệu (Badge) thể hiện nguồn gốc phát sinh tệp tin */}
                             <div className="absolute top-2 left-2 z-10 pointer-events-none">
                               {isInspection ? (
                                 <span className="px-1.5 py-0.5 rounded-md bg-sky-600/90 text-white text-[9px] font-extrabold shadow-xs">
@@ -1204,6 +1217,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                               )}
                             </div>
 
+                            {/* Render định dạng Media: Video / PDF & Tài liệu / Hình ảnh */}
                             {isVid ? (
                               <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white p-2">
                                 <Film className="w-8 h-8 text-amber-400 mb-1 group-hover:scale-110 transition-transform" />
@@ -1233,6 +1247,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                               />
                             )}
 
+                            {/* Hiệu ứng rê chuột xem chi tiết */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2 justify-between">
                               <span className="text-[10px] text-white truncate max-w-[90px] font-medium">
                                 {att.originalFileName || att.fileName}
@@ -1255,7 +1270,11 @@ export const AdminPetitionDetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* C. Bản đồ vị trí GIS hiện trường */}
+            {/* =========================================================================
+             * C. BẢN ĐỒ VỊ TRÍ GIS HIỆN TRƯỜNG
+             * - Tích hợp bản đồ vệ tinh MiniMapViewer
+             * - Ghim vị trí tọa độ GPS chính xác kèm địa chỉ phản ánh và đơn vị hành chính
+             * ========================================================================= */}
             <MiniMapViewer
               latitude={petition.latitude}
               longitude={petition.longitude}
@@ -1263,7 +1282,12 @@ export const AdminPetitionDetailPage: React.FC = () => {
               administrativeUnitName={petition.administrativeUnitName}
             />
 
-            {/* D1. Báo Cáo Nghiệm Thu Thực Địa (Internal Inspection & Acceptance) */}
+            {/* =========================================================================
+             * D1. BÁO CÁO NGHIỆM THU THỰC ĐỊA NỘI BỘ ĐƠN VỊ (Inspection & Acceptance)
+             * - Nghiệp vụ cốt lõi tại đơn vị thụ lý (Bộ Nông nghiệp & Môi trường)
+             * - Chuyên viên sau khi đi khảo sát thực tế sẽ lập báo cáo thẩm tra và đề xuất kết luận
+             * - Trưởng đơn vị thẩm định và bấm "Phê duyệt nghiệm thu" hoặc "Yêu cầu thẩm tra bổ sung"
+             * ========================================================================= */}
             {(petition.inspectionReport || petition.status === 11) && (
               <div className="bg-white rounded-2xl p-6 shadow-xs border border-violet-200/90 space-y-4">
                 <div className="flex items-center justify-between border-b border-violet-100 pb-3">
@@ -1279,7 +1303,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Trạng thái duyệt báo cáo */}
+                  {/* Trạng thái duyệt báo cáo của Trưởng đơn vị */}
                   {petition.inspectionReportApprovedAt ? (
                     <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -1293,7 +1317,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                   ) : null}
                 </div>
 
-                {/* Banner lý do yêu cầu thẩm tra lại (nếu có) */}
+                {/* Ý kiến chỉ đạo của Trưởng đơn vị nếu yêu cầu kiểm tra khảo sát lại */}
                 {petition.inspectionRejectionReason && (
                   <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300/80 text-xs text-amber-950 space-y-1">
                     <div className="font-bold flex items-center space-x-1 text-amber-900">
@@ -1304,7 +1328,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Thân báo cáo nghiệm thu */}
+                {/* Nội dung chi tiết báo cáo nghiệm thu thực địa */}
                 {petition.inspectionReport ? (
                   <div className="bg-gradient-to-br from-violet-50/50 via-slate-50 to-white rounded-xl border border-violet-200/70 p-4 space-y-3">
                     <div className="flex flex-wrap items-center justify-between text-xs text-slate-600 border-b border-violet-100/80 pb-2">
@@ -1327,7 +1351,7 @@ export const AdminPetitionDetailPage: React.FC = () => {
                       {petition.inspectionReport}
                     </div>
 
-                    {/* Actions cho Trưởng đơn vị hoặc Cán bộ */}
+                    {/* Các nút hành động: Cán bộ cập nhật báo cáo hoặc Trưởng đơn vị thẩm định phê duyệt */}
                     <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
                       {canSubmitInspectionReport && (
                         <button

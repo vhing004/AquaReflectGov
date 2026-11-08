@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore';
-import { dashboardApi } from '../api/dashboardApi';
-import { masterDataApi } from '../api/masterDataApi';
-import { reportsApi } from '../api/reportsApi';
+import { useAuthStore } from '../../store/useAuthStore';
+import { dashboardApi } from '../../api/dashboardApi';
+import { masterDataApi } from '../../api/masterDataApi';
+import { reportsApi } from '../../api/reportsApi';
 import {
   RotateCw,
   Calendar,
@@ -20,16 +20,16 @@ import {
   Filter,
   RotateCcw
 } from 'lucide-react';
-import { POST_MERGER_PROVINCES_34, VIETNAM_REGIONS } from '../data/maritimeData';
+import { POST_MERGER_PROVINCES_34, VIETNAM_REGIONS } from '../../data/maritimeData';
 
-import { KpiMetricCards } from '../components/dashboard/KpiMetricCards';
-import { TrendAreaChart } from '../components/dashboard/TrendAreaChart';
-import { CategoryPieChart } from '../components/dashboard/CategoryPieChart';
-import { DepartmentPerformanceTable } from '../components/dashboard/DepartmentPerformanceTable';
-import { SatisfactionWidget } from '../components/dashboard/SatisfactionWidget';
-import { hasRole, PERMISSIONS } from '../utils/permissions';
+import { KpiMetricCards } from '../../components/dashboard/KpiMetricCards';
+import { TrendAreaChart } from '../../components/dashboard/TrendAreaChart';
+import { CategoryPieChart } from '../../components/dashboard/CategoryPieChart';
+import { DepartmentPerformanceTable } from '../../components/dashboard/DepartmentPerformanceTable';
+import { SatisfactionWidget } from '../../components/dashboard/SatisfactionWidget';
+import { hasRole, PERMISSIONS } from '../../utils/permissions';
 
-export const DashboardPage: React.FC = () => {
+export const AdminDashboardPage: React.FC = () => {
   const { user } = useAuthStore();
   const [days, setDays] = useState<number>(30);
   const isSpecialist = user?.role === 'Specialist';
