@@ -17,10 +17,12 @@ public record GetSpatialSummaryQuery(
 public class GetSpatialSummaryQueryHandler : IRequestHandler<GetSpatialSummaryQuery, SpatialSummaryResultDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetSpatialSummaryQueryHandler(IApplicationDbContext context)
+    public GetSpatialSummaryQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<SpatialSummaryResultDto> Handle(GetSpatialSummaryQuery request, CancellationToken cancellationToken)
@@ -30,6 +32,12 @@ public class GetSpatialSummaryQueryHandler : IRequestHandler<GetSpatialSummaryQu
             .Include(p => p.Category)
             .Include(p => p.AdministrativeUnit)
             .Where(p => !p.IsDeleted && p.Latitude.HasValue && p.Longitude.HasValue);
+
+        // Nếu là Specialist thì chỉ thống kê số liệu không gian thuộc phòng ban mình phụ trách
+        if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist && _currentUser.DepartmentId.HasValue)
+        {
+            query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
+        }
 
         if (request.FromDate.HasValue)
             query = query.Where(p => p.CreatedAt >= DateTime.SpecifyKind(request.FromDate.Value, DateTimeKind.Utc));

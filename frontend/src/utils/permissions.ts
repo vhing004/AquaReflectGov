@@ -7,7 +7,7 @@ export const PERMISSIONS = {
   // === TRANG & MENU ===
   DASHBOARD_FULL: ['SuperAdmin', 'Dispatcher'] as UserRole[],
   DASHBOARD_ANY: ['SuperAdmin', 'Dispatcher', 'Specialist'] as UserRole[],
-  GIS_COMMAND_CENTER: ['SuperAdmin', 'Dispatcher'] as UserRole[],
+  GIS_COMMAND_CENTER: ['SuperAdmin', 'Dispatcher', 'Specialist'] as UserRole[],
   PETITIONS_ADMIN: ['SuperAdmin', 'Dispatcher', 'Specialist'] as UserRole[],
   NOTIFICATIONS: ['SuperAdmin', 'Dispatcher', 'Specialist'] as UserRole[],
 

@@ -20,10 +20,12 @@ public record GetHeatmapDataQuery(
 public class GetHeatmapDataQueryHandler : IRequestHandler<GetHeatmapDataQuery, HeatmapDataResultDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetHeatmapDataQueryHandler(IApplicationDbContext context)
+    public GetHeatmapDataQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<HeatmapDataResultDto> Handle(GetHeatmapDataQuery request, CancellationToken cancellationToken)
@@ -32,6 +34,12 @@ public class GetHeatmapDataQueryHandler : IRequestHandler<GetHeatmapDataQuery, H
             .AsNoTracking()
             .Include(p => p.Category)
             .Where(p => !p.IsDeleted && p.Latitude.HasValue && p.Longitude.HasValue);
+
+        // Nếu là Specialist thì chỉ hiển thị điểm nhiệt thuộc phòng ban mình phụ trách
+        if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist && _currentUser.DepartmentId.HasValue)
+        {
+            query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
+        }
 
         if (request.CategoryType.HasValue)
             query = query.Where(p => p.Category.CategoryType == request.CategoryType.Value);

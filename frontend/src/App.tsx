@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store/useAuthStore';
@@ -144,7 +144,7 @@ export const App: React.FC = () => {
               <Route
                 path="/admin/gis-map"
                 element={
-                  <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher']}>
+                  <ProtectedRoute allowedRoles={['SuperAdmin', 'Dispatcher', 'Specialist']}>
                     <AdminGisMapPage />
                   </ProtectedRoute>
                 }

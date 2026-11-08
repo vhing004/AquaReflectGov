@@ -21,10 +21,12 @@ public record GetPetitionsByRadiusQuery(
 public class GetPetitionsByRadiusQueryHandler : IRequestHandler<GetPetitionsByRadiusQuery, SpatialRadiusResultDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetPetitionsByRadiusQueryHandler(IApplicationDbContext context)
+    public GetPetitionsByRadiusQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<SpatialRadiusResultDto> Handle(GetPetitionsByRadiusQuery request, CancellationToken cancellationToken)
@@ -52,6 +54,12 @@ public class GetPetitionsByRadiusQueryHandler : IRequestHandler<GetPetitionsByRa
             .Where(p => !p.IsDeleted && p.Latitude.HasValue && p.Longitude.HasValue)
             .Where(p => p.Latitude >= minLat && p.Latitude <= maxLat &&
                         p.Longitude >= minLng && p.Longitude <= maxLng);
+
+        // Nếu là Specialist thì chỉ quét các hồ sơ thuộc phòng ban mình phụ trách
+        if (_currentUser.IsAuthenticated && _currentUser.Role == UserRole.Specialist && _currentUser.DepartmentId.HasValue)
+        {
+            query = query.Where(p => p.DepartmentId == _currentUser.DepartmentId.Value);
+        }
 
         if (request.CategoryType.HasValue)
             query = query.Where(p => p.Category.CategoryType == request.CategoryType.Value);

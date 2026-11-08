@@ -1,12 +1,14 @@
-﻿import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
   RotateCw, 
-  Layers
+  Layers,
+  Building2
 } from 'lucide-react';
 
+import { useAuthStore } from '../../store/useAuthStore';
 import { gisApi } from '../../api/gisApi';
 import type { 
   GisFilterParams, 
@@ -20,6 +22,9 @@ import { GisRadiusTool } from '../../components/gis/GisRadiusTool';
 import { GisSummarySidebar } from '../../components/gis/GisSummarySidebar';
 
 export const AdminGisMapPage: React.FC = () => {
+  const user = useAuthStore((state) => state.user);
+  const isSpecialist = user?.role === 'Specialist';
+
   // Map control states
   const [baseMap, setBaseMap] = useState<BaseMapType>('satellite');
   const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
@@ -165,13 +170,22 @@ export const AdminGisMapPage: React.FC = () => {
           </Link>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#006194] bg-sky-50 px-2 py-0.5 rounded">
-                Trung Tâm Chỉ Huy & Giám Sát GIS Toàn Quốc
-              </span>
+              {isSpecialist ? (
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded flex items-center space-x-1">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Bản Đồ Giám Sát Đơn Vị ({user?.departmentName || 'Nội Bộ'})</span>
+                </span>
+              ) : (
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#006194] bg-sky-50 px-2 py-0.5 rounded">
+                  Trung Tâm Chỉ Huy & Giám Sát GIS Toàn Quốc
+                </span>
+              )}
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             </div>
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-              Bản Đồ Không Gian Phản Ánh Toàn Quốc (34 Tỉnh/Thành Phố Sau Sáp Nhập)
+              {isSpecialist
+                ? `Bản Đồ Phản Ánh Trực Quan - ${user?.departmentName || 'Đơn Vị Thụ Lý'}`
+                : 'Bản Đồ Không Gian Phản Ánh Toàn Quốc (34 Tỉnh/Thành Phố Sau Sáp Nhập)'}
             </h1>
           </div>
         </div>
@@ -195,6 +209,21 @@ export const AdminGisMapPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Banner thông báo phạm vi dữ liệu theo thẩm quyền cho Cán bộ thụ lý */}
+      {isSpecialist && (
+        <div className="bg-emerald-50/80 border border-emerald-200 text-emerald-900 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-medium shadow-2xs">
+          <div className="flex items-center space-x-2">
+            <Building2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <span>
+              Chế độ xem theo thẩm quyền đơn vị: Hệ thống tự động giới hạn chỉ hiển thị các phản ánh thuộc phân công xử lý của <strong>{user?.departmentName || 'đơn vị của bạn'}</strong>.
+            </span>
+          </div>
+          <span className="text-[11px] font-bold bg-white text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-300 shadow-2xs shrink-0">
+            Phạm vi Đơn vị
+          </span>
+        </div>
+      )}
 
       {/* Filter Toolbar */}
       <GisFilterPanel
