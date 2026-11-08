@@ -1,6 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { X, Printer, Download, FileText, CheckCircle2, Shield } from 'lucide-react';
-import type { LegalDocument } from '../data/legalDocumentsData';
+// MODAL VĂN BẢN CHÍNH SÁCH CÁC LĨNH VỰC THỦY SẢN
+import React, { useEffect, useState } from "react";
+import {
+  X,
+  Printer,
+  Download,
+  FileText,
+  CheckCircle2,
+  Shield,
+} from "lucide-react";
+import type { LegalDocument } from "../data/legalDocumentsData";
 
 interface LegalDocumentModalProps {
   isOpen: boolean;
@@ -23,14 +31,14 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 20);
-      window.document.body.style.overflow = 'hidden';
+      window.document.body.style.overflow = "hidden";
       return () => clearTimeout(timer);
     } else {
       setIsVisible(false);
       const timer = setTimeout(() => {
         setIsRendered(false);
       }, 250);
-      window.document.body.style.overflow = 'unset';
+      window.document.body.style.overflow = "unset";
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -38,12 +46,12 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
   // Đóng modal khi nhấn phím ESC
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === "Escape" && isOpen) {
         handleClose();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
   const handleClose = () => {
@@ -60,12 +68,15 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
   };
 
   const handleDownload = () => {
-    const element = window.document.createElement('a');
-    const file = new Blob([`${document.title}\nSố hiệu: ${document.code}\n${document.summary}`], {
-      type: 'text/plain;charset=utf-8',
-    });
+    const element = window.document.createElement("a");
+    const file = new Blob(
+      [`${document.title}\nSố hiệu: ${document.code}\n${document.summary}`],
+      {
+        type: "text/plain;charset=utf-8",
+      },
+    );
     element.href = URL.createObjectURL(file);
-    element.download = `${document.code.replace(/[/]/g, '_')}_VanBanPhapLy.txt`;
+    element.download = `${document.code.replace(/[/]/g, "_")}_VanBanPhapLy.txt`;
     window.document.body.appendChild(element);
     element.click();
     window.document.body.removeChild(element);
@@ -74,7 +85,7 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto transition-opacity duration-300 ease-out ${
-        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
       {/* Background click listener */}
@@ -84,8 +95,8 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
       <div
         className={`relative z-10 w-full max-w-4xl max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden my-auto transform transition-all duration-300 ${
           isVisible
-            ? 'opacity-100 scale-100 translate-y-0 ease-out'
-            : 'opacity-0 scale-95 translate-y-4 ease-in'
+            ? "opacity-100 scale-100 translate-y-0 ease-out"
+            : "opacity-0 scale-95 translate-y-4 ease-in"
         }`}
       >
         {/* 1. MODAL HEADER BAR */}
@@ -138,14 +149,27 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
           {/* Quốc Hiệu & Tiêu Ngữ Chuẩn Văn Bản Nhà Nước */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-6 gap-4 font-sans text-xs">
             <div className="text-center sm:text-left space-y-1">
-              <p className="font-extrabold uppercase text-slate-800 tracking-wide">{document.issuingAuthority}</p>
-              <p className="font-bold text-slate-600">Số: <span className="font-mono text-sky-900 font-extrabold">{document.code}</span></p>
+              <p className="font-extrabold uppercase text-slate-800 tracking-wide">
+                {document.issuingAuthority}
+              </p>
+              <p className="font-bold text-slate-600">
+                Số:{" "}
+                <span className="font-mono text-sky-900 font-extrabold">
+                  {document.code}
+                </span>
+              </p>
             </div>
 
             <div className="text-center sm:text-right space-y-1 w-full sm:w-auto">
-              <p className="font-extrabold uppercase text-slate-900 tracking-wider">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
-              <p className="font-bold text-slate-700 italic border-b-2 border-slate-800 inline-block pb-1">Độc lập - Tự do - Hạnh phúc</p>
-              <p className="text-[11px] text-slate-500 italic mt-1">Hà Nội, ngày {document.issueDate}</p>
+              <p className="font-extrabold uppercase text-slate-900 tracking-wider">
+                CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+              </p>
+              <p className="font-bold text-slate-700 italic border-b-2 border-slate-800 inline-block pb-1">
+                Độc lập - Tự do - Hạnh phúc
+              </p>
+              <p className="text-[11px] text-slate-500 italic mt-1">
+                Hà Nội, ngày {document.issueDate}
+              </p>
             </div>
           </div>
 
@@ -176,7 +200,10 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
 
                 <div className="space-y-4 pl-2">
                   {chap.articles.map((art, artIdx) => (
-                    <div key={artIdx} className="space-y-2 p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                    <div
+                      key={artIdx}
+                      className="space-y-2 p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs"
+                    >
                       <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                         {art.articleTitle}
                       </h3>
@@ -203,18 +230,26 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
             </div>
 
             <div className="text-center space-y-2 relative pr-6">
-              <p className="font-extrabold uppercase text-slate-800">{document.signerTitle}</p>
+              <p className="font-extrabold uppercase text-slate-800">
+                {document.signerTitle}
+              </p>
 
               {/* Con dấu đỏ mô phỏng công vụ */}
               <div className="relative my-4 flex items-center justify-center">
                 <div className="w-24 h-24 rounded-full border-2 border-rose-600 border-dashed flex flex-col items-center justify-center text-rose-600 p-1 transform -rotate-12 opacity-85 shadow-sm">
-                  <span className="text-[8px] font-black uppercase tracking-tighter">CỘNG HÒA X.H.C.N VIỆT NAM</span>
+                  <span className="text-[8px] font-black uppercase tracking-tighter">
+                    CỘNG HÒA X.H.C.N VIỆT NAM
+                  </span>
                   <Shield className="w-6 h-6 text-rose-600 my-0.5" />
-                  <span className="text-[7px] font-bold uppercase">ỦY BAN NHÂN DÂN</span>
+                  <span className="text-[7px] font-bold uppercase">
+                    ỦY BAN NHÂN DÂN
+                  </span>
                 </div>
               </div>
 
-              <p className="font-extrabold text-sm text-slate-900">{document.signerName}</p>
+              <p className="font-extrabold text-sm text-slate-900">
+                {document.signerName}
+              </p>
             </div>
           </div>
         </div>
@@ -223,7 +258,10 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
         <div className="px-6 py-3.5 bg-slate-100 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 shrink-0">
           <div className="flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Văn bản đã được đối chiếu khớp với Cơ sở dữ liệu Pháp luật Quốc gia</span>
+            <span>
+              Văn bản đã được đối chiếu khớp với Cơ sở dữ liệu Pháp luật Quốc
+              gia
+            </span>
           </div>
 
           <button

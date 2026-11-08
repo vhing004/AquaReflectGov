@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { X, PhoneCall, User, AlertCircle, Loader2 } from 'lucide-react';
-import { adminApi } from '../api/adminApi';
-import type { Category, AdministrativeUnit } from '../types';
+// MODAL TIẾP NHẬN HỘ CỦA ADMIN
+import React, { useState } from "react";
+import { X, PhoneCall, User, AlertCircle, Loader2 } from "lucide-react";
+import { adminApi } from "../api/adminApi";
+import type { Category, AdministrativeUnit } from "../types";
 
 interface CreateOnBehalfModalProps {
   isOpen: boolean;
@@ -18,15 +19,15 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
   adminUnits: _adminUnits = [],
   onSuccess,
 }) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [categoryId, setCategoryId] = useState(categories[0]?.id || "");
   const [receptionSource, setReceptionSource] = useState<number>(1); // 1 = Phone
-  const [citizenName, setCitizenName] = useState('');
-  const [citizenPhone, setCitizenPhone] = useState('');
-  const [citizenEmail, setCitizenEmail] = useState('');
-  const [citizenIdCard, setCitizenIdCard] = useState('');
-  const [addressText, setAddressText] = useState('');
+  const [citizenName, setCitizenName] = useState("");
+  const [citizenPhone, setCitizenPhone] = useState("");
+  const [citizenEmail, setCitizenEmail] = useState("");
+  const [citizenIdCard, setCitizenIdCard] = useState("");
+  const [addressText, setAddressText] = useState("");
   const [adminUnitId] = useState<number | undefined>(undefined);
   const [priorityLevel, setPriorityLevel] = useState<number>(1);
   const [files, setFiles] = useState<File[]>([]);
@@ -37,8 +38,13 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim() || !citizenPhone.trim() || !citizenName.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ các thông tin bắt buộc (*).');
+    if (
+      !title.trim() ||
+      !content.trim() ||
+      !citizenPhone.trim() ||
+      !citizenName.trim()
+    ) {
+      setErrorMsg("Vui lòng điền đầy đủ các thông tin bắt buộc (*).");
       return;
     }
 
@@ -47,20 +53,24 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
       setErrorMsg(null);
 
       const formData = new FormData();
-      formData.append('title', title.trim());
-      formData.append('content', content.trim());
-      formData.append('categoryId', categoryId || categories[0]?.id || '');
-      formData.append('receptionSource', receptionSource.toString());
-      formData.append('citizenName', citizenName.trim());
-      formData.append('citizenPhone', citizenPhone.trim());
-      if (citizenEmail.trim()) formData.append('citizenEmail', citizenEmail.trim());
-      if (citizenIdCard.trim()) formData.append('citizenIdCard', citizenIdCard.trim());
-      if (addressText.trim()) formData.append('addressText', addressText.trim());
-      if (adminUnitId) formData.append('administrativeUnitId', adminUnitId.toString());
-      formData.append('priorityLevel', priorityLevel.toString());
+      formData.append("title", title.trim());
+      formData.append("content", content.trim());
+      formData.append("categoryId", categoryId || categories[0]?.id || "");
+      formData.append("receptionSource", receptionSource.toString());
+      formData.append("citizenName", citizenName.trim());
+      formData.append("citizenPhone", citizenPhone.trim());
+      if (citizenEmail.trim())
+        formData.append("citizenEmail", citizenEmail.trim());
+      if (citizenIdCard.trim())
+        formData.append("citizenIdCard", citizenIdCard.trim());
+      if (addressText.trim())
+        formData.append("addressText", addressText.trim());
+      if (adminUnitId)
+        formData.append("administrativeUnitId", adminUnitId.toString());
+      formData.append("priorityLevel", priorityLevel.toString());
 
       files.forEach((file) => {
-        formData.append('files', file);
+        formData.append("files", file);
       });
 
       const res = await adminApi.createOnBehalf(formData);
@@ -70,7 +80,10 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
       }
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
-      setErrorMsg(axiosError?.response?.data?.message || 'Có lỗi xảy ra khi nhập hộ phản ánh. Vui lòng thử lại.');
+      setErrorMsg(
+        axiosError?.response?.data?.message ||
+          "Có lỗi xảy ra khi nhập hộ phản ánh. Vui lòng thử lại.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -91,9 +104,12 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
             <PhoneCall className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Tiếp Nhận Hộ Phản Ánh Kiến Nghị</h2>
+            <h2 className="text-lg font-bold text-slate-900">
+              Tiếp Nhận Hộ Phản Ánh Kiến Nghị
+            </h2>
             <p className="text-xs text-slate-500">
-              Nhập thông tin phản ánh tiếp nhận qua điện thoại hotline, trực tiếp hoặc văn bản giấy
+              Nhập thông tin phản ánh tiếp nhận qua điện thoại hotline, trực
+              tiếp hoặc văn bản giấy
             </p>
           </div>
         </div>
@@ -124,7 +140,9 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Mức độ ưu tiên</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Mức độ ưu tiên
+              </label>
               <select
                 value={priorityLevel}
                 onChange={(e) => setPriorityLevel(Number(e.target.value))}
@@ -141,7 +159,9 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
             <div className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
               <User className="w-3.5 h-3.5 text-[#006194]" />
-              <span>Thông tin Người gửi phản ánh (Công dân / Cơ sở nuôi trồng)</span>
+              <span>
+                Thông tin Người gửi phản ánh (Công dân / Cơ sở nuôi trồng)
+              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -174,7 +194,9 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">Email nhận thông báo</label>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Email nhận thông báo
+                </label>
                 <input
                   type="email"
                   value={citizenEmail}
@@ -185,7 +207,9 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">Số CCCD / Mã số tàu</label>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Số CCCD / Mã số tàu
+                </label>
                 <input
                   type="text"
                   value={citizenIdCard}
@@ -231,7 +255,8 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Nội dung chi tiết phản ánh <span className="text-rose-500">*</span>
+              Nội dung chi tiết phản ánh{" "}
+              <span className="text-rose-500">*</span>
             </label>
             <textarea
               rows={3}
@@ -245,7 +270,9 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
 
           {/* Địa bàn */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Địa bàn / Vị trí xảy ra</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Địa bàn / Vị trí xảy ra
+            </label>
             <input
               type="text"
               value={addressText}
@@ -257,7 +284,9 @@ export const CreateOnBehalfModal: React.FC<CreateOnBehalfModalProps> = ({
 
           {/* Tệp đính kèm */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Tệp đính kèm / Văn bản scan (nếu có)</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Tệp đính kèm / Văn bản scan (nếu có)
+            </label>
             <input
               type="file"
               multiple
